@@ -3,52 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chaos Arena Slap-Fest</title>
+    <title>Chaos Arena: Slap-Fest</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Arial Black', sans-serif; background: #222; color: white; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1a1a1a; color: white; user-select: none; }
         canvas { display: block; }
         
-        /* UI Overlays */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-        .menu-card { background: rgba(0,0,0,0.8); padding: 30px; border-radius: 15px; border: 4px solid #ff0055; pointer-events: auto; text-align: center; width: 400px; }
-        
-        button { background: #ff0055; color: white; border: none; padding: 15px 30px; font-size: 1.2rem; cursor: pointer; border-radius: 8px; margin: 10px; transition: transform 0.1s; }
-        button:hover { transform: scale(1.05); background: #ff4488; }
-        input { padding: 10px; width: 80%; margin: 10px; border-radius: 5px; border: none; }
-        
-        #hud { position: absolute; top: 20px; left: 20px; pointer-events: none; display: none; }
+        /* UI Layers */
+        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.7); z-index: 10; }
+        .menu-card { background: #2d2d2d; padding: 40px; border-radius: 20px; border: 4px solid #ff0055; text-align: center; width: 450px; box-shadow: 0 0 30px rgba(255,0,85,0.4); }
         .hidden { display: none !important; }
+
+        h1 { font-size: 3rem; margin-top: 0; color: #ff0055; text-shadow: 3px 3px #000; font-style: italic; }
+        button { background: #ff0055; color: white; border: none; padding: 15px 30px; font-size: 1.2rem; font-weight: bold; cursor: pointer; border-radius: 10px; margin: 10px; width: 100%; transition: 0.2s; }
+        button:hover { background: #ff4488; transform: scale(1.05); }
+        button.secondary { background: #444; }
+
+        textarea { width: 100%; height: 80px; background: #111; color: #0f0; border: 1px solid #444; font-family: monospace; font-size: 0.7rem; margin: 10px 0; border-radius: 5px; }
+        input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; background: #fff; color: #000; border-radius: 5px; border: none; box-sizing: border-box; }
+        
+        #hud { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 5; }
+        .player-label { position: absolute; background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 5px; font-size: 12px; transform: translate(-50%, -100%); pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <div id="hud">
-        <h2 id="status">ALIVE: 4</h2>
+    <div id="hud" class="hidden">
+        <h2 id="match-status">ARENA ACTIVE</h2>
     </div>
 
-    <div id="ui-layer">
+    <div id="ui-overlay">
         <div id="main-menu" class="menu-card">
-            <h1>SLAP-FEST 3D</h1>
-            <button onclick="startGame(false)">SOLO (vs BOTS)</button>
-            <button onclick="showMultiplayer()">MULTIPLAYER</button>
+            <h1>SLAP-FEST</h1>
+            <button onclick="startSinglePlayer()">LOCAL vs BOTS</button>
+            <button onclick="switchMenu('multi-menu')" class="secondary">MULTIPLAYER</button>
         </div>
 
         <div id="multi-menu" class="menu-card hidden">
-            <h3>MULTIPLAYER (WebRTC)</h3>
-            <button onclick="initHost()">CREATE ROOM</button>
-            <p>OR</p>
-            <input type="text" id="join-code" placeholder="Paste Code Here">
-            <button onclick="initJoin()">JOIN ROOM</button>
-            <br>
-            <button onclick="showMainMenu()" style="background:#555">BACK</button>
+            <h2>MULTIPLAYER</h2>
+            <button onclick="initHost()">HOST ROOM</button>
+            <button onclick="switchMenu('join-input-menu')">JOIN ROOM</button>
+            <button onclick="switchMenu('main-menu')" class="secondary">BACK</button>
         </div>
 
-        <div id="connection-screen" class="menu-card hidden">
-            <h3 id="conn-title">Your Room Code:</h3>
-            <textarea id="copy-code" style="width:100%; height:100px;" readonly></textarea>
-            <p>Send this to your friend, then paste their response back.</p>
-            <input type="text" id="pasted-response" placeholder="Paste response here">
-            <button onclick="processResponse()">CONNECT</button>
+        <div id="host-screen" class="menu-card hidden">
+            <h3>HOSTING</h3>
+            <p>1. Copy your code & send to friend:</p>
+            <textarea id="offer-sdp" readonly></textarea>
+            <button onclick="copyOffer()">COPY CODE</button>
+            <p>2. Paste their response here:</p>
+            <input type="text" id="answer-sdp-input" placeholder="Paste response here...">
+            <button onclick="connectAsHost()">START CONNECTION</button>
+        </div>
+
+        <div id="join-input-menu" class="menu-card hidden">
+            <h3>JOIN ROOM</h3>
+            <p>Paste Host's Code:</p>
+            <textarea id="join-offer-input"></textarea>
+            <button onclick="initJoin()">GENERATE RESPONSE</button>
+            <div id="join-response-area" class="hidden">
+                <p>Send this response to Host:</p>
+                <textarea id="join-answer-sdp" readonly></textarea>
+                <button onclick="copyAnswer()">COPY & START</button>
+            </div>
         </div>
     </div>
 
@@ -59,101 +75,143 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- GAME CONFIG ---
-        const CONFIG = {
-            arenaSize: 20,
-            gravity: -0.05,
-            slapForce: 0.8,
-            friction: 0.92,
-            colors: [0xff0055, 0x00ffaa, 0x00aaff, 0xffaa00]
-        };
+        // --- CONSTANTS ---
+        const ARENA_SIZE = 15;
+        const COLORS = [0xff0055, 0x00ffaa, 0x00aaff, 0xffaa00];
+        const SLAP_DISTANCE = 2.5;
+        const SLAP_KNOCKBACK = 1.2;
 
+        // --- GLOBALS ---
         let scene, camera, renderer, clock;
         let players = [];
-        let isGameRunning = false;
+        let localPlayer = null;
+        let isGameStarted = false;
+        let peerConn, dataChannel;
+        let isHost = false;
 
-        // --- CORE CLASSES ---
+        // --- PLAYER CLASS ---
         class Player {
-            constructor(id, color, isBot = false) {
+            constructor(id, color, isLocal = false, isBot = false) {
                 this.id = id;
+                this.isLocal = isLocal;
                 this.isBot = isBot;
+                this.color = color;
                 this.velocity = new THREE.Vector3();
-                this.isGrounded = true;
                 this.isDead = false;
+                this.slapCooldown = 0;
 
-                // Mesh: Simple box body + big hand spheres
-                const group = new THREE.Group();
-                const body = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 1), new THREE.MeshPhongMaterial({ color }));
-                group.add(body);
-                
-                this.hand = new THREE.Mesh(new THREE.SphereGeometry(0.4), new THREE.MeshPhongMaterial({ color: 0xffffff }));
-                this.hand.position.set(0.8, 0, 0.5);
-                group.add(this.hand);
+                // Character Mesh
+                this.group = new THREE.Group();
+                const body = new THREE.Mesh(
+                    new THREE.CapsuleGeometry(0.5, 1, 4, 8),
+                    new THREE.MeshPhongMaterial({ color })
+                );
+                body.position.y = 1;
+                this.group.add(body);
 
-                this.mesh = group;
-                this.mesh.position.y = 1;
-                this.mesh.position.x = (Math.random() - 0.5) * 10;
-                this.mesh.position.z = (Math.random() - 0.5) * 10;
-                scene.add(this.mesh);
+                // Big Hands
+                this.handGroup = new THREE.Group();
+                const handGeo = new THREE.SphereGeometry(0.3, 8, 8);
+                const handMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+                this.lHand = new THREE.Mesh(handGeo, handMat);
+                this.rHand = new THREE.Mesh(handGeo, handMat);
+                this.lHand.position.set(-0.7, 1, 0.5);
+                this.rHand.position.set(0.7, 1, 0.5);
+                this.group.add(this.lHand, this.rHand);
+
+                this.group.position.set((Math.random()-0.5)*10, 1, (Math.random()-0.5)*10);
+                scene.add(this.group);
             }
 
-            update(input) {
+            update(input, delta) {
                 if (this.isDead) return;
 
-                // Movement Logic
-                if (input.left) this.velocity.x -= 0.02;
-                if (input.right) this.velocity.x += 0.02;
-                if (input.up) this.velocity.z -= 0.02;
-                if (input.down) this.velocity.z += 0.02;
+                // Movement
+                const moveSpeed = 0.15;
+                if (input.up) this.velocity.z -= moveSpeed;
+                if (input.down) this.velocity.z += moveSpeed;
+                if (input.left) this.velocity.x -= moveSpeed;
+                if (input.right) this.velocity.x += moveSpeed;
 
                 // Apply Physics
-                this.mesh.position.add(this.velocity);
-                this.velocity.multiplyScalar(CONFIG.friction);
-                
-                // Gravity
-                if (this.mesh.position.y > 0.75) {
-                    this.velocity.y += CONFIG.gravity;
-                } else {
-                    this.velocity.y = 0;
-                    this.mesh.position.y = 0.75;
+                this.group.position.add(this.velocity);
+                this.velocity.multiplyScalar(0.85); // Friction
+
+                // Look Direction
+                if (Math.abs(this.velocity.x) > 0.01 || Math.abs(this.velocity.z) > 0.01) {
+                    const targetAngle = Math.atan2(this.velocity.x, this.velocity.z);
+                    this.group.rotation.y = THREE.MathUtils.lerp(this.group.rotation.y, targetAngle, 0.1);
                 }
 
-                // Check Fall
-                if (this.mesh.position.y < -5) {
-                    this.die();
+                // Gravity & Fall
+                if (this.group.position.y > 0) this.velocity.y -= 0.05;
+                if (this.group.position.y < -10) this.die();
+
+                // Slap logic
+                if (input.slap && this.slapCooldown <= 0) {
+                    this.performSlap();
                 }
+                if (this.slapCooldown > 0) this.slapCooldown -= delta;
+
+                // Simple Hand Wobble
+                this.lHand.position.y = 1 + Math.sin(Date.now() * 0.01) * 0.1;
+                this.rHand.position.y = 1 + Math.cos(Date.now() * 0.01) * 0.1;
+            }
+
+            performSlap() {
+                this.slapCooldown = 0.5;
+                // Visual feedback
+                this.rHand.position.z = 1.5;
+                setTimeout(() => this.rHand.position.z = 0.5, 100);
+
+                // Collision Check
+                players.forEach(p => {
+                    if (p === this || p.isDead) return;
+                    const dist = this.group.position.distanceTo(p.group.position);
+                    if (dist < SLAP_DISTANCE) {
+                        const dir = new THREE.Vector3().subVectors(p.group.position, this.group.position).normalize();
+                        p.velocity.add(dir.multiplyScalar(SLAP_KNOCKBACK));
+                        p.velocity.y = 0.3; // Tiny hop
+                    }
+                });
             }
 
             die() {
                 this.isDead = true;
-                this.mesh.visible = false;
+                this.group.visible = false;
+                checkWinCondition();
             }
         }
 
         // --- INITIALIZATION ---
         function init() {
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x111111);
-
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 15, 15);
+            scene.background = new THREE.Color(0x222222);
+            
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 18, 18);
             camera.lookAt(0, 0, 0);
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
 
-            const light = new THREE.DirectionalLight(0xffffff, 1);
-            light.position.set(5, 10, 7);
-            scene.add(light, new THREE.AmbientLight(0x404040));
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            const sun = new THREE.DirectionalLight(0xffffff, 1);
+            sun.position.set(10, 20, 10);
+            scene.add(ambient, sun);
 
-            // Arena
-            const floor = new THREE.Mesh(
-                new THREE.BoxGeometry(CONFIG.arenaSize, 1, CONFIG.arenaSize),
-                new THREE.MeshPhongMaterial({ color: 0x333333 })
-            );
-            floor.position.y = -0.5;
-            scene.add(floor);
+            // Arena Mesh
+            const arenaGeo = new THREE.CylinderGeometry(ARENA_SIZE, ARENA_SIZE, 1, 32);
+            const arenaMat = new THREE.MeshPhongMaterial({ color: 0x444444 });
+            const arena = new THREE.Mesh(arenaGeo, arenaMat);
+            arena.position.y = -0.5;
+            scene.add(arena);
+
+            // Grid helper for depth
+            const grid = new THREE.GridHelper(40, 20, 0xff0055, 0x333333);
+            grid.position.y = -0.51;
+            scene.add(grid);
 
             clock = new THREE.Clock();
             animate();
@@ -161,66 +219,202 @@
 
         // --- GAME LOOP ---
         const keys = {};
-        window.onkeydown = (e) => keys[e.code] = true;
-        window.onkeyup = (e) => keys[e.code] = false;
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            if (isGameRunning) {
-                const p1Input = {
+            const delta = clock.getDelta();
+
+            if (isGameStarted) {
+                // Local Input
+                const localInput = {
+                    up: keys['KeyW'] || keys['ArrowUp'],
+                    down: keys['KeyS'] || keys['ArrowDown'],
                     left: keys['KeyA'] || keys['ArrowLeft'],
                     right: keys['KeyD'] || keys['ArrowRight'],
-                    up: keys['KeyW'] || keys['ArrowUp'],
-                    down: keys['KeyS'] || keys['ArrowDown']
+                    slap: keys['Space']
                 };
 
+                // Gamepad Support
+                const gamepad = navigator.getGamepads()[0];
+                if (gamepad) {
+                    if (gamepad.axes[1] < -0.1) localInput.up = true;
+                    if (gamepad.axes[1] > 0.1) localInput.down = true;
+                    if (gamepad.axes[0] < -0.1) localInput.left = true;
+                    if (gamepad.axes[0] > 0.1) localInput.right = true;
+                    if (gamepad.buttons[0].pressed) localInput.slap = true;
+                }
+
                 players.forEach(p => {
-                    if (p.id === 'local') p.update(p1Input);
-                    else if (p.isBot) updateAI(p);
+                    if (p.isLocal) p.update(localInput, delta);
+                    else if (p.isBot) runBotAI(p, delta);
                 });
+
+                // Network Sync (Stub for WebRTC integration)
+                if (dataChannel && dataChannel.readyState === 'open') {
+                    dataChannel.send(JSON.stringify({
+                        pos: localPlayer.group.position,
+                        rot: localPlayer.group.rotation.y,
+                        slap: localInput.slap
+                    }));
+                }
             }
 
             renderer.render(scene, camera);
         }
 
-        function updateAI(bot) {
-            // Simple AI: Move toward center if too far, otherwise move randomly
-            const dist = bot.mesh.position.length();
-            const input = { left: false, right: false, up: false, down: false };
+        function runBotAI(bot, delta) {
+            const input = { up: false, down: false, left: false, right: false, slap: false };
             
-            if (dist > 5) {
-                if (bot.mesh.position.x > 0) input.left = true; else input.right = true;
-                if (bot.mesh.position.z > 0) input.up = true; else input.down = true;
-            } else {
-                if (Math.random() > 0.95) input.right = Math.random() > 0.5;
+            // AI Logic: Find nearest non-dead player
+            let target = null;
+            let minDist = Infinity;
+            players.forEach(p => {
+                if (p === bot || p.isDead) return;
+                const d = bot.group.position.distanceTo(p.group.position);
+                if (d < minDist) { minDist = d; target = p; }
+            });
+
+            if (target) {
+                if (target.group.position.x < bot.group.position.x) input.left = true;
+                if (target.group.position.x > bot.group.position.x) input.right = true;
+                if (target.group.position.z < bot.group.position.z) input.up = true;
+                if (target.group.position.z > bot.group.position.z) input.down = true;
+                
+                if (minDist < SLAP_DISTANCE + 1) input.slap = (Math.random() > 0.9);
             }
-            bot.update(input);
+
+            // Comedic Randomness: occasionally drift off
+            if (Math.random() > 0.99) { input.left = !input.left; }
+
+            bot.update(input, delta);
         }
 
-        // --- UI & STATE ---
-        window.startGame = (multi) => {
-            document.getElementById('ui-layer').classList.add('hidden');
-            document.getElementById('hud').style.display = 'block';
+        function checkWinCondition() {
+            const alive = players.filter(p => !p.isDead);
+            document.getElementById('match-status').innerText = `PLAYERS ALIVE: ${alive.length}`;
+            if (alive.length <= 1 && isGameStarted) {
+                const winner = alive[0];
+                alert(winner ? `Winner: ${winner.id}!` : "Everyone fell! Draw!");
+                location.reload();
+            }
+        }
+
+        // --- MULTIPLAYER CORE (WebRTC) ---
+        async function initHost() {
+            isHost = true;
+            peerConn = new RTCPeerConnection();
+            dataChannel = peerConn.createDataChannel("gameData");
+            setupDataChannel();
+
+            const offer = await peerConn.createOffer();
+            await peerConn.setLocalDescription(offer);
+
+            // Wait for ICE candidates to settle for simple copy-paste
+            peerConn.onicecandidate = (e) => {
+                if (!e.candidate) {
+                    document.getElementById('offer-sdp').value = btoa(JSON.stringify(peerConn.localDescription));
+                    switchMenu('host-screen');
+                }
+            };
+        }
+
+        async function connectAsHost() {
+            const answerRaw = document.getElementById('answer-sdp-input').value;
+            const answer = new RTCSessionDescription(JSON.parse(atob(answerRaw)));
+            await peerConn.setRemoteDescription(answer);
+        }
+
+        async function initJoin() {
+            const offerRaw = document.getElementById('join-offer-input').value;
+            const offer = new RTCSessionDescription(JSON.parse(atob(offerRaw)));
+
+            peerConn = new RTCPeerConnection();
+            peerConn.ondatachannel = (e) => {
+                dataChannel = e.channel;
+                setupDataChannel();
+            };
+
+            await peerConn.setRemoteDescription(offer);
+            const answer = await peerConn.createAnswer();
+            await peerConn.setLocalDescription(answer);
+
+            peerConn.onicecandidate = (e) => {
+                if (!e.candidate) {
+                    document.getElementById('join-answer-sdp').value = btoa(JSON.stringify(peerConn.localDescription));
+                    document.getElementById('join-response-area').classList.remove('hidden');
+                }
+            };
+        }
+
+        function setupDataChannel() {
+            dataChannel.onopen = () => startMultiplayerGame();
+            dataChannel.onmessage = (e) => {
+                const msg = JSON.parse(e.data);
+                const remotePlayer = players.find(p => !p.isLocal && !p.isBot);
+                if (remotePlayer) {
+                    remotePlayer.group.position.copy(msg.pos);
+                    remotePlayer.group.rotation.y = msg.rot;
+                    if (msg.slap) remotePlayer.performSlap();
+                }
+            };
+        }
+
+        // --- GAME START WRAPPERS ---
+        window.startSinglePlayer = () => {
+            document.getElementById('ui-overlay').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
             
-            players.push(new Player('local', CONFIG.colors[0]));
-            players.push(new Player('bot1', CONFIG.colors[1], true));
-            players.push(new Player('bot2', CONFIG.colors[2], true));
+            localPlayer = new Player('YOU', COLORS[0], true);
+            players.push(localPlayer);
+            players.push(new Player('BOT 1', COLORS[1], false, true));
+            players.push(new Player('BOT 2', COLORS[2], false, true));
+            players.push(new Player('BOT 3', COLORS[3], false, true));
             
-            isGameRunning = true;
+            isGameStarted = true;
         };
 
-        window.showMultiplayer = () => {
-            document.getElementById('main-menu').classList.add('hidden');
-            document.getElementById('multi-menu').classList.remove('hidden');
+        function startMultiplayerGame() {
+            document.getElementById('ui-overlay').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            
+            localPlayer = new Player('YOU', isHost ? COLORS[0] : COLORS[1], true);
+            const other = new Player('FRIEND', isHost ? COLORS[1] : COLORS[0], false, false);
+            players.push(localPlayer, other);
+            
+            // Fill with bots
+            players.push(new Player('BOT A', COLORS[2], false, true));
+            players.push(new Player('BOT B', COLORS[3], false, true));
+            
+            isGameStarted = true;
+        }
+
+        // --- UI HELPERS ---
+        window.switchMenu = (id) => {
+            document.querySelectorAll('.menu-card').forEach(m => m.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
         };
 
-        window.showMainMenu = () => {
-            document.getElementById('multi-menu').classList.add('hidden');
-            document.getElementById('main-menu').classList.remove('hidden');
+        window.copyOffer = () => {
+            document.getElementById('offer-sdp').select();
+            document.execCommand('copy');
+            alert("Code copied! Send it to your friend.");
         };
 
+        window.copyAnswer = () => {
+            document.getElementById('join-answer-sdp').select();
+            document.execCommand('copy');
+            alert("Response copied! Send it back to the host.");
+            startMultiplayerGame();
+        };
+
+        // Initialize Three.js scene on load
         init();
+        window.initHost = initHost;
+        window.initJoin = initJoin;
+        window.connectAsHost = connectAsHost;
+        window.startMultiplayerGame = startMultiplayerGame;
     </script>
 </body>
 </html>
