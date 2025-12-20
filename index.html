@@ -3,32 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chaos Arena Slap-Fest</title>
+    <title>ULTIMATE ARENA SHOWDOWN</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            font-family: 'Arial Black', 'Arial', sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #1a0a2e, #3d1b6e);
-            color: #fff;
+            background: radial-gradient(circle at center, #0a0a2a 0%, #000000 100%);
+            color: white;
             min-height: 100vh;
             overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
         
         #gameContainer {
             width: 100vw;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
             position: relative;
         }
         
@@ -41,690 +34,778 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0, 0, 0, 0.85);
-            z-index: 10;
-            transition: opacity 0.5s;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 100;
             padding: 20px;
+            text-align: center;
         }
         
         .screen.hidden {
             display: none !important;
         }
         
-        /* Title Styles */
-        .title {
-            font-size: 3.5rem;
-            margin-bottom: 20px;
-            text-align: center;
-            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
-            color: #ffcc00;
-            animation: titlePulse 2s infinite alternate;
-        }
-        
-        @keyframes titlePulse {
-            0% { transform: scale(1); text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff; }
-            100% { transform: scale(1.05); text-shadow: 0 0 15px #ff00ff, 0 0 30px #ff00ff; }
-        }
-        
-        .subtitle {
-            font-size: 1.5rem;
-            margin-bottom: 30px;
-            text-align: center;
-            color: #aaffaa;
-            max-width: 600px;
-            line-height: 1.5;
-        }
-        
-        /* Button Styles */
-        .btn {
-            background: linear-gradient(45deg, #ff3366, #ff9933);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            margin: 10px;
-            font-size: 1.2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 5px 15px rgba(255, 51, 102, 0.4);
-            min-width: 200px;
-            text-align: center;
-        }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(255, 51, 102, 0.6);
-        }
-        
-        .btn:active {
-            transform: translateY(1px);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(45deg, #3366ff, #33ccff);
-            box-shadow: 0 5px 15px rgba(51, 102, 255, 0.4);
-        }
-        
-        .btn-secondary:hover {
-            box-shadow: 0 8px 20px rgba(51, 102, 255, 0.6);
-        }
-        
-        /* Form Styles */
-        .form-group {
-            margin: 20px 0;
-            text-align: center;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 1.2rem;
-            color: #aaffaa;
-        }
-        
-        select, input {
-            padding: 12px 20px;
-            font-size: 1.2rem;
-            border-radius: 10px;
-            border: 2px solid #ff3366;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            width: 300px;
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        
-        /* Connection Code Styles */
-        .code-display {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 20px;
-            border-radius: 15px;
-            margin: 30px 0;
-            text-align: center;
-            border: 3px dashed #ffcc00;
-            max-width: 500px;
-            width: 90%;
-        }
-        
-        .code {
-            font-size: 2rem;
-            letter-spacing: 5px;
-            color: #ffcc00;
-            margin: 15px 0;
-            font-family: monospace;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 10px;
-            user-select: all;
-            word-break: break-all;
-        }
-        
-        .hint {
-            color: #aaa;
-            font-style: italic;
-            margin-top: 15px;
-        }
-        
         /* Game Canvas */
         #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            display: block;
+            z-index: 1;
         }
         
-        /* HUD Styles */
+        /* HUD Elements */
         #hud {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             padding: 20px;
-            z-index: 5;
-            display: flex;
-            justify-content: space-between;
+            z-index: 10;
             pointer-events: none;
-            flex-wrap: wrap;
         }
         
-        .player-hud {
+        .health-bar-container {
             background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #444;
+            border-radius: 10px;
+            width: 300px;
+            height: 30px;
+            margin: 10px;
+            overflow: hidden;
+        }
+        
+        .health-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #00ff00);
+            width: 100%;
+            transition: width 0.3s;
+        }
+        
+        .player-info {
+            position: absolute;
+            top: 20px;
+            background: rgba(0, 0, 0, 0.8);
             padding: 15px;
             border-radius: 10px;
-            min-width: 150px;
             border: 2px solid;
-            margin: 5px;
+            min-width: 250px;
         }
         
         .player-name {
-            font-size: 1.1rem;
-            font-weight: bold;
+            font-size: 1.5rem;
             margin-bottom: 5px;
         }
         
-        .player-score {
-            font-size: 1.8rem;
-            color: #ffcc00;
+        .player-stats {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
         }
         
-        /* Round Info */
-        #roundInfo {
+        .stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        
+        .ability {
+            position: absolute;
+            bottom: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #ff9900;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .ability-cooldown {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: conic-gradient(#ff9900 0%, #333 0%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+        
+        /* Game Messages */
+        #gameMessage {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 2.5rem;
+            font-size: 3rem;
             color: #ffcc00;
-            text-shadow: 0 0 10px #ff00ff;
-            z-index: 6;
+            text-shadow: 0 0 20px #ff0066, 0 0 40px #ff0066;
+            z-index: 20;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.5s;
             text-align: center;
         }
         
-        /* Controls Info */
-        .controls-info {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 15px;
-            margin-top: 20px;
-            max-width: 500px;
-            text-align: center;
-        }
-        
-        .controls-title {
-            color: #ffcc00;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-        
-        .control-item {
-            margin: 8px 0;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .control-key {
-            background: #333;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-family: monospace;
-        }
-        
-        /* Player Colors */
-        .player-1 { border-color: #ff3366; }
-        .player-2 { border-color: #3366ff; }
-        .player-3 { border-color: #33cc66; }
-        .player-4 { border-color: #ffcc00; }
-        
-        .player-1 .player-name { color: #ff3366; }
-        .player-2 .player-name { color: #3366ff; }
-        .player-3 .player-name { color: #33cc66; }
-        .player-4 .player-name { color: #ffcc00; }
-        
-        /* Arena Modifier Display */
-        #arenaModifier {
+        #miniMap {
             position: absolute;
-            bottom: 20px;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00aaff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        /* Title Styles */
+        .title {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #ff0066, #00ccff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 0, 102, 0.5);
+            animation: titleGlow 2s infinite alternate;
+        }
+        
+        @keyframes titleGlow {
+            0% { text-shadow: 0 0 20px rgba(255, 0, 102, 0.5); }
+            100% { text-shadow: 0 0 40px rgba(255, 0, 102, 0.8), 0 0 60px rgba(0, 204, 255, 0.5); }
+        }
+        
+        /* Button Styles */
+        .btn {
+            background: linear-gradient(45deg, #ff0066, #00ccff);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            margin: 15px;
+            font-size: 1.5rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(255, 0, 102, 0.5);
+            min-width: 300px;
+            text-align: center;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 0, 102, 0.8);
+        }
+        
+        .btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, #00ccff, #ff0066);
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin: 25px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+            color: #00ccff;
+        }
+        
+        select, input {
+            padding: 15px 25px;
+            font-size: 1.2rem;
+            border-radius: 25px;
+            border: 2px solid #00ccff;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            width: 350px;
+            text-align: center;
+            outline: none;
+        }
+        
+        /* Game Stats */
+        #gameStats {
+            position: absolute;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.8);
             padding: 15px 30px;
-            border-radius: 50px;
-            font-size: 1.3rem;
+            border-radius: 15px;
+            border: 2px solid #ffcc00;
+            display: flex;
+            gap: 30px;
+            font-size: 1.2rem;
+        }
+        
+        .stat-value {
             color: #ffcc00;
-            z-index: 5;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s;
-            text-align: center;
-            white-space: nowrap;
+            font-weight: bold;
         }
         
-        /* Scoreboard */
-        #scoreboard {
-            margin: 20px 0;
-            font-size: 1.3rem;
-            text-align: center;
+        /* Kill Feed */
+        #killFeed {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff0066;
+            border-radius: 10px;
+            padding: 10px;
         }
         
-        /* Responsive */
+        .kill-message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+            background: rgba(255, 0, 102, 0.2);
+            font-size: 0.9rem;
+        }
+        
+        /* Power-up Display */
+        .power-up {
+            position: absolute;
+            bottom: 100px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #00ff00;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Controls Display */
+        .controls-display {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #00ccff;
+            font-size: 0.9rem;
+            max-width: 300px;
+        }
+        
+        /* Loading Screen */
+        .loading-bar {
+            width: 400px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            margin: 30px 0;
+            overflow: hidden;
+        }
+        
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0066, #00ccff);
+            width: 0%;
+            transition: width 0.3s;
+            border-radius: 15px;
+        }
+        
+        /* Mobile Controls */
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 20px;
+            z-index: 30;
+        }
+        
+        .mobile-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            user-select: none;
+            touch-action: none;
+            backdrop-filter: blur(10px);
+        }
+        
         @media (max-width: 768px) {
             .title { font-size: 2.5rem; }
-            .subtitle { font-size: 1.2rem; }
-            .btn { padding: 12px 20px; font-size: 1.1rem; min-width: 180px; margin: 5px; }
-            .code { font-size: 1.5rem; }
-            .player-hud { min-width: 120px; padding: 10px; font-size: 0.9rem; }
-            .controls-info { padding: 15px; margin: 10px; }
-            select, input { width: 250px; }
-        }
-        
-        @media (max-width: 480px) {
-            .title { font-size: 2rem; }
-            .btn { min-width: 160px; padding: 10px 15px; }
-            #hud { flex-direction: column; align-items: center; }
-            .player-hud { width: 90%; margin-bottom: 10px; }
+            .btn { padding: 15px 30px; font-size: 1.2rem; min-width: 250px; }
+            select, input { width: 280px; }
+            #gameStats { font-size: 1rem; gap: 15px; }
+            .player-info { min-width: 200px; }
+            #mobileControls { display: flex; }
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
-        <!-- Start Screen -->
-        <div id="startScreen" class="screen">
-            <h1 class="title">CHAOS ARENA SLAP-FEST</h1>
-            <p class="subtitle">The wackiest 3D brawler in browser history!</p>
-            
-            <div class="form-group">
-                <label for="playerCount">Number of Real Players (1-4):</label>
-                <select id="playerCount">
-                    <option value="1">1 Player</option>
-                    <option value="2">2 Players</option>
-                    <option value="3">3 Players</option>
-                    <option value="4" selected>4 Players</option>
-                </select>
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="screen">
+            <h1 class="title">LOADING</h1>
+            <div class="loading-bar">
+                <div id="loadingProgress" class="loading-progress"></div>
             </div>
-            
-            <div class="form-group">
-                <label for="botCount">Number of AI Bots (0-3):</label>
-                <select id="botCount">
-                    <option value="0" selected>No Bots</option>
-                    <option value="1">1 Bot</option>
-                    <option value="2">2 Bots</option>
-                    <option value="3">3 Bots</option>
-                </select>
-            </div>
-            
-            <button id="createRoomBtn" class="btn">CREATE ROOM</button>
-            <button id="joinRoomBtn" class="btn btn-secondary">JOIN ROOM</button>
-            
-            <div class="controls-info">
-                <div class="controls-title">CONTROLS</div>
-                <div class="control-item">
-                    <span>Movement:</span>
-                    <span class="control-key">WASD / Arrow Keys / Gamepad Stick</span>
-                </div>
-                <div class="control-item">
-                    <span>Slap:</span>
-                    <span class="control-key">SPACE / Gamepad A Button</span>
-                </div>
-                <div class="control-item">
-                    <span>Goal:</span>
-                    <span>Slap opponents off the arena!</span>
-                </div>
-            </div>
+            <div id="loadingText">Initializing Game Engine...</div>
         </div>
         
-        <!-- Create Room Screen -->
-        <div id="createScreen" class="screen hidden">
-            <h1 class="title">ROOM CREATED</h1>
-            <p class="subtitle">Share this code with other players on the same Wi-Fi:</p>
+        <!-- Main Menu -->
+        <div id="menuScreen" class="screen hidden">
+            <h1 class="title">ULTIMATE ARENA SHOWDOWN</h1>
+            <p style="font-size: 1.3rem; margin-bottom: 40px; color: #00ccff;">
+                Survive the arena, collect upgrades, and become the ultimate champion!
+            </p>
             
-            <div class="code-display">
-                <div id="connectionCode" class="code">GENERATING...</div>
-                <p class="hint">Waiting for players to join...</p>
+            <button id="playBtn" class="btn">PLAY NOW</button>
+            <button id="howToPlayBtn" class="btn btn-secondary">HOW TO PLAY</button>
+            <button id="settingsBtn" class="btn">SETTINGS</button>
+            
+            <div style="margin-top: 50px; color: #888; font-size: 0.9rem;">
+                Use WASD to move • SPACE to jump • MOUSE to aim/shoot • R to reload
             </div>
-            
-            <button id="startGameBtn" class="btn">START GAME</button>
-            <button id="backFromCreateBtn" class="btn btn-secondary">BACK</button>
-        </div>
-        
-        <!-- Join Room Screen -->
-        <div id="joinScreen" class="screen hidden">
-            <h1 class="title">JOIN ROOM</h1>
-            <p class="subtitle">Enter the connection code from the host:</p>
-            
-            <div class="form-group">
-                <input type="text" id="roomCodeInput" placeholder="Enter 6-character code" maxlength="6">
-            </div>
-            
-            <button id="connectRoomBtn" class="btn">CONNECT</button>
-            <button id="backFromJoinBtn" class="btn btn-secondary">BACK</button>
         </div>
         
         <!-- Game Screen -->
         <div id="gameScreen" class="screen hidden">
             <canvas id="gameCanvas"></canvas>
             <div id="hud"></div>
-            <div id="roundInfo"></div>
-            <div id="arenaModifier"></div>
+            <div id="gameStats">
+                <div>ROUND: <span id="roundCount" class="stat-value">1</span></div>
+                <div>ALIVE: <span id="playersAlive" class="stat-value">4</span>/<span id="totalPlayers" class="stat-value">4</span></div>
+                <div>KILLS: <span id="killCount" class="stat-value">0</span></div>
+                <div>TIME: <span id="gameTimer" class="stat-value">5:00</span></div>
+            </div>
+            <div id="killFeed"></div>
+            <div id="gameMessage"></div>
         </div>
         
-        <!-- Result Screen -->
-        <div id="resultScreen" class="screen hidden">
-            <h1 id="resultTitle" class="title">ROUND OVER!</h1>
-            <p id="resultMessage" class="subtitle"></p>
+        <!-- Settings Screen -->
+        <div id="settingsScreen" class="screen hidden">
+            <h1 class="title">SETTINGS</h1>
             
-            <div id="scoreboard"></div>
+            <div class="form-group">
+                <label for="playerName">PLAYER NAME</label>
+                <input type="text" id="playerName" value="PLAYER" maxlength="12">
+            </div>
             
-            <button id="nextRoundBtn" class="btn">NEXT ROUND</button>
-            <button id="backToLobbyBtn" class="btn btn-secondary">BACK TO LOBBY</button>
+            <div class="form-group">
+                <label for="difficulty">DIFFICULTY</label>
+                <select id="difficulty">
+                    <option value="easy">EASY</option>
+                    <option value="normal" selected>NORMAL</option>
+                    <option value="hard">HARD</option>
+                    <option value="insane">INSANE</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="botCount">NUMBER OF BOTS (1-7)</label>
+                <input type="range" id="botCount" min="1" max="7" value="3">
+                <span id="botCountValue">3</span>
+            </div>
+            
+            <div class="form-group">
+                <label for="volume">VOLUME</label>
+                <input type="range" id="volume" min="0" max="100" value="70">
+                <span id="volumeValue">70%</span>
+            </div>
+            
+            <button id="saveSettingsBtn" class="btn">SAVE SETTINGS</button>
+            <button id="backToMenuBtn" class="btn btn-secondary">BACK TO MENU</button>
+        </div>
+        
+        <!-- How to Play Screen -->
+        <div id="howToPlayScreen" class="screen hidden">
+            <h1 class="title">HOW TO PLAY</h1>
+            
+            <div style="max-width: 800px; text-align: left; margin: 30px 0; line-height: 1.6;">
+                <h2 style="color: #00ccff; margin: 20px 0;">OBJECTIVE</h2>
+                <p>Be the last player standing in the arena! Eliminate opponents using weapons, collect power-ups, and upgrade your abilities.</p>
+                
+                <h2 style="color: #00ccff; margin: 20px 0;">CONTROLS</h2>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+                    <div><strong>WASD:</strong> Movement</div>
+                    <div><strong>MOUSE:</strong> Aim/Shoot</div>
+                    <div><strong>SPACE:</strong> Jump</div>
+                    <div><strong>SHIFT:</strong> Sprint</div>
+                    <div><strong>R:</strong> Reload</div>
+                    <div><strong>1-4:</strong> Switch Weapons</div>
+                    <div><strong>E:</strong> Use/Interact</div>
+                    <div><strong>Q:</strong> Special Ability</div>
+                </div>
+                
+                <h2 style="color: #00ccff; margin: 20px 0;">POWER-UPS</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="border-left: 4px solid #ff0066; padding-left: 10px;">
+                        <strong style="color: #ff0066;">DAMAGE BOOST</strong><br>
+                        Increases weapon damage
+                    </div>
+                    <div style="border-left: 4px solid #00ff00; padding-left: 10px;">
+                        <strong style="color: #00ff00;">SPEED BOOST</strong><br>
+                        Increases movement speed
+                    </div>
+                    <div style="border-left: 4px solid #00ccff; padding-left: 10px;">
+                        <strong style="color: #00ccff;">HEALTH PACK</strong><br>
+                        Restores health
+                    </div>
+                    <div style="border-left: 4px solid #ffcc00; padding-left: 10px;">
+                        <strong style="color: #ffcc00;">SHIELD</strong><br>
+                        Temporary damage reduction
+                    </div>
+                </div>
+                
+                <h2 style="color: #00ccff; margin: 20px 0;">UPGRADE SYSTEM</h2>
+                <p>Eliminate enemies to earn upgrade points. Between rounds, spend points to upgrade:</p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>HEALTH:</strong> Increase maximum health</li>
+                    <li><strong>DAMAGE:</strong> Deal more damage</li>
+                    <li><strong>SPEED:</strong> Move faster</li>
+                    <li><strong>RELOAD:</strong> Faster reload times</li>
+                    <li><strong>SPECIAL ABILITY:</strong> Unique class ability</li>
+                </ul>
+            </div>
+            
+            <button id="backFromHowToBtn" class="btn">BACK TO MENU</button>
+        </div>
+        
+        <!-- Upgrade Screen -->
+        <div id="upgradeScreen" class="screen hidden">
+            <h1 class="title">UPGRADES AVAILABLE!</h1>
+            <p style="font-size: 1.5rem; margin-bottom: 30px; color: #ffcc00;">
+                Points: <span id="upgradePoints" class="stat-value">0</span>
+            </p>
+            
+            <div id="upgradeOptions" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 800px; margin: 30px;">
+                <!-- Upgrades will be populated here -->
+            </div>
+            
+            <button id="continueBtn" class="btn" style="margin-top: 30px;">CONTINUE TO NEXT ROUND</button>
+        </div>
+        
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="screen hidden">
+            <h1 id="gameOverTitle" class="title">GAME OVER</h1>
+            <p id="gameOverMessage" style="font-size: 2rem; margin-bottom: 30px; color: #ffcc00;"></p>
+            
+            <div id="finalStats" style="background: rgba(255, 255, 255, 0.1); padding: 30px; border-radius: 15px; margin: 20px; min-width: 400px;">
+                <h2 style="color: #00ccff; margin-bottom: 20px;">FINAL STATISTICS</h2>
+                <div id="statsList"></div>
+            </div>
+            
+            <button id="playAgainBtn" class="btn">PLAY AGAIN</button>
+            <button id="mainMenuBtn" class="btn btn-secondary">MAIN MENU</button>
+        </div>
+        
+        <!-- Mobile Controls -->
+        <div id="mobileControls" class="hidden">
+            <div class="mobile-btn" id="mobileMove">↖</div>
+            <div class="mobile-btn" id="mobileJump">↑</div>
+            <div class="mobile-btn" id="mobileShoot">○</div>
+            <div class="mobile-btn" id="mobileReload">R</div>
         </div>
     </div>
 
     <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
+    <!-- Cannon.js Physics Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    
+    <!-- TWEEN.js for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    
     <script>
         // ============================
         // GAME CONFIGURATION
         // ============================
         const CONFIG = {
-            GRAVITY: 30,
-            PLAYER_SPEED: 12,
-            PLAYER_JUMP_FORCE: 15,
-            SLAP_FORCE: 25,
-            SLAP_RANGE: 3,
-            SLAP_COOLDOWN: 0.5,
-            ARENA_SIZE: 25,
-            ARENA_HEIGHT: 2,
-            ROUND_TIME: 120, // seconds
-            MAX_SCORE: 3,
-            BOT_REACTION_TIME: 0.3, // seconds
-            BOT_MISTAKE_CHANCE: 0.2, // 20% chance to make a mistake
-            NETWORK_UPDATE_RATE: 0.1 // seconds
+            // Game Settings
+            ROUND_TIME: 300, // 5 minutes
+            MAX_ROUNDS: 5,
+            PLAYER_COUNT: 8,
+            UPGRADE_POINTS_PER_KILL: 10,
+            
+            // Player Settings
+            PLAYER_HEALTH: 100,
+            PLAYER_SPEED: 15,
+            PLAYER_JUMP_FORCE: 12,
+            PLAYER_SIZE: 1.5,
+            
+            // Weapon Settings
+            WEAPONS: {
+                pistol: { damage: 15, range: 100, fireRate: 0.5, ammo: 12, reloadTime: 1.5 },
+                shotgun: { damage: 30, range: 30, fireRate: 1.0, ammo: 6, reloadTime: 2.0 },
+                rifle: { damage: 20, range: 150, fireRate: 0.2, ammo: 30, reloadTime: 2.5 },
+                rocket: { damage: 50, range: 200, fireRate: 2.0, ammo: 3, reloadTime: 3.0 }
+            },
+            
+            // AI Settings
+            AI_DIFFICULTY: {
+                easy: { accuracy: 0.3, reaction: 0.8, aggression: 0.4 },
+                normal: { accuracy: 0.5, reaction: 0.6, aggression: 0.6 },
+                hard: { accuracy: 0.7, reaction: 0.4, aggression: 0.8 },
+                insane: { accuracy: 0.9, reaction: 0.2, aggression: 1.0 }
+            },
+            
+            // Arena Settings
+            ARENA_SIZE: 100,
+            ARENA_HEIGHT: 50,
+            
+            // Power-up Settings
+            POWERUP_SPAWN_RATE: 10, // seconds
+            POWERUP_TYPES: ['health', 'damage', 'speed', 'shield', 'ammo']
         };
 
         // ============================
         // GAME STATE
         // ============================
         let gameState = {
-            screen: 'start',
-            players: [],
-            bots: [],
-            localPlayerId: null,
-            isHost: false,
-            roomCode: '',
-            peerConnections: {},
-            dataChannel: null,
+            // Game Flow
+            currentScreen: 'loading',
+            gameActive: false,
             roundActive: false,
-            roundTimer: CONFIG.ROUND_TIME,
-            scores: [0, 0, 0, 0],
-            roundWinner: null,
-            gameWinner: null,
-            arenaModifier: null,
-            modifierTimer: 0,
-            lastNetworkUpdate: 0
+            roundNumber: 1,
+            gameTimer: CONFIG.ROUND_TIME,
+            playersAlive: 0,
+            totalPlayers: CONFIG.PLAYER_COUNT,
+            
+            // Player State
+            players: [],
+            localPlayer: null,
+            playerUpgrades: {
+                health: 0,
+                damage: 0,
+                speed: 0,
+                reload: 0,
+                ability: 0
+            },
+            upgradePoints: 0,
+            
+            // Game Objects
+            bullets: [],
+            powerups: [],
+            obstacles: [],
+            
+            // Statistics
+            kills: 0,
+            damageDealt: 0,
+            accuracy: 0,
+            shotsFired: 0,
+            hits: 0,
+            
+            // Settings
+            playerName: 'PLAYER',
+            difficulty: 'normal',
+            botCount: 3,
+            volume: 0.7,
+            
+            // References
+            world: null,
+            scene: null,
+            camera: null,
+            renderer: null,
+            clock: null,
+            lastTime: 0
         };
 
         // ============================
         // THREE.JS SETUP
         // ============================
-        let scene, camera, renderer;
-        let arena, characters = [];
-        let clock = new THREE.Clock();
+        let scene, camera, renderer, world;
+        let physicsWorld, clock = new THREE.Clock();
+        let objectsToUpdate = [];
+        let currentWeapon = 'pistol';
+        let weaponMeshes = {};
         
-        // Input state
+        // Input State
         let inputState = {
-            keys: {},
-            gamepads: [],
-            players: [
-                { move: { x: 0, y: 0 }, slap: false },
-                { move: { x: 0, y: 0 }, slap: false },
-                { move: { x: 0, y: 0 }, slap: false },
-                { move: { x: 0, y: 0 }, slap: false }
-            ]
+            // Keyboard
+            keys: {
+                'w': false, 'a': false, 's': false, 'd': false,
+                ' ': false, 'shift': false, 'r': false, 'e': false, 'q': false
+            },
+            
+            // Mouse
+            mouse: { x: 0, y: 0, deltaX: 0, deltaY: 0 },
+            mouseButtons: { left: false, right: false },
+            
+            // Mobile Touch
+            touch: { left: false, right: false, jump: false, reload: false },
+            
+            // Gamepad
+            gamepad: null,
+            
+            // Weapon Selection
+            weaponSelection: 1 // 1-4
         };
 
         // ============================
-        // WEBRTC SIMPLE IMPLEMENTATION
-        // ============================
-        class SimpleWebRTC {
-            constructor() {
-                this.connections = {};
-                this.onData = null;
-            }
-            
-            generateRoomCode() {
-                return Math.random().toString(36).substring(2, 8).toUpperCase();
-            }
-            
-            createRoom() {
-                const code = this.generateRoomCode();
-                gameState.roomCode = code;
-                gameState.isHost = true;
-                gameState.localPlayerId = 0;
-                
-                // Create player 1
-                gameState.players[0] = {
-                    id: 0,
-                    name: 'Player 1',
-                    position: { x: 0, y: 3, z: 0 },
-                    rotation: 0,
-                    velocity: { x: 0, y: 0, z: 0 },
-                    isSlapping: false,
-                    slapCooldown: 0,
-                    isGrounded: false,
-                    isAI: false,
-                    isConnected: true,
-                    color: 0xff3366
-                };
-                
-                return code;
-            }
-            
-            joinRoom(code) {
-                if (code.length !== 6) return false;
-                
-                gameState.roomCode = code;
-                gameState.isHost = false;
-                
-                // Find available player slot
-                let playerId = null;
-                for (let i = 1; i < 4; i++) {
-                    if (!gameState.players[i] || !gameState.players[i].isConnected) {
-                        playerId = i;
-                        break;
-                    }
-                }
-                
-                if (playerId === null) return false;
-                
-                gameState.localPlayerId = playerId;
-                
-                // Create player
-                gameState.players[playerId] = {
-                    id: playerId,
-                    name: `Player ${playerId + 1}`,
-                    position: { x: 0, y: 3, z: 0 },
-                    rotation: 0,
-                    velocity: { x: 0, y: 0, z: 0 },
-                    isSlapping: false,
-                    slapCooldown: 0,
-                    isGrounded: false,
-                    isAI: false,
-                    isConnected: true,
-                    color: [0x3366ff, 0x33cc66, 0xffcc00][playerId - 1]
-                };
-                
-                return true;
-            }
-            
-            send(data) {
-                // Simulated network for single player
-                if (gameState.isHost && this.onData) {
-                    setTimeout(() => {
-                        this.onData({ data: JSON.stringify(data) });
-                    }, 50);
-                }
-            }
-            
-            disconnect() {
-                if (gameState.localPlayerId !== null && gameState.players[gameState.localPlayerId]) {
-                    gameState.players[gameState.localPlayerId].isConnected = false;
-                }
-            }
-        }
-
-        // ============================
-        // AI BOT IMPLEMENTATION
-        // ============================
-        class AIBot {
-            constructor(id) {
-                this.id = id;
-                this.targetPlayer = null;
-                this.nextActionTime = 0;
-                this.mistakeTimer = 0;
-                this.currentMistake = null;
-                this.reactionTime = CONFIG.BOT_REACTION_TIME + Math.random() * 0.5;
-                
-                // Create bot player
-                gameState.players[id] = {
-                    id: id,
-                    name: `Bot ${id - gameState.players.filter(p => p && !p.isAI).length + 1}`,
-                    position: { 
-                        x: (Math.random() - 0.5) * CONFIG.ARENA_SIZE * 0.7, 
-                        y: 3, 
-                        z: (Math.random() - 0.5) * CONFIG.ARENA_SIZE * 0.7 
-                    },
-                    rotation: 0,
-                    velocity: { x: 0, y: 0, z: 0 },
-                    isSlapping: false,
-                    slapCooldown: 0,
-                    isGrounded: false,
-                    isAI: true,
-                    isConnected: true,
-                    color: [0x888888, 0xaaaaaa, 0x666666][id % 3]
-                };
-                
-                gameState.bots.push(this);
-            }
-            
-            update(deltaTime) {
-                const bot = gameState.players[this.id];
-                if (!bot || !gameState.roundActive) return;
-                
-                // Update cooldowns
-                if (bot.slapCooldown > 0) {
-                    bot.slapCooldown -= deltaTime;
-                }
-                
-                // Make occasional mistakes
-                if (this.mistakeTimer > 0) {
-                    this.mistakeTimer -= deltaTime;
-                    if (this.mistakeTimer <= 0) {
-                        this.currentMistake = null;
-                    }
-                } else if (Math.random() < CONFIG.BOT_MISTAKE_CHANCE * deltaTime) {
-                    this.makeMistake();
-                }
-                
-                // Find nearest player to target
-                this.findTarget();
-                
-                // Plan next action
-                if (this.nextActionTime > 0) {
-                    this.nextActionTime -= deltaTime;
-                } else {
-                    this.decideAction(deltaTime);
-                }
-                
-                // Execute current mistake if any
-                if (this.currentMistake === 'confused') {
-                    bot.velocity.x = Math.sin(Date.now() * 0.01) * 5;
-                    bot.velocity.z = Math.cos(Date.now() * 0.01) * 5;
-                    return;
-                } else if (this.currentMistake === 'spin') {
-                    bot.rotation += deltaTime * 10;
-                    return;
-                }
-                
-                // Move toward target or wander
-                if (this.targetPlayer && gameState.players[this.targetPlayer]) {
-                    const target = gameState.players[this.targetPlayer];
-                    const dx = target.position.x - bot.position.x;
-                    const dz = target.position.z - bot.position.z;
-                    const distance = Math.sqrt(dx * dx + dz * dz);
-                    
-                    // Move toward target
-                    if (distance > CONFIG.SLAP_RANGE * 1.5) {
-                        bot.velocity.x = (dx / distance) * CONFIG.PLAYER_SPEED;
-                        bot.velocity.z = (dz / distance) * CONFIG.PLAYER_SPEED;
-                        bot.rotation = Math.atan2(dx, dz);
-                    } 
-                    // Attack if in range
-                    else if (bot.slapCooldown <= 0) {
-                        bot.isSlapping = true;
-                        bot.slapCooldown = CONFIG.SLAP_COOLDOWN;
-                        this.nextActionTime = this.reactionTime;
-                        
-                        // Sometimes miss
-                        if (Math.random() < 0.3) {
-                            bot.rotation += (Math.random() - 0.5) * Math.PI;
-                        }
-                    } else {
-                        // Circle around target
-                        bot.velocity.x = (-dz / distance) * CONFIG.PLAYER_SPEED * 0.7;
-                        bot.velocity.z = (dx / distance) * CONFIG.PLAYER_SPEED * 0.7;
-                    }
-                } else {
-                    // Wander aimlessly
-                    bot.velocity.x = Math.sin(Date.now() * 0.001 + this.id) * CONFIG.PLAYER_SPEED * 0.5;
-                    bot.velocity.z = Math.cos(Date.now() * 0.001 + this.id) * CONFIG.PLAYER_SPEED * 0.5;
-                    bot.rotation += deltaTime * 2;
-                }
-            }
-            
-            findTarget() {
-                let nearestDist = Infinity;
-                let nearestId = null;
-                
-                for (let i = 0; i < 4; i++) {
-                    if (i === this.id || !gameState.players[i] || !gameState.players[i].isConnected) continue;
-                    
-                    const dx = gameState.players[i].position.x - gameState.players[this.id].position.x;
-                    const dz = gameState.players[i].position.z - gameState.players[this.id].position.z;
-                    const dist = dx * dx + dz * dz;
-                    
-                    if (dist < nearestDist) {
-                        nearestDist = dist;
-                        nearestId = i;
-                    }
-                }
-                
-                this.targetPlayer = nearestId;
-            }
-            
-            decideAction(deltaTime) {
-                // Random delay before next action
-                this.nextActionTime = 0.5 + Math.random() * 1.0;
-            }
-            
-            makeMistake() {
-                const mistakes = ['confused', 'spin', 'jump', 'pause'];
-                this.currentMistake = mistakes[Math.floor(Math.random() * mistakes.length)];
-                this.mistakeTimer = 1 + Math.random() * 2;
-                
-                const bot = gameState.players[this.id];
-                if (this.currentMistake === 'jump' && bot.isGrounded) {
-                    bot.velocity.y = CONFIG.PLAYER_JUMP_FORCE * 0.7;
-                } else if (this.currentMistake === 'pause') {
-                    bot.velocity.x = 0;
-                    bot.velocity.z = 0;
-                }
-            }
-            
-            remove() {
-                const index = gameState.bots.indexOf(this);
-                if (index > -1) {
-                    gameState.bots.splice(index, 1);
-                }
-            }
-        }
-
-        // ============================
-        // GAME INITIALIZATION
+        // INITIALIZATION
         // ============================
         function init() {
-            console.log("Game initializing...");
+            console.log("Initializing Ultimate Arena Showdown...");
             
-            // Set up WebRTC simulation
-            window.webrtc = new SimpleWebRTC();
+            // Load settings from localStorage
+            loadSettings();
             
             // Set up event listeners
             setupEventListeners();
             
-            // Show start screen
-            showScreen('start');
+            // Set up Three.js
+            initThreeJS();
+            
+            // Initialize physics
+            initPhysics();
+            
+            // Create arena
+            createArena();
+            
+            // Start game loop
+            animate();
+            
+            // Show menu screen
+            setTimeout(() => {
+                showScreen('menu');
+            }, 500);
+        }
+
+        // ============================
+        // EVENT LISTENERS
+        // ============================
+        function setupEventListeners() {
+            console.log("Setting up event listeners...");
+            
+            // Menu Buttons
+            document.getElementById('playBtn').addEventListener('click', () => {
+                startNewGame();
+            });
+            
+            document.getElementById('howToPlayBtn').addEventListener('click', () => {
+                showScreen('howToPlay');
+            });
+            
+            document.getElementById('settingsBtn').addEventListener('click', () => {
+                showScreen('settings');
+            });
+            
+            // Settings Screen
+            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+            document.getElementById('backToMenuBtn').addEventListener('click', () => showScreen('menu'));
+            document.getElementById('botCount').addEventListener('input', updateSliderValue);
+            document.getElementById('volume').addEventListener('input', updateSliderValue);
+            
+            // How to Play Screen
+            document.getElementById('backFromHowToBtn').addEventListener('click', () => showScreen('menu'));
+            
+            // Upgrade Screen
+            document.getElementById('continueBtn').addEventListener('click', continueToNextRound);
+            
+            // Game Over Screen
+            document.getElementById('playAgainBtn').addEventListener('click', startNewGame);
+            document.getElementById('mainMenuBtn').addEventListener('click', () => showScreen('menu'));
+            
+            // Keyboard Input
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                inputState.keys[key] = true;
+                
+                // Weapon selection (1-4)
+                if (key >= '1' && key <= '4') {
+                    inputState.weaponSelection = parseInt(key);
+                    switchWeapon(parseInt(key));
+                }
+                
+                // Prevent spacebar from scrolling
+                if (key === ' ') {
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                inputState.keys[key] = false;
+            });
+            
+            // Mouse Input
+            document.addEventListener('mousemove', (e) => {
+                const rect = renderer.domElement.getBoundingClientRect();
+                inputState.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                inputState.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                inputState.mouse.deltaX = e.movementX || 0;
+                inputState.mouse.deltaY = e.movementY || 0;
+            });
+            
+            document.addEventListener('mousedown', (e) => {
+                if (e.button === 0) inputState.mouseButtons.left = true;
+                if (e.button === 2) inputState.mouseButtons.right = true;
+            });
+            
+            document.addEventListener('mouseup', (e) => {
+                if (e.button === 0) inputState.mouseButtons.left = false;
+                if (e.button === 2) inputState.mouseButtons.right = false;
+            });
+            
+            // Prevent right-click menu
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            // Window Resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Mobile Touch Events
+            setupMobileControls();
+            
+            console.log("Event listeners set up successfully");
+        }
+
+        function setupMobileControls() {
+            const mobileBtns = document.querySelectorAll('.mobile-btn');
+            mobileBtns.forEach(btn => {
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const id = e.target.id;
+                    switch(id) {
+                        case 'mobileMove': inputState.touch.left = true; break;
+                        case 'mobileShoot': inputState.mouseButtons.left = true; break;
+                        case 'mobileJump': inputState.keys[' '] = true; break;
+                        case 'mobileReload': inputState.keys['r'] = true; break;
+                    }
+                });
+                
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const id = e.target.id;
+                    switch(id) {
+                        case 'mobileMove': inputState.touch.left = false; break;
+                        case 'mobileShoot': inputState.mouseButtons.left = false; break;
+                        case 'mobileJump': inputState.keys[' '] = false; break;
+                        case 'mobileReload': inputState.keys['r'] = false; break;
+                    }
+                });
+            });
+        }
+
+        function updateSliderValue(e) {
+            const element = e.target;
+            const valueElement = document.getElementById(element.id + 'Value');
+            if (valueElement) {
+                valueElement.textContent = element.value + (element.id === 'volume' ? '%' : '');
+            }
         }
 
         // ============================
@@ -734,199 +815,28 @@
             console.log(`Showing screen: ${screenName}`);
             
             // Hide all screens
-            document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('createScreen').classList.add('hidden');
-            document.getElementById('joinScreen').classList.add('hidden');
-            document.getElementById('gameScreen').classList.add('hidden');
-            document.getElementById('resultScreen').classList.add('hidden');
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.add('hidden');
+            });
             
             // Show requested screen
             const screenElement = document.getElementById(screenName + 'Screen');
             if (screenElement) {
                 screenElement.classList.remove('hidden');
-                gameState.screen = screenName;
+                gameState.currentScreen = screenName;
             }
             
-            // Screen-specific initialization
-            if (screenName === 'create') {
-                const code = window.webrtc.generateRoomCode();
-                document.getElementById('connectionCode').textContent = code;
-                gameState.roomCode = code;
-                
-                // Set up bots based on selection
-                const botCount = parseInt(document.getElementById('botCount').value);
-                setupBots(botCount);
-                
-            } else if (screenName === 'game') {
-                setTimeout(() => {
-                    initGame();
-                }, 100);
-            }
-        }
-
-        // ============================
-        // EVENT LISTENERS
-        // ============================
-        function setupEventListeners() {
-            console.log("Setting up event listeners...");
-            
-            // Start screen buttons
-            document.getElementById('createRoomBtn').addEventListener('click', function() {
-                console.log("Create Room button clicked");
-                showScreen('create');
-            });
-            
-            document.getElementById('joinRoomBtn').addEventListener('click', function() {
-                console.log("Join Room button clicked");
-                showScreen('join');
-            });
-            
-            // Create screen buttons
-            document.getElementById('startGameBtn').addEventListener('click', function() {
-                console.log("Start Game button clicked");
-                // Add any additional players as AI for now (simulating network join)
-                const playerCount = parseInt(document.getElementById('playerCount').value);
-                for (let i = 1; i < playerCount; i++) {
-                    if (!gameState.players[i]) {
-                        gameState.players[i] = {
-                            id: i,
-                            name: `Player ${i + 1}`,
-                            position: { x: 0, y: 3, z: 0 },
-                            rotation: 0,
-                            velocity: { x: 0, y: 0, z: 0 },
-                            isSlapping: false,
-                            slapCooldown: 0,
-                            isGrounded: false,
-                            isAI: false,
-                            isConnected: true,
-                            color: [0x3366ff, 0x33cc66, 0xffcc00][i - 1]
-                        };
+            // Screen-specific setup
+            switch(screenName) {
+                case 'game':
+                    if (!gameState.gameActive) {
+                        setupGame();
                     }
-                }
-                
-                showScreen('game');
-            });
-            
-            document.getElementById('backFromCreateBtn').addEventListener('click', function() {
-                console.log("Back from Create button clicked");
-                showScreen('start');
-            });
-            
-            // Join screen buttons
-            document.getElementById('connectRoomBtn').addEventListener('click', function() {
-                console.log("Connect Room button clicked");
-                const code = document.getElementById('roomCodeInput').value.toUpperCase();
-                if (code.length === 6) {
-                    if (window.webrtc.joinRoom(code)) {
-                        showScreen('game');
-                    } else {
-                        alert('Could not join room. It might be full.');
-                    }
-                } else {
-                    alert('Please enter a valid 6-character code.');
-                }
-            });
-            
-            document.getElementById('backFromJoinBtn').addEventListener('click', function() {
-                console.log("Back from Join button clicked");
-                showScreen('start');
-            });
-            
-            // Result screen buttons
-            document.getElementById('nextRoundBtn').addEventListener('click', function() {
-                console.log("Next Round button clicked");
-                startNewRound();
-            });
-            
-            document.getElementById('backToLobbyBtn').addEventListener('click', function() {
-                console.log("Back to Lobby button clicked");
-                resetGame();
-                showScreen('start');
-            });
-            
-            // Keyboard input
-            document.addEventListener('keydown', (e) => {
-                inputState.keys[e.key.toLowerCase()] = true;
-                
-                // Prevent spacebar from scrolling page
-                if (e.key === ' ' && gameState.screen === 'game') {
-                    e.preventDefault();
-                }
-                
-                // Start button for gamepads
-                if (e.key === 'Enter' && gameState.screen === 'game' && gameState.roundWinner) {
-                    document.getElementById('nextRoundBtn').click();
-                }
-            });
-            
-            document.addEventListener('keyup', (e) => {
-                inputState.keys[e.key.toLowerCase()] = false;
-            });
-            
-            // Gamepad input
-            window.addEventListener('gamepadconnected', (e) => {
-                console.log(`Gamepad connected: ${e.gamepad.id}`);
-                updateGamepads();
-            });
-            
-            window.addEventListener('gamepaddisconnected', (e) => {
-                console.log(`Gamepad disconnected: ${e.gamepad.id}`);
-                updateGamepads();
-            });
-            
-            console.log("Event listeners set up successfully");
-        }
-
-        // ============================
-        // BOT SETUP
-        // ============================
-        function setupBots(botCount) {
-            // Clear existing bots
-            gameState.bots.forEach(bot => bot.remove());
-            gameState.bots = [];
-            
-            // Find available slots for bots
-            let botId = 0;
-            for (let i = 0; i < 4 && botId < botCount; i++) {
-                if (!gameState.players[i]) {
-                    new AIBot(i);
-                    botId++;
-                }
+                    break;
+                case 'upgrade':
+                    showUpgradeScreen();
+                    break;
             }
-        }
-
-        // ============================
-        // GAME INITIALIZATION
-        // ============================
-        function initGame() {
-            console.log("Initializing game...");
-            
-            // Initialize Three.js
-            initThreeJS();
-            
-            // Create arena and players
-            createArena();
-            createPlayers();
-            
-            // Initialize scores
-            const playerCount = parseInt(document.getElementById('playerCount').value);
-            const botCount = parseInt(document.getElementById('botCount').value);
-            const totalPlayers = Math.min(4, playerCount + botCount);
-            
-            for (let i = 0; i < 4; i++) {
-                gameState.scores[i] = 0;
-            }
-            
-            // Update HUD
-            updateHUD();
-            
-            // Start first round
-            startNewRound();
-            
-            // Start game loop
-            animate();
-            
-            console.log("Game initialized successfully");
         }
 
         // ============================
@@ -937,675 +847,1425 @@
             
             // Create scene
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a0a2e);
+            scene.fog = new THREE.Fog(0x000000, 10, 200);
             
             // Create camera
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 25, 30);
-            camera.lookAt(0, 0, 0);
+            camera.position.set(0, 20, 30);
             
             // Create renderer
-            const canvas = document.getElementById('gameCanvas');
-            renderer = new THREE.WebGLRenderer({ 
-                canvas: canvas, 
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('gameCanvas'),
                 antialias: true,
                 alpha: true
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setPixelRatio(window.devicePixelRatio);
             
-            // Add lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
             scene.add(ambientLight);
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(10, 20, 5);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(50, 100, 50);
             directionalLight.castShadow = true;
+            directionalLight.shadow.camera.left = -100;
+            directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100;
+            directionalLight.shadow.camera.bottom = -100;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
             scene.add(directionalLight);
             
-            // Add fog for depth
-            scene.fog = new THREE.Fog(0x1a0a2e, 20, 50);
-            
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+            // Add hemisphere light for better ambiance
+            const hemisphereLight = new THREE.HemisphereLight(0x0000ff, 0xff0000, 0.3);
+            scene.add(hemisphereLight);
             
             console.log("Three.js initialized");
+        }
+
+        // ============================
+        // PHYSICS INITIALIZATION
+        // ============================
+        function initPhysics() {
+            console.log("Initializing Physics...");
+            
+            // Create Cannon.js world
+            physicsWorld = new CANNON.World();
+            physicsWorld.gravity.set(0, -9.82, 0);
+            physicsWorld.broadphase = new CANNON.NaiveBroadphase();
+            physicsWorld.solver.iterations = 10;
+            
+            console.log("Physics initialized");
         }
 
         // ============================
         // ARENA CREATION
         // ============================
         function createArena() {
-            // Remove existing arena
-            if (arena) {
-                scene.remove(arena);
-            }
+            console.log("Creating arena...");
             
-            // Create arena platform
-            const arenaGeometry = new THREE.CylinderGeometry(
-                CONFIG.ARENA_SIZE, 
-                CONFIG.ARENA_SIZE, 
-                CONFIG.ARENA_HEIGHT, 
-                32
-            );
-            
-            const arenaMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x3d1b6e,
+            // Ground
+            const groundGeometry = new THREE.PlaneGeometry(CONFIG.ARENA_SIZE * 2, CONFIG.ARENA_SIZE * 2);
+            const groundMaterial = new THREE.MeshStandardMaterial({
+                color: 0x333333,
                 roughness: 0.8,
                 metalness: 0.2
             });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
             
-            arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
-            arena.receiveShadow = true;
-            arena.position.y = -CONFIG.ARENA_HEIGHT / 2;
-            scene.add(arena);
-            
-            // Add arena border
-            const borderGeometry = new THREE.TorusGeometry(
-                CONFIG.ARENA_SIZE + 0.5, 
-                0.5, 
-                16, 
-                100
-            );
-            const borderMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xffcc00,
-                emissive: 0xffcc00,
-                emissiveIntensity: 0.3
+            // Ground physics body
+            const groundBody = new CANNON.Body({
+                mass: 0,
+                shape: new CANNON.Plane()
             });
-            const border = new THREE.Mesh(borderGeometry, borderMaterial);
-            border.position.y = 1;
-            scene.add(border);
+            groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+            physicsWorld.addBody(groundBody);
+            
+            // Arena walls
+            const wallHeight = 20;
+            const wallThickness = 2;
+            const wallMaterial = new THREE.MeshStandardMaterial({
+                color: 0x555555,
+                emissive: 0x222222,
+                roughness: 0.7
+            });
+            
+            // Create 4 walls around the arena
+            const wallPositions = [
+                { x: CONFIG.ARENA_SIZE, y: wallHeight/2, z: 0 },
+                { x: -CONFIG.ARENA_SIZE, y: wallHeight/2, z: 0 },
+                { x: 0, y: wallHeight/2, z: CONFIG.ARENA_SIZE },
+                { x: 0, y: wallHeight/2, z: -CONFIG.ARENA_SIZE }
+            ];
+            
+            wallPositions.forEach((pos, i) => {
+                const wallGeometry = new THREE.BoxGeometry(
+                    i < 2 ? wallThickness : CONFIG.ARENA_SIZE * 2,
+                    wallHeight,
+                    i < 2 ? CONFIG.ARENA_SIZE * 2 : wallThickness
+                );
+                const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+                wall.position.set(pos.x, pos.y, pos.z);
+                wall.castShadow = true;
+                wall.receiveShadow = true;
+                scene.add(wall);
+                
+                // Physics body for wall
+                const wallBody = new CANNON.Body({
+                    mass: 0,
+                    shape: new CANNON.Box(new CANNON.Vec3(
+                        i < 2 ? wallThickness/2 : CONFIG.ARENA_SIZE,
+                        wallHeight/2,
+                        i < 2 ? CONFIG.ARENA_SIZE : wallThickness/2
+                    ))
+                });
+                wallBody.position.copy(wall.position);
+                physicsWorld.addBody(wallBody);
+                objectsToUpdate.push({ mesh: wall, body: wallBody });
+            });
+            
+            // Add obstacles and platforms
+            createObstacles();
+            
+            // Add decorative elements
+            createDecorations();
+            
+            console.log("Arena created");
+        }
+
+        function createObstacles() {
+            // Add various obstacles for cover and platforming
+            const obstacleMaterial = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                roughness: 0.8
+            });
+            
+            const obstacles = [
+                { x: 30, y: 5, z: 30, size: { x: 10, y: 10, z: 10 } },
+                { x: -30, y: 5, z: 30, size: { x: 10, y: 10, z: 10 } },
+                { x: 30, y: 5, z: -30, size: { x: 10, y: 10, z: 10 } },
+                { x: -30, y: 5, z: -30, size: { x: 10, y: 10, z: 10 } },
+                { x: 0, y: 10, z: 0, size: { x: 20, y: 20, z: 20 } }, // Central tower
+                { x: 50, y: 15, z: 0, size: { x: 5, y: 30, z: 5 } }, // Tall pillar
+                { x: -50, y: 15, z: 0, size: { x: 5, y: 30, z: 5 } }, // Tall pillar
+            ];
+            
+            obstacles.forEach((obs, i) => {
+                const geometry = new THREE.BoxGeometry(obs.size.x, obs.size.y, obs.size.z);
+                const obstacle = new THREE.Mesh(geometry, obstacleMaterial);
+                obstacle.position.set(obs.x, obs.y, obs.z);
+                obstacle.castShadow = true;
+                obstacle.receiveShadow = true;
+                scene.add(obstacle);
+                
+                // Physics body
+                const body = new CANNON.Body({
+                    mass: 0,
+                    shape: new CANNON.Box(new CANNON.Vec3(obs.size.x/2, obs.size.y/2, obs.size.z/2))
+                });
+                body.position.copy(obstacle.position);
+                physicsWorld.addBody(body);
+                objectsToUpdate.push({ mesh: obstacle, body: body });
+                
+                gameState.obstacles.push(obstacle);
+            });
+        }
+
+        function createDecorations() {
+            // Add some visual flair to the arena
+            const colors = [0xff0066, 0x00ccff, 0x00ff00, 0xffcc00];
+            
+            // Floating orbs
+            for (let i = 0; i < 20; i++) {
+                const geometry = new THREE.SphereGeometry(1 + Math.random() * 2, 8, 8);
+                const material = new THREE.MeshStandardMaterial({
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    emissive: true,
+                    emissiveIntensity: 0.5
+                });
+                const orb = new THREE.Mesh(geometry, material);
+                orb.position.set(
+                    (Math.random() - 0.5) * CONFIG.ARENA_SIZE * 1.5,
+                    30 + Math.random() * 20,
+                    (Math.random() - 0.5) * CONFIG.ARENA_SIZE * 1.5
+                );
+                scene.add(orb);
+                
+                // Animate orbs
+                const startY = orb.position.y;
+                new TWEEN.Tween(orb.position)
+                    .to({ y: startY + 10 }, 2000 + Math.random() * 3000)
+                    .easing(TWEEN.Easing.Sinusoidal.InOut)
+                    .yoyo(true)
+                    .repeat(Infinity)
+                    .start();
+            }
+            
+            // Floor patterns
+            const floorPattern = new THREE.GridHelper(CONFIG.ARENA_SIZE * 2, 20, 0x00ccff, 0x0088aa);
+            floorPattern.position.y = 0.1;
+            scene.add(floorPattern);
+        }
+
+        // ============================
+        // GAME SETUP
+        // ============================
+        function setupGame() {
+            console.log("Setting up new game...");
+            
+            // Reset game state
+            gameState.gameActive = true;
+            gameState.roundActive = true;
+            gameState.roundNumber = 1;
+            gameState.gameTimer = CONFIG.ROUND_TIME;
+            gameState.players = [];
+            gameState.bullets = [];
+            gameState.powerups = [];
+            gameState.kills = 0;
+            gameState.damageDealt = 0;
+            gameState.shotsFired = 0;
+            gameState.hits = 0;
+            gameState.upgradePoints = 0;
+            
+            // Clear scene
+            scene.traverse((object) => {
+                if (object.userData && object.userData.type === 'player' || 
+                    object.userData && object.userData.type === 'bullet' ||
+                    object.userData && object.userData.type === 'powerup') {
+                    scene.remove(object);
+                    if (object.body) {
+                        physicsWorld.removeBody(object.body);
+                    }
+                }
+            });
+            
+            // Create local player
+            createPlayer(true);
+            
+            // Create AI players
+            const botCount = gameState.botCount;
+            for (let i = 0; i < botCount; i++) {
+                createPlayer(false, i + 1);
+            }
+            
+            // Set up HUD
+            updateHUD();
+            
+            // Start power-up spawner
+            startPowerUpSpawner();
+            
+            console.log("Game setup complete");
         }
 
         // ============================
         // PLAYER CREATION
         // ============================
-        function createPlayers() {
-            // Clear existing characters
-            characters.forEach(char => {
-                if (char && char.parent) {
-                    scene.remove(char);
+        function createPlayer(isLocal, botId = 0) {
+            const playerId = gameState.players.length;
+            const playerColor = new THREE.Color(
+                Math.random() * 0.5 + 0.5,
+                Math.random() * 0.5 + 0.5,
+                Math.random() * 0.5 + 0.5
+            );
+            
+            // Player character
+            const group = new THREE.Group();
+            
+            // Body
+            const bodyGeometry = new THREE.CapsuleGeometry(0.8, 1.5, 4, 8);
+            const bodyMaterial = new THREE.MeshStandardMaterial({
+                color: playerColor,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            group.add(body);
+            
+            // Head
+            const headGeometry = new THREE.SphereGeometry(0.5, 8, 8);
+            const headMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffddbb,
+                roughness: 0.8
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = 1.2;
+            head.castShadow = true;
+            group.add(head);
+            
+            // Arms
+            const armGeometry = new THREE.CapsuleGeometry(0.2, 1.2, 4, 4);
+            const leftArm = new THREE.Mesh(armGeometry, bodyMaterial);
+            leftArm.position.set(1, 0.5, 0);
+            leftArm.castShadow = true;
+            group.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(armGeometry, bodyMaterial);
+            rightArm.position.set(-1, 0.5, 0);
+            rightArm.castShadow = true;
+            group.add(rightArm);
+            
+            // Weapon
+            const weaponGeometry = new THREE.BoxGeometry(1, 0.2, 0.2);
+            const weaponMaterial = new THREE.MeshStandardMaterial({
+                color: 0x888888,
+                metalness: 0.8,
+                roughness: 0.2
+            });
+            const weapon = new THREE.Mesh(weaponGeometry, weaponMaterial);
+            weapon.position.set(1.5, 0.8, 0.5);
+            group.add(weapon);
+            weaponMeshes[playerId] = weapon;
+            
+            // Position player randomly in arena
+            const angle = (playerId / gameState.totalPlayers) * Math.PI * 2;
+            const radius = CONFIG.ARENA_SIZE * 0.7;
+            const position = {
+                x: Math.cos(angle) * radius,
+                y: 5,
+                z: Math.sin(angle) * radius
+            };
+            
+            group.position.set(position.x, position.y, position.z);
+            scene.add(group);
+            
+            // Physics body
+            const shape = new CANNON.Sphere(0.8);
+            const bodyPhysics = new CANNON.Body({
+                mass: 5,
+                shape: shape,
+                linearDamping: 0.9,
+                angularDamping: 0.9
+            });
+            bodyPhysics.position.copy(position);
+            physicsWorld.addBody(bodyPhysics);
+            
+            // Player data
+            const player = {
+                id: playerId,
+                name: isLocal ? gameState.playerName : `BOT ${botId}`,
+                isLocal: isLocal,
+                isAI: !isLocal,
+                isAlive: true,
+                health: CONFIG.PLAYER_HEALTH + (gameState.playerUpgrades.health * 20),
+                maxHealth: CONFIG.PLAYER_HEALTH + (gameState.playerUpgrades.health * 20),
+                damageMultiplier: 1 + (gameState.playerUpgrades.damage * 0.2),
+                speedMultiplier: 1 + (gameState.playerUpgrades.speed * 0.1),
+                reloadMultiplier: 1 - (gameState.playerUpgrades.reload * 0.1),
+                
+                position: position,
+                velocity: new THREE.Vector3(),
+                rotation: 0,
+                
+                weapon: 'pistol',
+                ammo: CONFIG.WEAPONS.pistol.ammo,
+                maxAmmo: CONFIG.WEAPONS.pistol.ammo,
+                reloading: false,
+                reloadTimer: 0,
+                fireTimer: 0,
+                
+                physicsBody: bodyPhysics,
+                mesh: group,
+                weaponMesh: weapon,
+                
+                stats: {
+                    kills: 0,
+                    damageDealt: 0,
+                    accuracy: 0,
+                    shotsFired: 0,
+                    hits: 0
+                },
+                
+                // AI specific
+                aiState: isLocal ? null : {
+                    target: null,
+                    state: 'wander',
+                    wanderTimer: 0,
+                    decisionTimer: 0,
+                    lastKnownPlayerPosition: null
+                }
+            };
+            
+            gameState.players.push(player);
+            
+            if (isLocal) {
+                gameState.localPlayer = player;
+                // Set camera to follow player
+                camera.position.set(position.x, position.y + 10, position.z + 15);
+            }
+            
+            objectsToUpdate.push({ mesh: group, body: bodyPhysics });
+            
+            return player;
+        }
+
+        // ============================
+        // GAME LOOP
+        // ============================
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const deltaTime = Math.min(clock.getDelta(), 0.1);
+            
+            // Update physics
+            physicsWorld.step(1/60, deltaTime, 3);
+            
+            // Update objects with physics
+            objectsToUpdate.forEach(obj => {
+                if (obj.body && obj.mesh) {
+                    obj.mesh.position.copy(obj.body.position);
+                    obj.mesh.quaternion.copy(obj.body.quaternion);
                 }
             });
-            characters = [];
             
-            // Create player characters
-            for (let i = 0; i < 4; i++) {
-                if (!gameState.players[i] || !gameState.players[i].isConnected) continue;
+            // Update game state based on current screen
+            switch(gameState.currentScreen) {
+                case 'game':
+                    if (gameState.roundActive) {
+                        updateGame(deltaTime);
+                    }
+                    break;
+            }
+            
+            // Update TWEEN animations
+            TWEEN.update();
+            
+            // Render scene
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        function updateGame(deltaTime) {
+            // Update game timer
+            gameState.gameTimer -= deltaTime;
+            if (gameState.gameTimer <= 0) {
+                gameState.gameTimer = 0;
+                endRound();
+                return;
+            }
+            
+            // Update players
+            gameState.players.forEach((player, index) => {
+                if (!player.isAlive) return;
                 
-                // Create character group
-                const character = new THREE.Group();
+                // Update timers
+                if (player.reloading) {
+                    player.reloadTimer -= deltaTime;
+                    if (player.reloadTimer <= 0) {
+                        player.reloading = false;
+                        player.ammo = player.maxAmmo;
+                    }
+                }
                 
-                // Body (sphere)
-                const bodyGeometry = new THREE.SphereGeometry(1, 8, 8);
-                const bodyMaterial = new THREE.MeshStandardMaterial({ 
-                    color: gameState.players[i].color,
-                    roughness: 0.7,
-                    metalness: 0.3
-                });
-                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-                body.castShadow = true;
-                character.add(body);
+                if (player.fireTimer > 0) {
+                    player.fireTimer -= deltaTime;
+                }
                 
-                // Head (smaller sphere)
-                const headGeometry = new THREE.SphereGeometry(0.6, 8, 8);
-                const headMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0xffddbb,
-                    roughness: 0.8
-                });
-                const head = new THREE.Mesh(headGeometry, headMaterial);
-                head.position.y = 1.5;
-                head.castShadow = true;
-                character.add(head);
+                // Update physics position
+                if (player.physicsBody) {
+                    player.position.copy(player.physicsBody.position);
+                }
                 
-                // Eyes
-                const eyeGeometry = new THREE.SphereGeometry(0.15, 4, 4);
-                const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+                // Handle input for local player
+                if (player.isLocal) {
+                    handlePlayerInput(player, deltaTime);
+                } else if (player.isAI) {
+                    updateAI(player, deltaTime);
+                }
                 
-                const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-                leftEye.position.set(0.3, 1.6, 0.5);
-                character.add(leftEye);
+                // Update weapon mesh
+                if (player.weaponMesh) {
+                    player.weaponMesh.lookAt(camera.position);
+                }
                 
-                const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-                rightEye.position.set(-0.3, 1.6, 0.5);
-                character.add(rightEye);
+                // Check if player fell off arena
+                if (player.position.y < -10) {
+                    playerDie(player, null);
+                }
+            });
+            
+            // Update bullets
+            gameState.bullets.forEach((bullet, index) => {
+                bullet.position.add(bullet.velocity.clone().multiplyScalar(deltaTime * 50));
+                bullet.mesh.position.copy(bullet.position);
                 
-                // Big exaggerated hands
-                const handGeometry = new THREE.SphereGeometry(0.8, 6, 6);
-                const handMaterial = new THREE.MeshStandardMaterial({ 
-                    color: gameState.players[i].color,
-                    roughness: 0.7
-                });
+                // Check for collisions
+                checkBulletCollisions(bullet);
                 
-                const leftHand = new THREE.Mesh(handGeometry, handMaterial);
-                leftHand.position.set(1.5, 0, 0);
-                leftHand.castShadow = true;
-                character.add(leftHand);
-                
-                const rightHand = new THREE.Mesh(handGeometry, handMaterial);
-                rightHand.position.set(-1.5, 0, 0);
-                rightHand.castShadow = true;
-                character.add(rightHand);
-                
-                // Slap effect (hidden by default)
-                const slapGeometry = new THREE.SphereGeometry(1.5, 8, 8);
-                const slapMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0xffff00,
-                    emissive: 0xffff00,
-                    emissiveIntensity: 0.5,
-                    transparent: true,
-                    opacity: 0.7
-                });
-                const slapEffect = new THREE.Mesh(slapGeometry, slapMaterial);
-                slapEffect.visible = false;
-                character.add(slapEffect);
-                
-                // Store reference to slap effect
-                gameState.players[i].slapEffect = slapEffect;
-                
-                // Position character
-                character.position.set(
-                    gameState.players[i].position.x,
-                    gameState.players[i].position.y,
-                    gameState.players[i].position.z
+                // Remove bullets that are too far
+                if (bullet.position.length() > CONFIG.ARENA_SIZE * 2) {
+                    scene.remove(bullet.mesh);
+                    gameState.bullets.splice(index, 1);
+                }
+            });
+            
+            // Update HUD
+            updateHUD();
+            
+            // Update camera to follow local player
+            if (gameState.localPlayer && gameState.localPlayer.isAlive) {
+                const targetPosition = gameState.localPlayer.position.clone();
+                const cameraOffset = new THREE.Vector3(
+                    Math.sin(gameState.localPlayer.rotation) * 15,
+                    10,
+                    Math.cos(gameState.localPlayer.rotation) * 15
                 );
-                character.rotation.y = gameState.players[i].rotation;
                 
-                scene.add(character);
-                characters[i] = character;
+                camera.position.lerp(targetPosition.clone().add(cameraOffset), deltaTime * 5);
+                camera.lookAt(targetPosition.clone().add(new THREE.Vector3(0, 3, 0)));
+            }
+            
+            // Check win condition
+            const alivePlayers = gameState.players.filter(p => p.isAlive);
+            if (alivePlayers.length <= 1) {
+                endRound();
             }
         }
 
         // ============================
         // INPUT HANDLING
         // ============================
-        function updateGamepads() {
-            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-            inputState.gamepads = [];
+        function handlePlayerInput(player, deltaTime) {
+            if (!player.isAlive) return;
             
-            for (let i = 0; i < gamepads.length; i++) {
-                if (gamepads[i]) {
-                    inputState.gamepads[i] = gamepads[i];
-                }
-            }
-        }
-
-        function processInput(deltaTime) {
-            // Process keyboard input for local player
-            if (gameState.localPlayerId !== null && gameState.players[gameState.localPlayerId]) {
-                const player = inputState.players[gameState.localPlayerId];
-                
-                // Reset input
-                player.move.x = 0;
-                player.move.y = 0;
-                player.slap = false;
-                
-                // Keyboard input
-                if (inputState.keys['w'] || inputState.keys['arrowup']) player.move.y = -1;
-                if (inputState.keys['s'] || inputState.keys['arrowdown']) player.move.y = 1;
-                if (inputState.keys['a'] || inputState.keys['arrowleft']) player.move.x = -1;
-                if (inputState.keys['d'] || inputState.keys['arrowright']) player.move.x = 1;
-                if (inputState.keys[' ']) player.slap = true;
-                
-                // Gamepad input
-                if (inputState.gamepads[0]) {
-                    const gamepad = inputState.gamepads[0];
-                    
-                    // Left stick movement (with deadzone)
-                    const deadzone = 0.1;
-                    let stickX = Math.abs(gamepad.axes[0]) > deadzone ? gamepad.axes[0] : 0;
-                    let stickY = Math.abs(gamepad.axes[1]) > deadzone ? gamepad.axes[1] : 0;
-                    
-                    player.move.x += stickX;
-                    player.move.y += stickY;
-                    
-                    // D-pad movement
-                    if (gamepad.buttons[12]?.pressed) player.move.y = -1; // Up
-                    if (gamepad.buttons[13]?.pressed) player.move.y = 1;  // Down
-                    if (gamepad.buttons[14]?.pressed) player.move.x = -1; // Left
-                    if (gamepad.buttons[15]?.pressed) player.move.x = 1;  // Right
-                    
-                    // Slap button (A/Cross)
-                    if (gamepad.buttons[0]?.pressed) player.slap = true;
-                }
-                
-                // Normalize diagonal movement
-                if (player.move.x !== 0 || player.move.y !== 0) {
-                    const length = Math.sqrt(player.move.x * player.move.x + player.move.y * player.move.y);
-                    player.move.x /= length;
-                    player.move.y /= length;
-                }
-            }
-        }
-
-        // ============================
-        // GAME LOGIC
-        // ============================
-        function updateGame(deltaTime) {
-            if (!gameState.roundActive) return;
+            const moveSpeed = CONFIG.PLAYER_SPEED * player.speedMultiplier;
+            const moveVector = new THREE.Vector3();
             
-            // Update round timer
-            gameState.roundTimer -= deltaTime;
-            if (gameState.roundTimer <= 0) {
-                endRound(null);
-                return;
+            // Keyboard movement
+            if (inputState.keys['w']) moveVector.z -= 1;
+            if (inputState.keys['s']) moveVector.z += 1;
+            if (inputState.keys['a']) moveVector.x -= 1;
+            if (inputState.keys['d']) moveVector.x += 1;
+            
+            // Sprinting
+            const sprintMultiplier = inputState.keys['shift'] ? 1.5 : 1;
+            
+            // Normalize diagonal movement
+            if (moveVector.length() > 0) {
+                moveVector.normalize();
+                moveVector.multiplyScalar(moveSpeed * sprintMultiplier * deltaTime);
+                
+                // Rotate movement vector based on camera direction
+                const cameraDirection = new THREE.Vector3();
+                camera.getWorldDirection(cameraDirection);
+                cameraDirection.y = 0;
+                cameraDirection.normalize();
+                
+                const right = new THREE.Vector3();
+                right.crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize();
+                
+                const forwardMovement = cameraDirection.clone().multiplyScalar(moveVector.z);
+                const rightMovement = right.clone().multiplyScalar(moveVector.x);
+                
+                const finalMovement = forwardMovement.add(rightMovement);
+                
+                // Apply movement to physics body
+                player.physicsBody.velocity.x = finalMovement.x * 50;
+                player.physicsBody.velocity.z = finalMovement.z * 50;
+                
+                // Rotate player to face movement direction
+                if (finalMovement.length() > 0.1) {
+                    player.rotation = Math.atan2(finalMovement.x, finalMovement.z);
+                }
+            } else {
+                // Apply damping when not moving
+                player.physicsBody.velocity.x *= 0.9;
+                player.physicsBody.velocity.z *= 0.9;
             }
             
-            // Update arena modifier
-            if (gameState.arenaModifier) {
-                gameState.modifierTimer -= deltaTime;
-                if (gameState.modifierTimer <= 0) {
-                    gameState.arenaModifier = null;
-                    hideArenaModifier();
-                }
+            // Jumping
+            if (inputState.keys[' '] && Math.abs(player.physicsBody.velocity.y) < 0.1) {
+                player.physicsBody.velocity.y = CONFIG.PLAYER_JUMP_FORCE;
             }
             
-            // Apply arena modifier effects
-            applyArenaModifier(deltaTime);
-            
-            // Update bots
-            gameState.bots.forEach(bot => bot.update(deltaTime));
-            
-            // Update all players
-            for (let i = 0; i < 4; i++) {
-                const player = gameState.players[i];
-                if (!player || !player.isConnected) continue;
-                
-                // Apply input to local player
-                if (i === gameState.localPlayerId) {
-                    const input = inputState.players[i];
+            // Shooting
+            if (inputState.mouseButtons.left && player.fireTimer <= 0 && !player.reloading) {
+                if (player.ammo > 0) {
+                    shoot(player);
+                    player.ammo--;
+                    player.fireTimer = CONFIG.WEAPONS[player.weapon].fireRate;
                     
-                    // Update velocity based on input
-                    player.velocity.x = input.move.x * CONFIG.PLAYER_SPEED;
-                    player.velocity.z = input.move.y * CONFIG.PLAYER_SPEED;
-                    
-                    // Update rotation based on movement direction
-                    if (input.move.x !== 0 || input.move.y !== 0) {
-                        player.rotation = Math.atan2(input.move.x, input.move.y);
+                    if (player.ammo <= 0) {
+                        startReload(player);
                     }
-                    
-                    // Handle slap
-                    if (input.slap && player.slapCooldown <= 0) {
-                        player.isSlapping = true;
-                        player.slapCooldown = CONFIG.SLAP_COOLDOWN;
-                    }
-                }
-                
-                // Apply gravity
-                player.velocity.y -= CONFIG.GRAVITY * deltaTime;
-                
-                // Update position
-                player.position.x += player.velocity.x * deltaTime;
-                player.position.y += player.velocity.y * deltaTime;
-                player.position.z += player.velocity.z * deltaTime;
-                
-                // Ground collision
-                if (player.position.y <= 1) {
-                    player.position.y = 1;
-                    player.velocity.y = 0;
-                    player.isGrounded = true;
                 } else {
-                    player.isGrounded = false;
-                }
-                
-                // Arena boundary check
-                const distanceFromCenter = Math.sqrt(
-                    player.position.x * player.position.x + 
-                    player.position.z * player.position.z
-                );
-                
-                if (distanceFromCenter > CONFIG.ARENA_SIZE) {
-                    // Player is out of bounds
-                    if (player.position.y > 0) {
-                        // Bounce back toward center
-                        const angle = Math.atan2(player.position.z, player.position.x);
-                        player.velocity.x = -Math.cos(angle) * 10;
-                        player.velocity.z = -Math.sin(angle) * 10;
-                        player.velocity.y = 5;
-                    } else {
-                        // Player fell off
-                        playerFell(i);
-                    }
-                }
-                
-                // Update slap effect
-                if (player.slapEffect) {
-                    if (player.isSlapping) {
-                        player.slapEffect.visible = true;
-                        player.slapEffect.scale.set(1, 1, 1);
-                        player.isSlapping = false;
-                        
-                        // Check for slap collisions
-                        checkSlapCollision(i);
-                    } else {
-                        player.slapEffect.scale.multiplyScalar(0.8);
-                        if (player.slapEffect.scale.x < 0.1) {
-                            player.slapEffect.visible = false;
-                        }
-                    }
-                }
-                
-                // Update cooldown
-                if (player.slapCooldown > 0) {
-                    player.slapCooldown -= deltaTime;
-                }
-                
-                // Update character position and rotation
-                if (characters[i]) {
-                    characters[i].position.set(
-                        player.position.x,
-                        player.position.y,
-                        player.position.z
-                    );
-                    characters[i].rotation.y = player.rotation;
-                    
-                    // Add bobbing animation
-                    if (player.isGrounded && (player.velocity.x !== 0 || player.velocity.z !== 0)) {
-                        characters[i].position.y += Math.sin(Date.now() * 0.01) * 0.1;
-                    }
+                    startReload(player);
                 }
             }
             
-            // Update camera to follow action
-            updateCamera(deltaTime);
-            
-            // Update HUD
-            updateHUD();
-        }
-
-        // ============================
-        // SLAP MECHANICS
-        // ============================
-        function checkSlapCollision(slapperId) {
-            const slapper = gameState.players[slapperId];
-            if (!slapper) return;
-            
-            for (let i = 0; i < 4; i++) {
-                if (i === slapperId || !gameState.players[i] || !gameState.players[i].isConnected) continue;
-                
-                const target = gameState.players[i];
-                const dx = target.position.x - slapper.position.x;
-                const dy = target.position.y - slapper.position.y;
-                const dz = target.position.z - slapper.position.z;
-                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                
-                if (distance < CONFIG.SLAP_RANGE) {
-                    // Calculate knockback direction
-                    const angle = Math.atan2(dz, dx);
-                    const knockbackForce = CONFIG.SLAP_FORCE;
-                    
-                    // Apply knockback
-                    target.velocity.x += Math.cos(angle) * knockbackForce;
-                    target.velocity.z += Math.sin(angle) * knockbackForce;
-                    target.velocity.y += knockbackForce * 0.5;
-                    
-                    // Visual feedback
-                    if (characters[i]) {
-                        characters[i].scale.set(1.2, 0.8, 1.2);
-                        setTimeout(() => {
-                            if (characters[i]) {
-                                characters[i].scale.set(1, 1, 1);
-                            }
-                        }, 100);
-                    }
-                }
+            // Reloading
+            if (inputState.keys['r'] && !player.reloading && player.ammo < player.maxAmmo) {
+                startReload(player);
             }
-        }
-
-        function playerFell(playerId) {
-            const player = gameState.players[playerId];
-            if (!player || !player.isConnected) return;
             
-            // Reset player position
-            player.position.x = (Math.random() - 0.5) * CONFIG.ARENA_SIZE * 0.5;
-            player.position.y = 3;
-            player.position.z = (Math.random() - 0.5) * CONFIG.ARENA_SIZE * 0.5;
-            player.velocity.x = 0;
-            player.velocity.y = 0;
-            player.velocity.z = 0;
-            
-            // Check if round should end
-            const playersOnArena = gameState.players.filter(p => 
-                p && p.isConnected && 
-                Math.sqrt(p.position.x * p.position.x + p.position.z * p.position.z) < CONFIG.ARENA_SIZE
-            ).length;
-            
-            if (playersOnArena <= 1) {
-                // Find last player standing
-                const winner = gameState.players.find(p => 
-                    p && p.isConnected && 
-                    Math.sqrt(p.position.x * p.position.x + p.position.z * p.position.z) < CONFIG.ARENA_SIZE
-                );
-                
-                if (winner) {
-                    endRound(winner.id);
-                }
+            // Update player rotation based on mouse
+            if (inputState.mouse.deltaX !== 0) {
+                player.rotation += inputState.mouse.deltaX * 0.002;
             }
+            
+            // Reset mouse delta
+            inputState.mouse.deltaX = 0;
+            inputState.mouse.deltaY = 0;
         }
 
         // ============================
-        // ARENA MODIFIERS
+        // SHOOTING SYSTEM
         // ============================
-        function applyArenaModifier(deltaTime) {
-            if (!gameState.arenaModifier) return;
+        function shoot(player) {
+            const weapon = CONFIG.WEAPONS[player.weapon];
+            const damage = weapon.damage * player.damageMultiplier;
             
-            switch (gameState.arenaModifier) {
-                case 'slippery':
-                    // Increase player speed and reduce control
-                    for (let i = 0; i < 4; i++) {
-                        const player = gameState.players[i];
-                        if (!player || !player.isConnected) continue;
-                        
-                        player.velocity.x *= 1.05;
-                        player.velocity.z *= 1.05;
-                    }
-                    break;
-                    
-                case 'lowGravity':
-                    // Reduce gravity effect
-                    for (let i = 0; i < 4; i++) {
-                        const player = gameState.players[i];
-                        if (!player || !player.isConnected) continue;
-                        
-                        player.velocity.y += CONFIG.GRAVITY * 0.3 * deltaTime;
-                    }
-                    break;
-                    
-                case 'trampoline':
-                    // Make players bounce more
-                    for (let i = 0; i < 4; i++) {
-                        const player = gameState.players[i];
-                        if (!player || !player.isConnected || !player.isGrounded) continue;
-                        
-                        if (Math.random() < 0.1 * deltaTime) {
-                            player.velocity.y = CONFIG.PLAYER_JUMP_FORCE * 0.5;
-                        }
-                    }
-                    break;
-            }
-        }
-
-        function applyRandomModifier() {
-            const modifiers = ['slippery', 'lowGravity', 'trampoline'];
-            gameState.arenaModifier = modifiers[Math.floor(Math.random() * modifiers.length)];
-            gameState.modifierTimer = 10; // 10 seconds
+            // Create bullet mesh
+            const bulletGeometry = new THREE.SphereGeometry(0.2, 4, 4);
+            const bulletMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffff00,
+                emissive: 0xff9900,
+                emissiveIntensity: 0.5
+            });
+            const bulletMesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
             
-            showArenaModifier(gameState.arenaModifier);
-        }
-
-        function showArenaModifier(modifier) {
-            const element = document.getElementById('arenaModifier');
-            const names = {
-                slippery: 'SLIPPERY FLOOR!',
-                lowGravity: 'LOW GRAVITY!',
-                trampoline: 'TRAMPOLINE ARENA!'
+            // Calculate direction
+            const direction = new THREE.Vector3();
+            direction.setFromSphericalCoords(
+                1,
+                Math.PI / 2 - inputState.mouse.y * 0.5,
+                player.rotation + inputState.mouse.x * 2
+            );
+            
+            // Position bullet at player's weapon
+            const bulletPosition = player.position.clone().add(new THREE.Vector3(0, 2, 0));
+            bulletMesh.position.copy(bulletPosition);
+            scene.add(bulletMesh);
+            
+            // Create bullet object
+            const bullet = {
+                shooter: player,
+                position: bulletPosition,
+                velocity: direction.clone().normalize().multiplyScalar(100),
+                damage: damage,
+                mesh: bulletMesh,
+                weaponType: player.weapon
             };
             
-            element.textContent = names[modifier] || modifier.toUpperCase();
-            element.style.opacity = 1;
+            gameState.bullets.push(bullet);
             
-            setTimeout(() => {
-                element.style.opacity = 0;
-            }, 2000);
-        }
-
-        function hideArenaModifier() {
-            document.getElementById('arenaModifier').style.opacity = 0;
-        }
-
-        // ============================
-        // ROUND MANAGEMENT
-        // ============================
-        function startNewRound() {
-            gameState.roundActive = true;
-            gameState.roundTimer = CONFIG.ROUND_TIME;
-            gameState.roundWinner = null;
+            // Update stats
+            player.stats.shotsFired++;
+            gameState.shotsFired++;
             
-            // Reset player positions
-            const positions = [
-                { x: -10, z: 0 },
-                { x: 10, z: 0 },
-                { x: 0, z: -10 },
-                { x: 0, z: 10 }
-            ];
-            
-            for (let i = 0; i < 4; i++) {
-                if (!gameState.players[i] || !gameState.players[i].isConnected) continue;
-                
-                const pos = positions[i] || { x: 0, z: 0 };
-                gameState.players[i].position.x = pos.x;
-                gameState.players[i].position.y = 3;
-                gameState.players[i].position.z = pos.z;
-                gameState.players[i].velocity.x = 0;
-                gameState.players[i].velocity.y = 0;
-                gameState.players[i].velocity.z = 0;
-                gameState.players[i].isSlapping = false;
-                gameState.players[i].slapCooldown = 0;
-                
-                if (characters[i]) {
-                    characters[i].position.set(pos.x, 3, pos.z);
-                    characters[i].scale.set(1, 1, 1);
-                }
+            // Visual feedback
+            if (player.weaponMesh) {
+                player.weaponMesh.scale.set(1.2, 0.8, 1.2);
+                new TWEEN.Tween(player.weaponMesh.scale)
+                    .to({ x: 1, y: 1, z: 1 }, 100)
+                    .start();
             }
             
-            // Show round countdown
-            showRoundCountdown();
-            
-            // Apply random arena modifier after 5 seconds
-            setTimeout(() => {
-                if (gameState.roundActive) {
-                    applyRandomModifier();
-                }
-            }, 5000);
+            // Add recoil
+            player.physicsBody.velocity.add(
+                new CANNON.Vec3(-direction.x * 2, 0, -direction.z * 2)
+            );
         }
 
-        function showRoundCountdown() {
-            const roundInfo = document.getElementById('roundInfo');
-            roundInfo.textContent = 'ROUND START!';
-            roundInfo.style.opacity = 1;
-            
-            setTimeout(() => {
-                roundInfo.style.opacity = 0;
-            }, 1000);
-        }
-
-        function endRound(winnerId) {
-            gameState.roundActive = false;
-            gameState.roundWinner = winnerId;
-            
-            // Update scores
-            if (winnerId !== null) {
-                gameState.scores[winnerId]++;
+        function checkBulletCollisions(bullet) {
+            // Check player collisions
+            gameState.players.forEach(player => {
+                if (!player.isAlive || player === bullet.shooter) return;
                 
-                // Check for game winner
-                if (gameState.scores[winnerId] >= CONFIG.MAX_SCORE) {
-                    gameState.gameWinner = winnerId;
-                    showResultScreen(true);
+                const distance = bullet.position.distanceTo(player.position);
+                if (distance < 2) { // Hit detection radius
+                    // Hit player
+                    player.health -= bullet.damage;
+                    bullet.shooter.stats.hits++;
+                    bullet.shooter.stats.damageDealt += bullet.damage;
+                    gameState.hits++;
+                    gameState.damageDealt += bullet.damage;
+                    
+                    // Show hit effect
+                    showHitEffect(player.position);
+                    
+                    // Remove bullet
+                    scene.remove(bullet.mesh);
+                    gameState.bullets.splice(gameState.bullets.indexOf(bullet), 1);
+                    
+                    // Check if player died
+                    if (player.health <= 0) {
+                        playerDie(player, bullet.shooter);
+                    }
+                    
                     return;
                 }
-            }
+            });
             
-            showResultScreen(false);
+            // Check obstacle collisions
+            gameState.obstacles.forEach(obstacle => {
+                const distance = bullet.position.distanceTo(obstacle.position);
+                if (distance < 5) {
+                    // Hit obstacle
+                    scene.remove(bullet.mesh);
+                    gameState.bullets.splice(gameState.bullets.indexOf(bullet), 1);
+                    showExplosionEffect(bullet.position);
+                }
+            });
         }
 
-        function showResultScreen(isGameOver) {
-            const resultScreen = document.getElementById('resultScreen');
-            const resultTitle = document.getElementById('resultTitle');
-            const resultMessage = document.getElementById('resultMessage');
-            const scoreboard = document.getElementById('scoreboard');
+        function startReload(player) {
+            if (player.reloading || player.ammo === player.maxAmmo) return;
             
-            if (isGameOver && gameState.gameWinner !== null) {
-                const winner = gameState.players[gameState.gameWinner];
-                resultTitle.textContent = 'GAME OVER!';
-                resultMessage.textContent = `${winner.name} WINS THE GAME!`;
-                resultMessage.style.color = `#${winner.color.toString(16).padStart(6, '0')}`;
-            } else if (gameState.roundWinner !== null) {
-                const winner = gameState.players[gameState.roundWinner];
-                resultTitle.textContent = 'ROUND OVER!';
-                resultMessage.textContent = `${winner.name} WINS THE ROUND!`;
-                resultMessage.style.color = `#${winner.color.toString(16).padStart(6, '0')}`;
-            } else {
-                resultTitle.textContent = 'ROUND OVER!';
-                resultMessage.textContent = 'TIME\'S UP! NO WINNER!';
-                resultMessage.style.color = '#ffcc00';
+            player.reloading = true;
+            player.reloadTimer = CONFIG.WEAPONS[player.weapon].reloadTime * player.reloadMultiplier;
+            
+            // Visual feedback
+            if (player.weaponMesh) {
+                new TWEEN.Tween(player.weaponMesh.rotation)
+                    .to({ y: player.weaponMesh.rotation.y + Math.PI * 2 }, player.reloadTimer * 1000)
+                    .start();
+            }
+        }
+
+        function switchWeapon(weaponNumber) {
+            const weapons = ['pistol', 'shotgun', 'rifle', 'rocket'];
+            if (weaponNumber >= 1 && weaponNumber <= 4) {
+                currentWeapon = weapons[weaponNumber - 1];
+                if (gameState.localPlayer) {
+                    gameState.localPlayer.weapon = currentWeapon;
+                    gameState.localPlayer.maxAmmo = CONFIG.WEAPONS[currentWeapon].ammo;
+                    
+                    // Visual feedback
+                    showGameMessage(`Switched to ${currentWeapon.toUpperCase()}`, '#00ccff');
+                }
+            }
+        }
+
+        // ============================
+        // AI SYSTEM
+        // ============================
+        function updateAI(player, deltaTime) {
+            if (!player.aiState) return;
+            
+            const ai = player.aiState;
+            const difficulty = CONFIG.AI_DIFFICULTY[gameState.difficulty];
+            
+            // Update decision timer
+            ai.decisionTimer -= deltaTime;
+            if (ai.decisionTimer <= 0) {
+                makeAIDecision(player);
+                ai.decisionTimer = 1 + Math.random() * 2;
             }
             
-            // Update scoreboard
-            let scoreboardHTML = '<div style="margin-bottom: 20px;">SCORES:</div>';
-            for (let i = 0; i < 4; i++) {
-                if (!gameState.players[i] || !gameState.players[i].isConnected) continue;
+            // Execute current state
+            switch(ai.state) {
+                case 'wander':
+                    wanderBehavior(player, deltaTime);
+                    break;
+                case 'chase':
+                    chaseBehavior(player, deltaTime);
+                    break;
+                case 'attack':
+                    attackBehavior(player, deltaTime);
+                    break;
+                case 'flee':
+                    fleeBehavior(player, deltaTime);
+                    break;
+            }
+            
+            // Update wander timer
+            ai.wanderTimer -= deltaTime;
+            if (ai.wanderTimer <= 0) {
+                ai.wanderTimer = 3 + Math.random() * 5;
+                ai.target = null;
+            }
+        }
+
+        function makeAIDecision(player) {
+            const ai = player.aiState;
+            const alivePlayers = gameState.players.filter(p => p.isAlive && !p.isAI);
+            
+            // Find closest player
+            let closestPlayer = null;
+            let closestDistance = Infinity;
+            
+            alivePlayers.forEach(target => {
+                const distance = player.position.distanceTo(target.position);
+                if (distance < closestDistance && distance < 50) {
+                    closestDistance = distance;
+                    closestPlayer = target;
+                }
+            });
+            
+            if (closestPlayer) {
+                ai.target = closestPlayer;
+                ai.lastKnownPlayerPosition = closestPlayer.position.clone();
                 
-                const player = gameState.players[i];
-                scoreboardHTML += `
-                    <div style="color: #${player.color.toString(16).padStart(6, '0')}; margin: 10px 0;">
-                        ${player.name}: ${gameState.scores[i]} points
+                // Decide behavior based on distance and health
+                if (closestDistance < 20 && player.health > 30) {
+                    ai.state = 'attack';
+                } else if (closestDistance < 40) {
+                    ai.state = 'chase';
+                } else if (player.health < 30) {
+                    ai.state = 'flee';
+                } else {
+                    ai.state = 'wander';
+                }
+            } else {
+                ai.state = 'wander';
+            }
+        }
+
+        function wanderBehavior(player, deltaTime) {
+            // Random movement
+            if (!player.aiState.wanderDirection || Math.random() < 0.02) {
+                player.aiState.wanderDirection = new THREE.Vector3(
+                    Math.random() - 0.5,
+                    0,
+                    Math.random() - 0.5
+                ).normalize();
+            }
+            
+            // Apply movement
+            const moveSpeed = CONFIG.PLAYER_SPEED * 0.7;
+            player.physicsBody.velocity.x = player.aiState.wanderDirection.x * moveSpeed;
+            player.physicsBody.velocity.z = player.aiState.wanderDirection.z * moveSpeed;
+            
+            // Rotate player
+            if (player.aiState.wanderDirection.length() > 0) {
+                player.rotation = Math.atan2(
+                    player.aiState.wanderDirection.x,
+                    player.aiState.wanderDirection.z
+                );
+            }
+            
+            // Occasionally jump
+            if (Math.random() < 0.01 && Math.abs(player.physicsBody.velocity.y) < 0.1) {
+                player.physicsBody.velocity.y = CONFIG.PLAYER_JUMP_FORCE * 0.8;
+            }
+        }
+
+        function chaseBehavior(player, deltaTime) {
+            if (!player.aiState.target) return;
+            
+            const target = player.aiState.target;
+            const direction = new THREE.Vector3().subVectors(target.position, player.position);
+            direction.y = 0;
+            
+            if (direction.length() > 2) {
+                direction.normalize();
+                const moveSpeed = CONFIG.PLAYER_SPEED;
+                player.physicsBody.velocity.x = direction.x * moveSpeed;
+                player.physicsBody.velocity.z = direction.z * moveSpeed;
+                
+                // Rotate toward target
+                player.rotation = Math.atan2(direction.x, direction.z);
+            }
+            
+            // Try to shoot if in range
+            if (direction.length() < 25 && player.fireTimer <= 0 && !player.reloading) {
+                if (player.ammo > 0 && Math.random() < 0.8) {
+                    aiShoot(player, target);
+                } else if (!player.reloading) {
+                    startReload(player);
+                }
+            }
+        }
+
+        function attackBehavior(player, deltaTime) {
+            if (!player.aiState.target) return;
+            
+            const target = player.aiState.target;
+            const direction = new THREE.Vector3().subVectors(target.position, player.position);
+            direction.y = 0;
+            
+            // Strafe around target
+            const distance = direction.length();
+            if (distance > 10) {
+                direction.normalize();
+                player.physicsBody.velocity.x = direction.x * CONFIG.PLAYER_SPEED * 0.5;
+                player.physicsBody.velocity.z = direction.z * CONFIG.PLAYER_SPEED * 0.5;
+            } else {
+                // Strafe perpendicular to target
+                const strafeDirection = new THREE.Vector3(-direction.z, 0, direction.x);
+                strafeDirection.normalize();
+                player.physicsBody.velocity.x = strafeDirection.x * CONFIG.PLAYER_SPEED * 0.7;
+                player.physicsBody.velocity.z = strafeDirection.z * CONFIG.PLAYER_SPEED * 0.7;
+            }
+            
+            // Always face target
+            player.rotation = Math.atan2(direction.x, direction.z);
+            
+            // Shoot aggressively
+            if (player.fireTimer <= 0 && !player.reloading) {
+                if (player.ammo > 0) {
+                    aiShoot(player, target);
+                } else {
+                    startReload(player);
+                }
+            }
+        }
+
+        function fleeBehavior(player, deltaTime) {
+            // Find safe direction (away from threats)
+            let fleeDirection = new THREE.Vector3();
+            
+            gameState.players.forEach(other => {
+                if (other.isAlive && other !== player) {
+                    const direction = new THREE.Vector3().subVectors(player.position, other.position);
+                    const distance = direction.length();
+                    if (distance < 30) {
+                        direction.normalize();
+                        fleeDirection.add(direction.multiplyScalar(1 / distance));
+                    }
+                }
+            });
+            
+            if (fleeDirection.length() === 0) {
+                fleeDirection.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+            }
+            
+            fleeDirection.normalize();
+            player.physicsBody.velocity.x = fleeDirection.x * CONFIG.PLAYER_SPEED;
+            player.physicsBody.velocity.z = fleeDirection.z * CONFIG.PLAYER_SPEED;
+            player.rotation = Math.atan2(fleeDirection.x, fleeDirection.z);
+            
+            // Try to heal
+            if (player.health < 50 && Math.random() < 0.1) {
+                // AI would look for health packs here
+            }
+        }
+
+        function aiShoot(player, target) {
+            // Simple aiming (could be improved with lead prediction)
+            const direction = new THREE.Vector3().subVectors(target.position, player.position);
+            direction.normalize();
+            
+            // Add some inaccuracy based on difficulty
+            const difficulty = CONFIG.AI_DIFFICULTY[gameState.difficulty];
+            const inaccuracy = (1 - difficulty.accuracy) * 0.2;
+            direction.x += (Math.random() - 0.5) * inaccuracy;
+            direction.y += (Math.random() - 0.5) * inaccuracy;
+            direction.z += (Math.random() - 0.5) * inaccuracy;
+            direction.normalize();
+            
+            // Create bullet
+            const bulletGeometry = new THREE.SphereGeometry(0.2, 4, 4);
+            const bulletMaterial = new THREE.MeshStandardMaterial({
+                color: 0xff0000,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.3
+            });
+            const bulletMesh = new THREE.Mesh(bulletGeometry, bulletMaterial);
+            bulletMesh.position.copy(player.position.clone().add(new THREE.Vector3(0, 2, 0)));
+            scene.add(bulletMesh);
+            
+            const bullet = {
+                shooter: player,
+                position: bulletMesh.position.clone(),
+                velocity: direction.clone().multiplyScalar(80),
+                damage: CONFIG.WEAPONS[player.weapon].damage,
+                mesh: bulletMesh,
+                weaponType: player.weapon
+            };
+            
+            gameState.bullets.push(bullet);
+            player.ammo--;
+            player.fireTimer = CONFIG.WEAPONS[player.weapon].fireRate;
+            player.stats.shotsFired++;
+            
+            if (player.ammo <= 0) {
+                startReload(player);
+            }
+        }
+
+        // ============================
+        // GAME EVENTS
+        // ============================
+        function playerDie(player, killer) {
+            player.isAlive = false;
+            
+            // Update killer stats
+            if (killer) {
+                killer.stats.kills++;
+                killer.upgradePoints += CONFIG.UPGRADE_POINTS_PER_KILL;
+                gameState.kills++;
+                
+                // Add kill to feed
+                addKillToFeed(killer.name, player.name);
+                
+                // Show kill message
+                if (killer.isLocal) {
+                    showGameMessage(`ELIMINATED ${player.name}! +${CONFIG.UPGRADE_POINTS_PER_KILL} POINTS`, '#ffcc00');
+                }
+            }
+            
+            // Death animation
+            if (player.physicsBody) {
+                player.physicsBody.velocity.y = 5;
+                player.physicsBody.angularVelocity.set(
+                    Math.random() - 0.5,
+                    Math.random() - 0.5,
+                    Math.random() - 0.5
+                );
+                
+                // Remove physics body after delay
+                setTimeout(() => {
+                    if (player.physicsBody) {
+                        physicsWorld.removeBody(player.physicsBody);
+                    }
+                }, 3000);
+            }
+            
+            // Check if local player died
+            if (player.isLocal) {
+                setTimeout(() => {
+                    showGameMessage('YOU DIED!', '#ff0000');
+                }, 1000);
+            }
+        }
+
+        function endRound() {
+            gameState.roundActive = false;
+            
+            // Determine winner
+            const alivePlayers = gameState.players.filter(p => p.isAlive);
+            let winner = null;
+            
+            if (alivePlayers.length === 1) {
+                winner = alivePlayers[0];
+                showGameMessage(`${winner.name} WINS ROUND ${gameState.roundNumber}!`, '#00ff00');
+            } else if (alivePlayers.length === 0) {
+                showGameMessage('DRAW! NO WINNER', '#ffcc00');
+            } else {
+                // Time ran out, player with most kills wins
+                winner = gameState.players.reduce((a, b) => 
+                    (a.stats.kills > b.stats.kills) ? a : b
+                );
+                showGameMessage(`${winner.name} WINS ON POINTS!`, '#00ccff');
+            }
+            
+            // Give upgrade points to local player
+            if (gameState.localPlayer && gameState.localPlayer.isAlive) {
+                gameState.upgradePoints += CONFIG.UPGRADE_POINTS_PER_KILL * 2;
+            }
+            
+            // Show upgrade screen after delay
+            setTimeout(() => {
+                if (gameState.roundNumber < CONFIG.MAX_ROUNDS) {
+                    gameState.roundNumber++;
+                    showScreen('upgrade');
+                } else {
+                    gameOver(winner);
+                }
+            }, 3000);
+        }
+
+        function gameOver(winner) {
+            gameState.gameActive = false;
+            
+            // Update game over screen
+            const title = document.getElementById('gameOverTitle');
+            const message = document.getElementById('gameOverMessage');
+            const statsList = document.getElementById('statsList');
+            
+            if (winner && winner.isLocal) {
+                title.textContent = "VICTORY!";
+                message.textContent = "YOU ARE THE ULTIMATE CHAMPION!";
+            } else if (winner) {
+                title.textContent = "DEFEAT";
+                message.textContent = `${winner.name} WINS THE TOURNAMENT!`;
+            } else {
+                title.textContent = "GAME OVER";
+                message.textContent = "TOURNAMENT COMPLETE";
+            }
+            
+            // Update stats
+            let statsHTML = '';
+            gameState.players.forEach(player => {
+                const accuracy = player.stats.shotsFired > 0 
+                    ? Math.round((player.stats.hits / player.stats.shotsFired) * 100)
+                    : 0;
+                
+                statsHTML += `
+                    <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 5px;">
+                        <strong style="color: ${player.isLocal ? '#00ccff' : '#ff0066'}">${player.name}</strong>
+                        <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                            <span>Kills: ${player.stats.kills}</span>
+                            <span>Damage: ${Math.round(player.stats.damageDealt)}</span>
+                            <span>Accuracy: ${accuracy}%</span>
+                        </div>
                     </div>
                 `;
-            }
-            scoreboard.innerHTML = scoreboardHTML;
+            });
             
-            // Update button text
-            document.getElementById('nextRoundBtn').textContent = 
-                isGameOver ? 'PLAY AGAIN' : 'NEXT ROUND';
+            statsList.innerHTML = statsHTML;
             
-            showScreen('result');
+            showScreen('gameOver');
+        }
+
+        function startNewGame() {
+            // Reset upgrades
+            gameState.playerUpgrades = {
+                health: 0,
+                damage: 0,
+                speed: 0,
+                reload: 0,
+                ability: 0
+            };
+            
+            // Start game
+            showScreen('game');
+            setupGame();
         }
 
         // ============================
-        // CAMERA CONTROL
+        // POWER-UP SYSTEM
         // ============================
-        function updateCamera(deltaTime) {
-            // Calculate center of all players
-            let centerX = 0, centerZ = 0;
-            let playerCount = 0;
-            
-            for (let i = 0; i < 4; i++) {
-                if (!gameState.players[i] || !gameState.players[i].isConnected) continue;
+        function startPowerUpSpawner() {
+            setInterval(() => {
+                if (!gameState.roundActive) return;
                 
-                centerX += gameState.players[i].position.x;
-                centerZ += gameState.players[i].position.z;
-                playerCount++;
+                // Don't spawn too many power-ups
+                if (gameState.powerups.length < 5) {
+                    spawnPowerUp();
+                }
+            }, CONFIG.POWERUP_SPAWN_RATE * 1000);
+        }
+
+        function spawnPowerUp() {
+            const type = CONFIG.POWERUP_TYPES[Math.floor(Math.random() * CONFIG.POWERUP_TYPES.length)];
+            const position = new THREE.Vector3(
+                (Math.random() - 0.5) * CONFIG.ARENA_SIZE * 1.5,
+                2,
+                (Math.random() - 0.5) * CONFIG.ARENA_SIZE * 1.5
+            );
+            
+            // Create power-up mesh
+            let geometry, color;
+            switch(type) {
+                case 'health':
+                    geometry = new THREE.OctahedronGeometry(1, 0);
+                    color = 0x00ff00;
+                    break;
+                case 'damage':
+                    geometry = new THREE.TetrahedronGeometry(1, 0);
+                    color = 0xff0000;
+                    break;
+                case 'speed':
+                    geometry = new THREE.DodecahedronGeometry(1, 0);
+                    color = 0x00ccff;
+                    break;
+                case 'shield':
+                    geometry = new THREE.IcosahedronGeometry(1, 0);
+                    color = 0xffcc00;
+                    break;
+                default:
+                    geometry = new THREE.BoxGeometry(1, 1, 1);
+                    color = 0xffffff;
             }
             
-            if (playerCount > 0) {
-                centerX /= playerCount;
-                centerZ /= playerCount;
+            const material = new THREE.MeshStandardMaterial({
+                color: color,
+                emissive: color,
+                emissiveIntensity: 0.5,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.copy(position);
+            scene.add(mesh);
+            
+            // Add floating animation
+            mesh.userData.floatOffset = Math.random() * Math.PI * 2;
+            mesh.userData.type = 'powerup';
+            
+            // Store power-up
+            gameState.powerups.push({
+                type: type,
+                position: position,
+                mesh: mesh,
+                collected: false
+            });
+        }
+
+        // ============================
+        // UPGRADE SYSTEM
+        // ============================
+        function showUpgradeScreen() {
+            const pointsElement = document.getElementById('upgradePoints');
+            const optionsElement = document.getElementById('upgradeOptions');
+            
+            pointsElement.textContent = gameState.upgradePoints;
+            
+            const upgrades = [
+                {
+                    id: 'health',
+                    name: 'HEALTH BOOST',
+                    description: 'Increase maximum health by 20',
+                    cost: 10,
+                    currentLevel: gameState.playerUpgrades.health,
+                    maxLevel: 5,
+                    color: '#00ff00'
+                },
+                {
+                    id: 'damage',
+                    name: 'DAMAGE BOOST',
+                    description: 'Increase weapon damage by 20%',
+                    cost: 15,
+                    currentLevel: gameState.playerUpgrades.damage,
+                    maxLevel: 5,
+                    color: '#ff0000'
+                },
+                {
+                    id: 'speed',
+                    name: 'SPEED BOOST',
+                    description: 'Increase movement speed by 10%',
+                    cost: 8,
+                    currentLevel: gameState.playerUpgrades.speed,
+                    maxLevel: 5,
+                    color: '#00ccff'
+                },
+                {
+                    id: 'reload',
+                    name: 'FAST RELOAD',
+                    description: 'Decrease reload time by 10%',
+                    cost: 12,
+                    currentLevel: gameState.playerUpgrades.reload,
+                    maxLevel: 5,
+                    color: '#ffcc00'
+                },
+                {
+                    id: 'ability',
+                    name: 'SPECIAL ABILITY',
+                    description: 'Unlock powerful special ability',
+                    cost: 25,
+                    currentLevel: gameState.playerUpgrades.ability,
+                    maxLevel: 1,
+                    color: '#ff00ff'
+                }
+            ];
+            
+            let optionsHTML = '';
+            upgrades.forEach(upgrade => {
+                const canBuy = gameState.upgradePoints >= upgrade.cost && upgrade.currentLevel < upgrade.maxLevel;
+                const buttonClass = canBuy ? '' : 'disabled';
+                
+                optionsHTML += `
+                    <div style="background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; border-left: 5px solid ${upgrade.color}">
+                        <h3 style="color: ${upgrade.color}; margin-bottom: 10px;">${upgrade.name}</h3>
+                        <p style="margin-bottom: 15px; color: #ccc;">${upgrade.description}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <span style="color: #ffcc00;">Cost: ${upgrade.cost} points</span><br>
+                                <span style="color: #00ccff;">Level: ${upgrade.currentLevel}/${upgrade.maxLevel}</span>
+                            </div>
+                            <button onclick="buyUpgrade('${upgrade.id}', ${upgrade.cost})" 
+                                    style="background: ${canBuy ? upgrade.color : '#666'}; 
+                                           color: white; 
+                                           border: none; 
+                                           padding: 10px 20px; 
+                                           border-radius: 5px; 
+                                           cursor: ${canBuy ? 'pointer' : 'not-allowed'};"
+                                    ${!canBuy ? 'disabled' : ''}>
+                                ${upgrade.currentLevel >= upgrade.maxLevel ? 'MAXED' : 'UPGRADE'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            optionsElement.innerHTML = optionsHTML;
+        }
+
+        function buyUpgrade(id, cost) {
+            if (gameState.upgradePoints >= cost && gameState.playerUpgrades[id] < 5) {
+                gameState.upgradePoints -= cost;
+                gameState.playerUpgrades[id]++;
+                
+                // Apply upgrade to local player
+                if (gameState.localPlayer) {
+                    switch(id) {
+                        case 'health':
+                            gameState.localPlayer.maxHealth += 20;
+                            gameState.localPlayer.health = gameState.localPlayer.maxHealth;
+                            break;
+                        case 'damage':
+                            gameState.localPlayer.damageMultiplier += 0.2;
+                            break;
+                        case 'speed':
+                            gameState.localPlayer.speedMultiplier += 0.1;
+                            break;
+                        case 'reload':
+                            gameState.localPlayer.reloadMultiplier -= 0.1;
+                            break;
+                        case 'ability':
+                            // Unlock special ability
+                            showGameMessage('SPECIAL ABILITY UNLOCKED! PRESS Q TO USE', '#ff00ff');
+                            break;
+                    }
+                }
+                
+                // Update display
+                showUpgradeScreen();
             }
+        }
+
+        function continueToNextRound() {
+            // Reset players for next round
+            gameState.players.forEach(player => {
+                if (player.isAlive) {
+                    player.health = player.maxHealth;
+                    player.ammo = player.maxAmmo;
+                    player.reloading = false;
+                    
+                    // Reset position
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = CONFIG.ARENA_SIZE * 0.7;
+                    player.physicsBody.position.set(
+                        Math.cos(angle) * radius,
+                        5,
+                        Math.sin(angle) * radius
+                    );
+                    player.physicsBody.velocity.set(0, 0, 0);
+                }
+            });
             
-            // Smoothly move camera to follow action
-            const targetX = centerX;
-            const targetZ = centerZ;
+            // Reset game timer
+            gameState.gameTimer = CONFIG.ROUND_TIME;
+            gameState.roundActive = true;
             
-            camera.position.x += (targetX - camera.position.x) * deltaTime * 2;
-            camera.position.z += (targetZ + 30 - camera.position.z) * deltaTime * 2;
+            showScreen('game');
+            showGameMessage(`ROUND ${gameState.roundNumber} START!`, '#ffcc00');
+        }
+
+        // ============================
+        // VISUAL EFFECTS
+        // ============================
+        function showHitEffect(position) {
+            const geometry = new THREE.SphereGeometry(2, 8, 8);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0xff0000,
+                transparent: true,
+                opacity: 0.5
+            });
+            const effect = new THREE.Mesh(geometry, material);
+            effect.position.copy(position);
+            scene.add(effect);
             
-            // Look at center of action
-            camera.lookAt(centerX, 0, centerZ);
+            // Animate and remove
+            new TWEEN.Tween(effect.scale)
+                .to({ x: 3, y: 3, z: 3 }, 300)
+                .start();
+            
+            new TWEEN.Tween(effect.material)
+                .to({ opacity: 0 }, 300)
+                .onComplete(() => scene.remove(effect))
+                .start();
+        }
+
+        function showExplosionEffect(position) {
+            // Create explosion particles
+            for (let i = 0; i < 20; i++) {
+                const geometry = new THREE.SphereGeometry(0.2, 4, 4);
+                const material = new THREE.MeshBasicMaterial({
+                    color: Math.random() > 0.5 ? 0xff9900 : 0xff0000
+                });
+                const particle = new THREE.Mesh(geometry, material);
+                particle.position.copy(position);
+                
+                // Random velocity
+                const velocity = new THREE.Vector3(
+                    Math.random() - 0.5,
+                    Math.random() - 0.5,
+                    Math.random() - 0.5
+                ).normalize().multiplyScalar(10);
+                
+                scene.add(particle);
+                
+                // Animate particle
+                new TWEEN.Tween(particle.position)
+                    .to({
+                        x: position.x + velocity.x,
+                        y: position.y + velocity.y,
+                        z: position.z + velocity.z
+                    }, 1000)
+                    .start();
+                
+                new TWEEN.Tween(particle.material)
+                    .to({ opacity: 0 }, 1000)
+                    .onComplete(() => scene.remove(particle))
+                    .start();
+            }
+        }
+
+        function showGameMessage(text, color = '#ffffff') {
+            const element = document.getElementById('gameMessage');
+            element.textContent = text;
+            element.style.color = color;
+            element.style.opacity = 1;
+            
+            // Hide after delay
+            setTimeout(() => {
+                element.style.opacity = 0;
+            }, 3000);
+        }
+
+        function addKillToFeed(killer, victim) {
+            const feed = document.getElementById('killFeed');
+            const message = document.createElement('div');
+            message.className = 'kill-message';
+            message.textContent = `${killer} eliminated ${victim}`;
+            feed.insertBefore(message, feed.firstChild);
+            
+            // Keep only last 5 messages
+            while (feed.children.length > 5) {
+                feed.removeChild(feed.lastChild);
+            }
         }
 
         // ============================
@@ -1615,27 +2275,51 @@
             const hud = document.getElementById('hud');
             let hudHTML = '';
             
-            // Player info
-            for (let i = 0; i < 4; i++) {
-                if (!gameState.players[i] || !gameState.players[i].isConnected) continue;
-                
-                const player = gameState.players[i];
-                const playerNum = i + 1;
-                hudHTML += `
-                    <div class="player-hud player-${playerNum}">
-                        <div class="player-name">${player.name}</div>
-                        <div class="player-score">${gameState.scores[i]}</div>
-                    </div>
-                `;
-            }
+            // Update game stats
+            document.getElementById('playersAlive').textContent = 
+                gameState.players.filter(p => p.isAlive).length;
+            document.getElementById('killCount').textContent = gameState.kills;
             
-            // Timer
-            if (gameState.roundActive) {
-                const minutes = Math.floor(gameState.roundTimer / 60);
-                const seconds = Math.floor(gameState.roundTimer % 60);
-                hudHTML += `
-                    <div style="background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; align-self: center; margin: 5px;">
-                        <div style="font-size: 1.8rem; color: #ffcc00;">${minutes}:${seconds.toString().padStart(2, '0')}</div>
+            // Update timer
+            const minutes = Math.floor(gameState.gameTimer / 60);
+            const seconds = Math.floor(gameState.gameTimer % 60);
+            document.getElementById('gameTimer').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Create local player HUD if exists
+            if (gameState.localPlayer && gameState.localPlayer.isAlive) {
+                const player = gameState.localPlayer;
+                const healthPercent = (player.health / player.maxHealth) * 100;
+                const accuracy = player.stats.shotsFired > 0 
+                    ? Math.round((player.stats.hits / player.stats.shotsFired) * 100)
+                    : 0;
+                
+                hudHTML = `
+                    <div class="player-info" style="left: 20px; border-color: #00ccff;">
+                        <div class="player-name" style="color: #00ccff;">${player.name}</div>
+                        <div class="health-bar-container">
+                            <div class="health-bar" style="width: ${healthPercent}%"></div>
+                        </div>
+                        <div class="player-stats">
+                            <div class="stat">HP: ${Math.round(player.health)}/${player.maxHealth}</div>
+                            <div class="stat">ACC: ${accuracy}%</div>
+                            <div class="stat">KILLS: ${player.stats.kills}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="ability" style="left: 20px; bottom: 100px;">
+                        <div>WEAPON</div>
+                        <div class="ability-cooldown" style="background: conic-gradient(#ff9900 ${(player.ammo/player.maxAmmo)*100}%, #333 ${(player.ammo/player.maxAmmo)*100}%)">
+                            ${player.ammo}/${player.maxAmmo}
+                        </div>
+                        <div>${player.weapon.toUpperCase()}</div>
+                        ${player.reloading ? `<div>RELOADING...</div>` : ''}
+                    </div>
+                    
+                    <div class="ability" style="left: 120px; bottom: 100px;">
+                        <div>SPECIAL</div>
+                        <div class="ability-cooldown">Q</div>
+                        <div>READY</div>
                     </div>
                 `;
             }
@@ -1644,91 +2328,89 @@
         }
 
         // ============================
-        // GAME LOOP
+        // SETTINGS MANAGEMENT
         // ============================
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            const deltaTime = Math.min(clock.getDelta(), 0.1); // Cap delta time
-            
-            // Update gamepads
-            updateGamepads();
-            
-            // Process input
-            processInput(deltaTime);
-            
-            // Update game logic
-            updateGame(deltaTime);
-            
-            // Render scene
-            if (renderer && scene && camera) {
-                renderer.render(scene, camera);
-            }
-        }
-
-        // ============================
-        // RESET GAME
-        // ============================
-        function resetGame() {
-            // Reset game state
-            gameState = {
-                screen: 'start',
-                players: [],
-                bots: [],
-                localPlayerId: null,
-                isHost: false,
-                roomCode: '',
-                peerConnections: {},
-                dataChannel: null,
-                roundActive: false,
-                roundTimer: CONFIG.ROUND_TIME,
-                scores: [0, 0, 0, 0],
-                roundWinner: null,
-                gameWinner: null,
-                arenaModifier: null,
-                modifierTimer: 0,
-                lastNetworkUpdate: 0
-            };
-            
-            // Reset input state
-            inputState = {
-                keys: {},
-                gamepads: [],
-                players: [
-                    { move: { x: 0, y: 0 }, slap: false },
-                    { move: { x: 0, y: 0 }, slap: false },
-                    { move: { x: 0, y: 0 }, slap: false },
-                    { move: { x: 0, y: 0 }, slap: false }
-                ]
-            };
-            
-            // Clean up Three.js
-            if (scene) {
-                while(scene.children.length > 0) { 
-                    scene.remove(scene.children[0]); 
+        function loadSettings() {
+            try {
+                const savedSettings = localStorage.getItem('arenaShowdownSettings');
+                if (savedSettings) {
+                    const settings = JSON.parse(savedSettings);
+                    gameState.playerName = settings.playerName || 'PLAYER';
+                    gameState.difficulty = settings.difficulty || 'normal';
+                    gameState.botCount = settings.botCount || 3;
+                    gameState.volume = settings.volume || 0.7;
+                    
+                    // Update UI
+                    document.getElementById('playerName').value = gameState.playerName;
+                    document.getElementById('difficulty').value = gameState.difficulty;
+                    document.getElementById('botCount').value = gameState.botCount;
+                    document.getElementById('botCountValue').textContent = gameState.botCount;
+                    document.getElementById('volume').value = gameState.volume * 100;
+                    document.getElementById('volumeValue').textContent = Math.round(gameState.volume * 100) + '%';
                 }
+            } catch (e) {
+                console.log("No saved settings found");
             }
+        }
+
+        function saveSettings() {
+            gameState.playerName = document.getElementById('playerName').value;
+            gameState.difficulty = document.getElementById('difficulty').value;
+            gameState.botCount = parseInt(document.getElementById('botCount').value);
+            gameState.volume = parseInt(document.getElementById('volume').value) / 100;
             
-            characters = [];
-            arena = null;
-            scene = null;
-            camera = null;
-            renderer = null;
+            const settings = {
+                playerName: gameState.playerName,
+                difficulty: gameState.difficulty,
+                botCount: gameState.botCount,
+                volume: gameState.volume
+            };
+            
+            localStorage.setItem('arenaShowdownSettings', JSON.stringify(settings));
+            
+            showGameMessage('SETTINGS SAVED', '#00ff00');
+            setTimeout(() => {
+                showScreen('menu');
+            }, 1000);
         }
 
         // ============================
-        // START THE GAME
+        // UTILITY FUNCTIONS
+        // ============================
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // ============================
+        // START GAME
         // ============================
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM fully loaded and parsed");
-            init();
+            console.log("Game loading...");
+            
+            // Simulate loading progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    setTimeout(init, 500);
+                }
+                
+                document.getElementById('loadingProgress').style.width = progress + '%';
+                document.getElementById('loadingText').textContent = 
+                    progress < 30 ? 'Loading assets...' :
+                    progress < 60 ? 'Initializing physics...' :
+                    progress < 90 ? 'Setting up arena...' :
+                    'Ready!';
+            }, 100);
         });
         
-        // Fallback in case DOMContentLoaded already fired
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            setTimeout(init, 100);
-        }
+        // Make functions available globally for button clicks
+        window.buyUpgrade = buyUpgrade;
     </script>
 </body>
 </html>
