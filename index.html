@@ -3,335 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slap Your Friend - 3D P2P</title>
+    <title>SLAP! Ultimate - 3D P2P Brawler</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #222; color: white; }
-        canvas { display: block; }
+        :root { --accent: #ff0055; --bg: #0a0a12; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Impact, sans-serif; background: var(--bg); color: white; }
+        canvas { display: block; filter: contrast(1.1) saturate(1.2); }
         
-        /* UI Overlay */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
-        .panel { background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px; text-align: center; pointer-events: auto; border: 4px solid #ffcc00; max-width: 90%; }
-        button { background: #ffcc00; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 5px; margin: 5px; font-size: 1.1em; }
-        button:hover { background: #ffaa00; }
-        textarea { width: 100%; height: 80px; margin: 10px 0; font-size: 10px; background: #333; color: #0f0; border: 1px solid #555; }
+        /* UI DESIGN */
+        #ui-layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 100; background: rgba(10, 10, 18, 0.85); backdrop-filter: blur(8px); transition: opacity 0.5s; }
+        .panel { background: #1a1a2e; border: 4px solid var(--accent); padding: 40px; border-radius: 30px; text-align: center; width: 450px; box-shadow: 0 0 50px rgba(255, 0, 85, 0.3); }
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
         
-        #hud { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 2em; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; display: none; }
-        .hidden { display: none !important; }
+        h1 { font-size: 4rem; margin: 0; color: #fff; text-shadow: 0 0 20px var(--accent); font-style: italic; }
+        .subtitle { color: var(--accent); font-weight: bold; letter-spacing: 2px; margin-bottom: 30px; }
+        
+        button { background: var(--accent); color: white; border: none; padding: 18px 30px; font-size: 1.2rem; font-weight: 900; cursor: pointer; border-radius: 15px; margin: 10px; width: 100%; transition: 0.2s; text-transform: uppercase; }
+        button:hover { transform: scale(1.05); filter: brightness(1.2); }
+        
+        textarea { width: 100%; height: 100px; margin-top: 15px; border-radius: 10px; background: #000; color: #00ffcc; border: 1px solid #333; font-family: monospace; padding: 10px; box-sizing: border-box; font-size: 11px; }
+        
+        /* HUD */
+        #hud { position: absolute; top: 0; width: 100%; display: flex; justify-content: space-between; padding: 20px 50px; box-sizing: border-box; pointer-events: none; display: none; }
+        .score-box { background: rgba(0,0,0,0.6); padding: 10px 30px; border-radius: 15px; border-bottom: 4px solid var(--accent); font-size: 2rem; font-weight: bold; }
+        #center-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 5rem; font-weight: 900; color: white; text-shadow: 0 0 30px var(--accent); pointer-events: none; opacity: 0; transition: 0.3s; }
     </style>
 </head>
 <body>
 
-<div id="hud">SLAP HIM OFF!</div>
+<div id="hud">
+    <div class="score-box" id="p1-score">P1: 0</div>
+    <div class="score-box" id="p2-score">P2: 0</div>
+</div>
+<div id="center-msg">SLAP!</div>
 
 <div id="ui-layer">
     <div id="menu-main" class="panel">
-        <h1>🖐️ SLAP YOUR FRIEND</h1>
-        <p>A Chaotic 3D P2P Brawler</p>
-        <button onclick="showPanel('menu-create')">Create Room (Host)</button>
-        <button onclick="showPanel('menu-join')">Join Room (Client)</button>
+        <h1>SLAP!</h1>
+        <div class="subtitle">ULTIMATE P2P EDITION</div>
+        <button onclick="showPanel('menu-create')">Create Arena</button>
+        <button onclick="showPanel('menu-join')">Join Friend</button>
     </div>
 
     <div id="menu-create" class="panel hidden">
-        <h2>Host Session</h2>
-        <ol style="text-align: left; font-size: 0.9em;">
-            <li>Copy this code and send it to your friend:</li>
-            <textarea id="host-offer" readonly onclick="this.select()"></textarea>
-            <li>Wait for their response and paste it here:</li>
-        </ol>
-        <textarea id="host-answer-input" placeholder="Paste joiner's code here..."></textarea>
-        <button onclick="finalizeHost()">Finalize Connection</button>
+        <h2>Host Arena</h2>
+        <p>Send this invitation string:</p>
+        <textarea id="host-offer" readonly onclick="this.select()"></textarea>
+        <p>Paste response string:</p>
+        <textarea id="host-answer-input" placeholder="Paste joiner's response..."></textarea>
+        <button onclick="finalizeHost()">Start Combat</button>
     </div>
 
     <div id="menu-join" class="panel hidden">
-        <h2>Join Session</h2>
-        <textarea id="client-offer-input" placeholder="Paste host's code here..."></textarea>
+        <h2>Joining Arena</h2>
+        <textarea id="client-offer-input" placeholder="Paste host's code..."></textarea>
         <button onclick="startJoiner()">Generate Response</button>
         <div id="client-response-area" class="hidden">
-            <p>Send this back to the host:</p>
             <textarea id="client-answer-output" readonly onclick="this.select()"></textarea>
-            <p>Waiting for host to finalize...</p>
+            <p>Send that back to host!</p>
         </div>
-    </div>
-
-    <div id="menu-result" class="panel hidden">
-        <h1 id="win-text">YOU WIN!</h1>
-        <button onclick="location.reload()">Play Again</button>
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-/** * GAME CONFIG & STATE 
+/** * --- GAME CONSTANTS ---
  */
-const config = {
-    arenaSize: 10,
-    gravity: 0.015,
-    moveSpeed: 0.12,
-    knockback: 0.8,
-    slapCooldown: 800
+const GAME_CONFIG = {
+    arenaSize: 12,
+    playerSpeed: 0.18,
+    knockback: 1.5,
+    gravity: 0.02,
+    drag: 0.93,
+    slapCooldown: 500,
+    winScore: 3
 };
 
-let isHost = false;
-let peerConn, dataChannel;
-let gameStarted = false;
+let scene, camera, renderer, player, opponent, arena, floorGrid;
+let isHost = false, gameActive = false, score = { p1: 0, p2: 0 };
+let peerConn, dataChannel, keys = {};
+let time = 0, cameraShake = 0, slowMo = 1.0;
 
-// Three.js Globals
-let scene, camera, renderer, clock;
-let player, opponent;
-let keys = {};
-let arena;
-
-/**
- * P2P NETWORKING (WebRTC)
+/** * --- NETWORKING (WebRTC) ---
  */
-const iceConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+const rtcConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
 
 function showPanel(id) {
     document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
     document.getElementById(id).classList.remove('hidden');
-    if(id === 'menu-create') startHost();
+    if(id === 'menu-create') setupHost();
 }
 
-async function startHost() {
+async function setupHost() {
     isHost = true;
-    peerConn = new RTCPeerConnection(iceConfig);
-    dataChannel = peerConn.createDataChannel("gameData");
-    setupDataChannel();
-
+    peerConn = new RTCPeerConnection(rtcConfig);
+    dataChannel = peerConn.createDataChannel("slapChannel");
+    setupDataHandlers();
     const offer = await peerConn.createOffer();
     await peerConn.setLocalDescription(offer);
-
-    peerConn.onicecandidate = (e) => {
-        if (!e.candidate) {
-            document.getElementById('host-offer').value = btoa(JSON.stringify(peerConn.localDescription));
-        }
-    };
+    peerConn.onicecandidate = e => { if(!e.candidate) document.getElementById('host-offer').value = btoa(JSON.stringify(peerConn.localDescription)); };
 }
 
 async function finalizeHost() {
-    const answerRaw = document.getElementById('host-answer-input').value;
-    const answer = new RTCSessionDescription(JSON.parse(atob(answerRaw)));
+    const answer = new RTCSessionDescription(JSON.parse(atob(document.getElementById('host-answer-input').value)));
     await peerConn.setRemoteDescription(answer);
 }
 
 async function startJoiner() {
-    isHost = false;
-    const offerRaw = document.getElementById('client-offer-input').value;
-    const offer = new RTCSessionDescription(JSON.parse(atob(offerRaw)));
-
-    peerConn = new RTCPeerConnection(iceConfig);
-    peerConn.ondatachannel = (e) => {
-        dataChannel = e.channel;
-        setupDataChannel();
-    };
-
+    const offer = new RTCSessionDescription(JSON.parse(atob(document.getElementById('client-offer-input').value)));
+    peerConn = new RTCPeerConnection(rtcConfig);
+    peerConn.ondatachannel = e => { dataChannel = e.channel; setupDataHandlers(); };
     await peerConn.setRemoteDescription(offer);
     const answer = await peerConn.createAnswer();
     await peerConn.setLocalDescription(answer);
+    peerConn.onicecandidate = e => { if(!e.candidate) {
+        document.getElementById('client-answer-output').value = btoa(JSON.stringify(peerConn.localDescription));
+        document.getElementById('client-response-area').classList.remove('hidden');
+    }};
+}
 
-    peerConn.onicecandidate = (e) => {
-        if (!e.candidate) {
-            document.getElementById('client-answer-output').value = btoa(JSON.stringify(peerConn.localDescription));
-            document.getElementById('client-response-area').classList.remove('hidden');
+function setupDataHandlers() {
+    dataChannel.onopen = () => initWorld();
+    dataChannel.onmessage = e => {
+        const d = JSON.parse(e.data);
+        if(d.type === 'sync') {
+            opponent.position.lerp(new THREE.Vector3(d.p.x, d.p.y, d.p.z), 0.5);
+            opponent.rotation.y = d.r;
+            opponent.body.rotation.x = d.brx;
+        } else if(d.type === 'slap') {
+            handleHit(d.dir, d.pwr);
+        } else if(d.type === 'reset') {
+            resetRound(d.scores);
         }
     };
 }
 
-function setupDataChannel() {
-    dataChannel.onopen = () => startGame();
-    dataChannel.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'sync') {
-            opponent.position.set(msg.x, msg.y, msg.z);
-            opponent.rotation.y = msg.ry;
-        } else if (msg.type === 'slap') {
-            handleReceivedSlap(msg.power, msg.dir);
-        }
-    };
-}
-
-/**
- * GAME ENGINE
+/** * --- WORLD DESIGN & CHARACTER ---
  */
-function startGame() {
+function initWorld() {
     document.getElementById('ui-layer').classList.add('hidden');
-    document.getElementById('hud').style.display = 'block';
-    initScene();
-    gameStarted = true;
-    animate();
-}
-
-function initScene() {
+    document.getElementById('hud').style.display = 'flex';
+    
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87ceeb);
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    scene.background = new THREE.Color(0x0a0a12);
+    scene.fog = new THREE.Fog(0x0a0a12, 20, 50);
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
-    // Lights
-    const ambient = new THREE.AmbientLight(0xffffff, 0.7);
-    scene.add(ambient);
-    const sun = new THREE.DirectionalLight(0xffffff, 0.5);
-    sun.position.set(5, 10, 5);
-    scene.add(sun);
-
-    // Arena
-    const arenaGeo = new THREE.CylinderGeometry(config.arenaSize, config.arenaSize, 1, 32);
-    const arenaMat = new THREE.MeshPhongMaterial({ color: 0x44aa44 });
+    // Dynamic Arena
+    const arenaGeo = new THREE.CylinderGeometry(GAME_CONFIG.arenaSize, GAME_CONFIG.arenaSize + 2, 2, 6);
+    const arenaMat = new THREE.MeshPhongMaterial({ color: 0x222244, flatShading: true });
     arena = new THREE.Mesh(arenaGeo, arenaMat);
-    arena.position.y = -0.5;
+    arena.position.y = -1.1;
     scene.add(arena);
 
-    // Players
-    player = createCharacter(isHost ? 0xff0000 : 0x0000ff);
-    opponent = createCharacter(isHost ? 0x0000ff : 0xff0000);
-    
-    player.position.set(isHost ? -3 : 3, 1, 0);
-    opponent.position.set(isHost ? 3 : -3, 1, 0);
+    floorGrid = new THREE.GridHelper(40, 40, 0xff0055, 0x222222);
+    floorGrid.position.y = -0.05;
+    scene.add(floorGrid);
+
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+    scene.add(ambient);
+    const sun = new THREE.PointLight(0xffffff, 1, 100);
+    sun.position.set(10, 20, 10);
+    scene.add(sun);
+
+    player = createChar(isHost ? 0x00ffcc : 0xff0055);
+    opponent = createChar(isHost ? 0xff0055 : 0x00ffcc);
     
     scene.add(player);
     scene.add(opponent);
+    resetPositions();
 
-    clock = new THREE.Clock();
+    gameActive = true;
+    animate();
 }
 
-function createCharacter(col) {
+function createChar(color) {
     const group = new THREE.Group();
-    // Body
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.5), new THREE.MeshPhongMaterial({ color: col }));
-    group.add(body);
-    // Head
-    const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshPhongMaterial({ color: 0xffdbac }));
-    head.position.y = 0.9;
-    group.add(head);
-    // Hands (Exaggerated)
-    const handGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-    const handMat = new THREE.MeshPhongMaterial({ color: col });
-    group.leftHand = new THREE.Mesh(handGeo, handMat);
-    group.leftHand.position.set(-0.6, 0.2, 0.3);
-    group.add(group.leftHand);
+    const mat = new THREE.MeshPhongMaterial({ color: color, flatShading: true });
     
-    group.rightHand = new THREE.Mesh(handGeo, handMat);
-    group.rightHand.position.set(0.6, 0.2, 0.3);
-    group.add(group.rightHand);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.8, 0.8), mat);
+    body.position.y = 0.9;
+    group.add(body);
+    group.body = body;
+
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), new THREE.MeshPhongMaterial({color: 0xffffff}));
+    head.position.y = 1.4;
+    body.add(head);
+
+    const handGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+    group.hand = new THREE.Mesh(handGeo, mat);
+    group.hand.position.set(0.9, 0, 0.6);
+    body.add(group.hand);
 
     group.velocity = new THREE.Vector3();
     group.lastSlap = 0;
     return group;
 }
 
-/**
- * INPUT & LOOP
+/** * --- GAMEPLAY LOGIC ---
  */
-window.addEventListener('keydown', (e) => keys[e.code] = true);
-window.addEventListener('keyup', (e) => keys[e.code] = false);
-
 function handleInput() {
-    let moveX = 0;
-    let moveZ = 0;
+    let mx = 0, mz = 0;
+    const pad = navigator.getGamepads()[0];
 
-    // Keyboard (WASD + Arrows)
-    if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
-    if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
-    if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
-    if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
+    if(keys['KeyW'] || keys['ArrowUp'] || (pad && pad.axes[1] < -0.1)) mz -= 1;
+    if(keys['KeyS'] || keys['ArrowDown'] || (pad && pad.axes[1] > 0.1)) mz += 1;
+    if(keys['KeyA'] || keys['ArrowLeft'] || (pad && pad.axes[0] < -0.1)) mx -= 1;
+    if(keys['KeyD'] || keys['ArrowRight'] || (pad && pad.axes[0] > 0.1)) mx += 1;
 
-    // Gamepad
-    const gamepad = navigator.getGamepads()[0];
-    if (gamepad) {
-        if (Math.abs(gamepad.axes[0]) > 0.1) moveX = gamepad.axes[0];
-        if (Math.abs(gamepad.axes[1]) > 0.1) moveZ = gamepad.axes[1];
-        if (gamepad.buttons[0].pressed) trySlap(); // Button A
+    if(mx !== 0 || mz !== 0) {
+        const angle = Math.atan2(mx, mz);
+        player.rotation.y = THREE.MathUtils.lerp(player.rotation.y, angle, 0.2);
+        player.position.x += Math.sin(angle) * GAME_CONFIG.playerSpeed * slowMo;
+        player.position.z += Math.cos(angle) * GAME_CONFIG.playerSpeed * slowMo;
+        // Wobble
+        player.body.rotation.z = Math.sin(time * 15) * 0.15;
+        player.body.rotation.x = 0.1;
+    } else {
+        player.body.rotation.z *= 0.9;
+        player.body.rotation.x *= 0.9;
     }
 
-    if (keys['Space']) trySlap();
-
-    // Apply Movement
-    if (moveX !== 0 || moveZ !== 0) {
-        const angle = Math.atan2(moveX, moveZ);
-        player.rotation.y = angle;
-        player.position.x += Math.sin(angle) * config.moveSpeed;
-        player.position.z += Math.cos(angle) * config.moveSpeed;
-        
-        // Wobble effect
-        player.rotation.z = Math.sin(Date.now() * 0.01) * 0.1;
-    }
+    if(keys['Space'] || (pad && pad.buttons[0].pressed)) triggerSlap();
 }
 
-function trySlap() {
-    const now = Date.now();
-    if (now - player.lastSlap < config.slapCooldown) return;
-    player.lastSlap = now;
+function triggerSlap() {
+    if(Date.now() - player.lastSlap < GAME_CONFIG.slapCooldown) return;
+    player.lastSlap = Date.now();
 
-    // Animation
-    player.rightHand.position.z = 1.2;
-    setTimeout(() => player.rightHand.position.z = 0.3, 200);
+    // Hand Animation
+    player.hand.position.z = 2.0;
+    setTimeout(() => player.hand.position.z = 0.6, 150);
 
-    // Hit Detection
     const dist = player.position.distanceTo(opponent.position);
-    if (dist < 2.0) {
+    if(dist < 2.8) {
         const dir = new THREE.Vector3().subVectors(opponent.position, player.position).normalize();
-        dataChannel.send(JSON.stringify({ type: 'slap', power: config.knockback, dir: {x: dir.x, z: dir.z} }));
+        dataChannel.send(JSON.stringify({ type: 'slap', dir: {x: dir.x, z: dir.z}, pwr: GAME_CONFIG.knockback }));
+        
+        // Effects
+        cameraShake = 0.5;
+        slowMo = 0.2;
+        setTimeout(() => slowMo = 1.0, 200);
     }
 }
 
-function handleReceivedSlap(power, dir) {
-    opponent.rightHand.position.z = 1.2;
-    setTimeout(() => opponent.rightHand.position.z = 0.3, 200);
+function handleHit(dir, pwr) {
+    opponent.hand.position.z = 2.0;
+    setTimeout(() => opponent.hand.position.z = 0.6, 150);
     
-    player.velocity.x += dir.x * power;
-    player.velocity.z += dir.z * power;
-    
-    // Shake camera
-    camera.position.x += (Math.random() - 0.5) * 0.5;
+    player.velocity.x += dir.x * pwr;
+    player.velocity.z += dir.z * pwr;
+    cameraShake = 0.8;
 }
 
 function animate() {
-    if (!gameStarted) return;
+    if(!gameActive) return;
     requestAnimationFrame(animate);
+    time += 0.01;
 
     handleInput();
 
     // Physics
     player.position.add(player.velocity);
-    player.velocity.multiplyScalar(0.9); // Friction
+    player.velocity.multiplyScalar(GAME_CONFIG.drag);
 
-    if (player.position.y > 0 || player.position.length() > config.arenaSize) {
-        player.position.y -= config.gravity;
+    const d = Math.sqrt(player.position.x**2 + player.position.z**2);
+    if(d > GAME_CONFIG.arenaSize || player.position.y < 0) {
+        player.position.y -= GAME_CONFIG.gravity;
     }
 
-    // Win/Loss Condition
-    if (player.position.y < -5) endGame(false);
-    if (opponent.position.y < -5) endGame(true);
-
-    // Camera follow
-    camera.position.lerp(new THREE.Vector3(player.position.x, player.position.y + 5, player.position.z + 8), 0.1);
+    // Camera
+    camera.position.lerp(new THREE.Vector3(player.position.x, 8, player.position.z + 12), 0.1);
+    if(cameraShake > 0) {
+        camera.position.x += (Math.random()-0.5) * cameraShake;
+        camera.position.y += (Math.random()-0.5) * cameraShake;
+        cameraShake *= 0.9;
+    }
     camera.lookAt(player.position);
 
-    // Sync to peer
-    if (dataChannel.readyState === "open") {
+    // Networking
+    if(dataChannel.readyState === "open") {
         dataChannel.send(JSON.stringify({
             type: 'sync',
-            x: player.position.x, y: player.position.y, z: player.position.z,
-            ry: player.rotation.y
+            p: {x: player.position.x, y: player.position.y, z: player.position.z},
+            r: player.rotation.y, brx: player.body.rotation.x
         }));
+    }
+
+    // Win/Loss Detection
+    if(player.position.y < -15 && isHost) {
+        score.p2++; 
+        broadcastReset();
+    } else if (opponent.position.y < -15 && isHost) {
+        score.p1++;
+        broadcastReset();
     }
 
     renderer.render(scene, camera);
 }
 
-function endGame(win) {
-    gameStarted = false;
-    document.getElementById('ui-layer').classList.remove('hidden');
-    document.getElementById('menu-result').classList.remove('hidden');
-    document.getElementById('win-text').innerText = win ? "YOU KNOCKED THEM OUT!" : "YOU GOT SLAPPED OFF!";
-    document.getElementById('hud').style.display = 'none';
+function broadcastReset() {
+    const msg = { type: 'reset', scores: score };
+    dataChannel.send(JSON.stringify(msg));
+    resetRound(score);
 }
 
+function resetRound(newScores) {
+    score = newScores;
+    document.getElementById('p1-score').innerText = `P1: ${score.p1}`;
+    document.getElementById('p2-score').innerText = `P2: ${score.p2}`;
+    
+    const msg = document.getElementById('center-msg');
+    msg.innerText = "ROUND OVER!";
+    msg.style.opacity = 1;
+    
+    gameActive = false;
+    setTimeout(() => {
+        if(score.p1 >= GAME_CONFIG.winScore || score.p2 >= GAME_CONFIG.winScore) {
+            msg.innerText = score.p1 >= GAME_CONFIG.winScore ? "P1 WINS MATCH!" : "P2 WINS MATCH!";
+            setTimeout(() => location.reload(), 3000);
+        } else {
+            msg.style.opacity = 0;
+            resetPositions();
+            gameActive = true;
+            animate();
+        }
+    }, 2000);
+}
+
+function resetPositions() {
+    player.position.set(isHost ? -5 : 5, 0, 0);
+    opponent.position.set(isHost ? 5 : -5, 0, 0);
+    player.velocity.set(0,0,0);
+    player.rotation.set(0, isHost ? Math.PI/2 : -Math.PI/2, 0);
+}
+
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
 window.addEventListener('resize', () => {
-    if (!camera) return;
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
