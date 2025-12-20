@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!DOCTYPE html>
-<html>
-<head>
-    <title>My Three.js App</title>
-</head>
-<body>
-    <div id="container"></div>
-
-    <!-- Three.js library from CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.1/three.min.js"></script>
-</body>
-</html>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chaos Arena Slap-Fest</title>
@@ -30,6 +17,9 @@
             color: #fff;
             min-height: 100vh;
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         #gameContainer {
@@ -39,6 +29,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            position: relative;
         }
         
         /* Screen Styles */
@@ -53,15 +44,16 @@
             background: rgba(0, 0, 0, 0.85);
             z-index: 10;
             transition: opacity 0.5s;
+            padding: 20px;
         }
         
         .screen.hidden {
-            display: none;
+            display: none !important;
         }
         
         /* Title Styles */
         .title {
-            font-size: 4.5rem;
+            font-size: 3.5rem;
             margin-bottom: 20px;
             text-align: center;
             text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
@@ -75,10 +67,12 @@
         }
         
         .subtitle {
-            font-size: 1.8rem;
-            margin-bottom: 40px;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
             text-align: center;
             color: #aaffaa;
+            max-width: 600px;
+            line-height: 1.5;
         }
         
         /* Button Styles */
@@ -88,12 +82,12 @@
             border: none;
             padding: 15px 30px;
             margin: 10px;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s;
             box-shadow: 0 5px 15px rgba(255, 51, 102, 0.4);
-            min-width: 220px;
+            min-width: 200px;
             text-align: center;
         }
         
@@ -137,6 +131,7 @@
             color: white;
             width: 300px;
             text-align: center;
+            margin-bottom: 15px;
         }
         
         /* Connection Code Styles */
@@ -147,10 +142,12 @@
             margin: 30px 0;
             text-align: center;
             border: 3px dashed #ffcc00;
+            max-width: 500px;
+            width: 90%;
         }
         
         .code {
-            font-size: 2.5rem;
+            font-size: 2rem;
             letter-spacing: 5px;
             color: #ffcc00;
             margin: 15px 0;
@@ -159,6 +156,7 @@
             padding: 15px;
             border-radius: 10px;
             user-select: all;
+            word-break: break-all;
         }
         
         .hint {
@@ -185,24 +183,26 @@
             display: flex;
             justify-content: space-between;
             pointer-events: none;
+            flex-wrap: wrap;
         }
         
         .player-hud {
             background: rgba(0, 0, 0, 0.7);
             padding: 15px;
             border-radius: 10px;
-            min-width: 200px;
+            min-width: 150px;
             border: 2px solid;
+            margin: 5px;
         }
         
         .player-name {
-            font-size: 1.3rem;
+            font-size: 1.1rem;
             font-weight: bold;
             margin-bottom: 5px;
         }
         
         .player-score {
-            font-size: 2rem;
+            font-size: 1.8rem;
             color: #ffcc00;
         }
         
@@ -212,13 +212,14 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: #ffcc00;
             text-shadow: 0 0 10px #ff00ff;
             z-index: 6;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.5s;
+            text-align: center;
         }
         
         /* Controls Info */
@@ -227,14 +228,14 @@
             padding: 20px;
             border-radius: 15px;
             margin-top: 20px;
-            max-width: 600px;
+            max-width: 500px;
             text-align: center;
         }
         
         .controls-title {
             color: #ffcc00;
             margin-bottom: 15px;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
         }
         
         .control-item {
@@ -270,21 +271,39 @@
             background: rgba(0, 0, 0, 0.8);
             padding: 15px 30px;
             border-radius: 50px;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             color: #ffcc00;
             z-index: 5;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.5s;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        /* Scoreboard */
+        #scoreboard {
+            margin: 20px 0;
+            font-size: 1.3rem;
+            text-align: center;
         }
         
         /* Responsive */
         @media (max-width: 768px) {
-            .title { font-size: 3rem; }
-            .subtitle { font-size: 1.4rem; }
-            .btn { padding: 12px 20px; font-size: 1.2rem; min-width: 180px; }
-            .code { font-size: 1.8rem; }
-            .player-hud { min-width: 150px; padding: 10px; }
+            .title { font-size: 2.5rem; }
+            .subtitle { font-size: 1.2rem; }
+            .btn { padding: 12px 20px; font-size: 1.1rem; min-width: 180px; margin: 5px; }
+            .code { font-size: 1.5rem; }
+            .player-hud { min-width: 120px; padding: 10px; font-size: 0.9rem; }
+            .controls-info { padding: 15px; margin: 10px; }
+            select, input { width: 250px; }
+        }
+        
+        @media (max-width: 480px) {
+            .title { font-size: 2rem; }
+            .btn { min-width: 160px; padding: 10px 15px; }
+            #hud { flex-direction: column; align-items: center; }
+            .player-hud { width: 90%; margin-bottom: 10px; }
         }
     </style>
 </head>
@@ -375,13 +394,16 @@
             <h1 id="resultTitle" class="title">ROUND OVER!</h1>
             <p id="resultMessage" class="subtitle"></p>
             
-            <div id="scoreboard" style="margin: 30px 0; font-size: 1.5rem;"></div>
+            <div id="scoreboard"></div>
             
             <button id="nextRoundBtn" class="btn">NEXT ROUND</button>
             <button id="backToLobbyBtn" class="btn btn-secondary">BACK TO LOBBY</button>
         </div>
     </div>
 
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
     <script>
         // ============================
         // GAME CONFIGURATION
@@ -427,7 +449,7 @@
         // ============================
         // THREE.JS SETUP
         // ============================
-        let scene, camera, renderer, controls;
+        let scene, camera, renderer;
         let arena, characters = [];
         let clock = new THREE.Clock();
         
@@ -446,20 +468,16 @@
         // ============================
         // WEBRTC SIMPLE IMPLEMENTATION
         // ============================
-        // Since we can't have a real signaling server in a single HTML file,
-        // we simulate WebRTC with a shared game state
         class SimpleWebRTC {
             constructor() {
                 this.connections = {};
                 this.onData = null;
             }
             
-            // Generate a random room code
             generateRoomCode() {
                 return Math.random().toString(36).substring(2, 8).toUpperCase();
             }
             
-            // Host creates a room
             createRoom() {
                 const code = this.generateRoomCode();
                 gameState.roomCode = code;
@@ -484,7 +502,6 @@
                 return code;
             }
             
-            // Join a room with code
             joinRoom(code) {
                 if (code.length !== 6) return false;
                 
@@ -522,19 +539,15 @@
                 return true;
             }
             
-            // Send data to all connected players (simulated)
             send(data) {
-                // In a real implementation, this would send to other peers
-                // For single HTML file, we simulate by updating game state directly
+                // Simulated network for single player
                 if (gameState.isHost && this.onData) {
-                    // Process the data as if received from a player
                     setTimeout(() => {
                         this.onData({ data: JSON.stringify(data) });
                     }, 50);
                 }
             }
             
-            // Disconnect
             disconnect() {
                 if (gameState.localPlayerId !== null && gameState.players[gameState.localPlayerId]) {
                     gameState.players[gameState.localPlayerId].isConnected = false;
@@ -702,14 +715,13 @@
         // GAME INITIALIZATION
         // ============================
         function init() {
+            console.log("Game initializing...");
+            
             // Set up WebRTC simulation
             window.webrtc = new SimpleWebRTC();
             
             // Set up event listeners
             setupEventListeners();
-            
-            // Initialize Three.js when game starts
-            // This will be called when starting the game
             
             // Show start screen
             showScreen('start');
@@ -719,6 +731,8 @@
         // SCREEN MANAGEMENT
         // ============================
         function showScreen(screenName) {
+            console.log(`Showing screen: ${screenName}`);
+            
             // Hide all screens
             document.getElementById('startScreen').classList.add('hidden');
             document.getElementById('createScreen').classList.add('hidden');
@@ -727,8 +741,11 @@
             document.getElementById('resultScreen').classList.add('hidden');
             
             // Show requested screen
-            document.getElementById(screenName + 'Screen').classList.remove('hidden');
-            gameState.screen = screenName;
+            const screenElement = document.getElementById(screenName + 'Screen');
+            if (screenElement) {
+                screenElement.classList.remove('hidden');
+                gameState.screen = screenName;
+            }
             
             // Screen-specific initialization
             if (screenName === 'create') {
@@ -741,7 +758,9 @@
                 setupBots(botCount);
                 
             } else if (screenName === 'game') {
-                initGame();
+                setTimeout(() => {
+                    initGame();
+                }, 100);
             }
         }
 
@@ -749,17 +768,22 @@
         // EVENT LISTENERS
         // ============================
         function setupEventListeners() {
+            console.log("Setting up event listeners...");
+            
             // Start screen buttons
-            document.getElementById('createRoomBtn').addEventListener('click', () => {
+            document.getElementById('createRoomBtn').addEventListener('click', function() {
+                console.log("Create Room button clicked");
                 showScreen('create');
             });
             
-            document.getElementById('joinRoomBtn').addEventListener('click', () => {
+            document.getElementById('joinRoomBtn').addEventListener('click', function() {
+                console.log("Join Room button clicked");
                 showScreen('join');
             });
             
             // Create screen buttons
-            document.getElementById('startGameBtn').addEventListener('click', () => {
+            document.getElementById('startGameBtn').addEventListener('click', function() {
+                console.log("Start Game button clicked");
                 // Add any additional players as AI for now (simulating network join)
                 const playerCount = parseInt(document.getElementById('playerCount').value);
                 for (let i = 1; i < playerCount; i++) {
@@ -783,12 +807,14 @@
                 showScreen('game');
             });
             
-            document.getElementById('backFromCreateBtn').addEventListener('click', () => {
+            document.getElementById('backFromCreateBtn').addEventListener('click', function() {
+                console.log("Back from Create button clicked");
                 showScreen('start');
             });
             
             // Join screen buttons
-            document.getElementById('connectRoomBtn').addEventListener('click', () => {
+            document.getElementById('connectRoomBtn').addEventListener('click', function() {
+                console.log("Connect Room button clicked");
                 const code = document.getElementById('roomCodeInput').value.toUpperCase();
                 if (code.length === 6) {
                     if (window.webrtc.joinRoom(code)) {
@@ -801,16 +827,19 @@
                 }
             });
             
-            document.getElementById('backFromJoinBtn').addEventListener('click', () => {
+            document.getElementById('backFromJoinBtn').addEventListener('click', function() {
+                console.log("Back from Join button clicked");
                 showScreen('start');
             });
             
             // Result screen buttons
-            document.getElementById('nextRoundBtn').addEventListener('click', () => {
+            document.getElementById('nextRoundBtn').addEventListener('click', function() {
+                console.log("Next Round button clicked");
                 startNewRound();
             });
             
-            document.getElementById('backToLobbyBtn').addEventListener('click', () => {
+            document.getElementById('backToLobbyBtn').addEventListener('click', function() {
+                console.log("Back to Lobby button clicked");
                 resetGame();
                 showScreen('start');
             });
@@ -844,6 +873,8 @@
                 console.log(`Gamepad disconnected: ${e.gamepad.id}`);
                 updateGamepads();
             });
+            
+            console.log("Event listeners set up successfully");
         }
 
         // ============================
@@ -868,6 +899,8 @@
         // GAME INITIALIZATION
         // ============================
         function initGame() {
+            console.log("Initializing game...");
+            
             // Initialize Three.js
             initThreeJS();
             
@@ -892,12 +925,16 @@
             
             // Start game loop
             animate();
+            
+            console.log("Game initialized successfully");
         }
 
         // ============================
         // THREE.JS INITIALIZATION
         // ============================
         function initThreeJS() {
+            console.log("Initializing Three.js...");
+            
             // Create scene
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x1a0a2e);
@@ -909,7 +946,11 @@
             
             // Create renderer
             const canvas = document.getElementById('gameCanvas');
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas, 
+                antialias: true,
+                alpha: true
+            });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -921,12 +962,6 @@
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(10, 20, 5);
             directionalLight.castShadow = true;
-            directionalLight.shadow.camera.left = -30;
-            directionalLight.shadow.camera.right = 30;
-            directionalLight.shadow.camera.top = 30;
-            directionalLight.shadow.camera.bottom = -30;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
             scene.add(directionalLight);
             
             // Add fog for depth
@@ -938,6 +973,8 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
+            
+            console.log("Three.js initialized");
         }
 
         // ============================
@@ -965,7 +1002,6 @@
             
             arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
             arena.receiveShadow = true;
-            arena.castShadow = true;
             arena.position.y = -CONFIG.ARENA_HEIGHT / 2;
             scene.add(arena);
             
@@ -984,25 +1020,6 @@
             const border = new THREE.Mesh(borderGeometry, borderMaterial);
             border.position.y = 1;
             scene.add(border);
-            
-            // Add decorative pillars
-            for (let i = 0; i < 8; i++) {
-                const angle = (i / 8) * Math.PI * 2;
-                const pillarGeometry = new THREE.CylinderGeometry(0.5, 0.5, 8, 8);
-                const pillarMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0xff3366,
-                    emissive: 0xff3366,
-                    emissiveIntensity: 0.2
-                });
-                const pillar = new THREE.Mesh(pillarGeometry, pillarMaterial);
-                pillar.position.set(
-                    Math.sin(angle) * (CONFIG.ARENA_SIZE + 2),
-                    4,
-                    Math.cos(angle) * (CONFIG.ARENA_SIZE + 2)
-                );
-                pillar.castShadow = true;
-                scene.add(pillar);
-            }
         }
 
         // ============================
@@ -1010,7 +1027,11 @@
         // ============================
         function createPlayers() {
             // Clear existing characters
-            characters.forEach(char => scene.remove(char));
+            characters.forEach(char => {
+                if (char && char.parent) {
+                    scene.remove(char);
+                }
+            });
             characters = [];
             
             // Create player characters
@@ -1088,30 +1109,15 @@
                 gameState.players[i].slapEffect = slapEffect;
                 
                 // Position character
-                character.position.copy(gameState.players[i].position);
+                character.position.set(
+                    gameState.players[i].position.x,
+                    gameState.players[i].position.y,
+                    gameState.players[i].position.z
+                );
                 character.rotation.y = gameState.players[i].rotation;
                 
                 scene.add(character);
                 characters[i] = character;
-                
-                // Add player name label
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2');
-                canvas.width = 256;
-                canvas.height = 128;
-                context.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                context.fillRect(0, 0, canvas.width, canvas.height);
-                context.font = 'bold 40px Arial';
-                context.textAlign = 'center';
-                context.fillStyle = `#${gameState.players[i].color.toString(16).padStart(6, '0')}`;
-                context.fillText(gameState.players[i].name, canvas.width / 2, 50);
-                
-                const texture = new THREE.CanvasTexture(canvas);
-                const nameMaterial = new THREE.SpriteMaterial({ map: texture });
-                const nameSprite = new THREE.Sprite(nameMaterial);
-                nameSprite.position.y = 4;
-                nameSprite.scale.set(5, 2.5, 1);
-                character.add(nameSprite);
             }
         }
 
@@ -1166,11 +1172,6 @@
                     
                     // Slap button (A/Cross)
                     if (gamepad.buttons[0]?.pressed) player.slap = true;
-                    
-                    // Start button to restart round
-                    if (gamepad.buttons[9]?.pressed && gameState.roundWinner) {
-                        document.getElementById('nextRoundBtn').click();
-                    }
                 }
                 
                 // Normalize diagonal movement
@@ -1180,8 +1181,6 @@
                     player.move.y /= length;
                 }
             }
-            
-            // Update other players' input (for bots, this is handled in AI update)
         }
 
         // ============================
@@ -1193,7 +1192,7 @@
             // Update round timer
             gameState.roundTimer -= deltaTime;
             if (gameState.roundTimer <= 0) {
-                endRound(null); // Time's up, no winner
+                endRound(null);
                 return;
             }
             
@@ -1234,9 +1233,6 @@
                     if (input.slap && player.slapCooldown <= 0) {
                         player.isSlapping = true;
                         player.slapCooldown = CONFIG.SLAP_COOLDOWN;
-                        
-                        // Play slap sound (simulated)
-                        playSlapSound();
                     }
                 }
                 
@@ -1264,7 +1260,7 @@
                 );
                 
                 if (distanceFromCenter > CONFIG.ARENA_SIZE) {
-                    // Player is out of bounds - apply bounce back or fall
+                    // Player is out of bounds
                     if (player.position.y > 0) {
                         // Bounce back toward center
                         const angle = Math.atan2(player.position.z, player.position.x);
@@ -1301,7 +1297,11 @@
                 
                 // Update character position and rotation
                 if (characters[i]) {
-                    characters[i].position.copy(player.position);
+                    characters[i].position.set(
+                        player.position.x,
+                        player.position.y,
+                        player.position.z
+                    );
                     characters[i].rotation.y = player.rotation;
                     
                     // Add bobbing animation
@@ -1309,12 +1309,6 @@
                         characters[i].position.y += Math.sin(Date.now() * 0.01) * 0.1;
                     }
                 }
-            }
-            
-            // Network update (simulated)
-            if (Date.now() - gameState.lastNetworkUpdate > CONFIG.NETWORK_UPDATE_RATE * 1000) {
-                sendNetworkUpdate();
-                gameState.lastNetworkUpdate = Date.now();
             }
             
             // Update camera to follow action
@@ -1359,9 +1353,6 @@
                             }
                         }, 100);
                     }
-                    
-                    // Play hit sound (simulated)
-                    playHitSound();
                 }
             }
         }
@@ -1379,7 +1370,6 @@
             player.velocity.z = 0;
             
             // Check if round should end
-            const activePlayers = gameState.players.filter(p => p && p.isConnected).length;
             const playersOnArena = gameState.players.filter(p => 
                 p && p.isConnected && 
                 Math.sqrt(p.position.x * p.position.x + p.position.z * p.position.z) < CONFIG.ARENA_SIZE
@@ -1498,7 +1488,7 @@
                 gameState.players[i].slapCooldown = 0;
                 
                 if (characters[i]) {
-                    characters[i].position.copy(gameState.players[i].position);
+                    characters[i].position.set(pos.x, 3, pos.z);
                     characters[i].scale.set(1, 1, 1);
                 }
             }
@@ -1630,11 +1620,11 @@
                 if (!gameState.players[i] || !gameState.players[i].isConnected) continue;
                 
                 const player = gameState.players[i];
+                const playerNum = i + 1;
                 hudHTML += `
-                    <div class="player-hud player-${i + 1}">
+                    <div class="player-hud player-${playerNum}">
                         <div class="player-name">${player.name}</div>
                         <div class="player-score">${gameState.scores[i]}</div>
-                        <div>${gameState.roundActive && player.isGrounded ? 'ON ARENA' : ''}</div>
                     </div>
                 `;
             }
@@ -1644,47 +1634,13 @@
                 const minutes = Math.floor(gameState.roundTimer / 60);
                 const seconds = Math.floor(gameState.roundTimer % 60);
                 hudHTML += `
-                    <div style="background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; align-self: center;">
-                        <div style="font-size: 2rem; color: #ffcc00;">${minutes}:${seconds.toString().padStart(2, '0')}</div>
+                    <div style="background: rgba(0,0,0,0.7); padding: 15px; border-radius: 10px; align-self: center; margin: 5px;">
+                        <div style="font-size: 1.8rem; color: #ffcc00;">${minutes}:${seconds.toString().padStart(2, '0')}</div>
                     </div>
                 `;
             }
             
             hud.innerHTML = hudHTML;
-        }
-
-        // ============================
-        // NETWORK SIMULATION
-        // ============================
-        function sendNetworkUpdate() {
-            // In a real implementation, this would send player data to peers
-            // For this demo, we just simulate it
-            if (gameState.isHost && window.webrtc) {
-                const updateData = {
-                    type: 'gameUpdate',
-                    players: gameState.players,
-                    scores: gameState.scores,
-                    roundActive: gameState.roundActive,
-                    roundTimer: gameState.roundTimer,
-                    arenaModifier: gameState.arenaModifier
-                };
-                
-                window.webrtc.send(updateData);
-            }
-        }
-
-        // ============================
-        // AUDIO (SIMULATED)
-        // ============================
-        function playSlapSound() {
-            // In a real implementation, this would play a sound
-            // For this demo, we just log it
-            console.log('SLAP!');
-        }
-
-        function playHitSound() {
-            // In a real implementation, this would play a sound
-            console.log('HIT!');
         }
 
         // ============================
@@ -1705,7 +1661,7 @@
             updateGame(deltaTime);
             
             // Render scene
-            if (renderer) {
+            if (renderer && scene && camera) {
                 renderer.render(scene, camera);
             }
         }
@@ -1755,17 +1711,24 @@
             
             characters = [];
             arena = null;
+            scene = null;
+            camera = null;
+            renderer = null;
         }
 
         // ============================
         // START THE GAME
         // ============================
         // Initialize when page loads
-        window.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM fully loaded and parsed");
+            init();
+        });
         
-        // Export for debugging
-        window.gameState = gameState;
-        window.CONFIG = CONFIG;
+        // Fallback in case DOMContentLoaded already fired
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            setTimeout(init, 100);
+        }
     </script>
 </body>
 </html>
