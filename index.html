@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slap Your Friend - 3D P2P</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #222; color: white; }
+        canvas { display: block; }
+        
+        /* UI Overlay */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+        .panel { background: rgba(0,0,0,0.8); padding: 20px; border-radius: 15px; text-align: center; pointer-events: auto; border: 4px solid #ffcc00; max-width: 90%; }
+        button { background: #ffcc00; border: none; padding: 10px 20px; font-weight: bold; cursor: pointer; border-radius: 5px; margin: 5px; font-size: 1.1em; }
+        button:hover { background: #ffaa00; }
+        textarea { width: 100%; height: 80px; margin: 10px 0; font-size: 10px; background: #333; color: #0f0; border: 1px solid #555; }
+        
+        #hud { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 2em; font-weight: bold; text-shadow: 2px 2px #000; pointer-events: none; display: none; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="hud">SLAP HIM OFF!</div>
+
+<div id="ui-layer">
+    <div id="menu-main" class="panel">
+        <h1>🖐️ SLAP YOUR FRIEND</h1>
+        <p>A Chaotic 3D P2P Brawler</p>
+        <button onclick="showPanel('menu-create')">Create Room (Host)</button>
+        <button onclick="showPanel('menu-join')">Join Room (Client)</button>
+    </div>
+
+    <div id="menu-create" class="panel hidden">
+        <h2>Host Session</h2>
+        <ol style="text-align: left; font-size: 0.9em;">
+            <li>Copy this code and send it to your friend:</li>
+            <textarea id="host-offer" readonly onclick="this.select()"></textarea>
+            <li>Wait for their response and paste it here:</li>
+        </ol>
+        <textarea id="host-answer-input" placeholder="Paste joiner's code here..."></textarea>
+        <button onclick="finalizeHost()">Finalize Connection</button>
+    </div>
+
+    <div id="menu-join" class="panel hidden">
+        <h2>Join Session</h2>
+        <textarea id="client-offer-input" placeholder="Paste host's code here..."></textarea>
+        <button onclick="startJoiner()">Generate Response</button>
+        <div id="client-response-area" class="hidden">
+            <p>Send this back to the host:</p>
+            <textarea id="client-answer-output" readonly onclick="this.select()"></textarea>
+            <p>Waiting for host to finalize...</p>
+        </div>
+    </div>
+
+    <div id="menu-result" class="panel hidden">
+        <h1 id="win-text">YOU WIN!</h1>
+        <button onclick="location.reload()">Play Again</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+/** * GAME CONFIG & STATE 
+ */
+const config = {
+    arenaSize: 10,
+    gravity: 0.015,
+    moveSpeed: 0.12,
+    knockback: 0.8,
+    slapCooldown: 800
+};
+
+let isHost = false;
+let peerConn, dataChannel;
+let gameStarted = false;
+
+// Three.js Globals
+let scene, camera, renderer, clock;
+let player, opponent;
+let keys = {};
+let arena;
+
+/**
+ * P2P NETWORKING (WebRTC)
+ */
+const iceConfig = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+function showPanel(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    if(id === 'menu-create') startHost();
+}
+
+async function startHost() {
+    isHost = true;
+    peerConn = new RTCPeerConnection(iceConfig);
+    dataChannel = peerConn.createDataChannel("gameData");
+    setupDataChannel();
+
+    const offer = await peerConn.createOffer();
+    await peerConn.setLocalDescription(offer);
+
+    peerConn.onicecandidate = (e) => {
+        if (!e.candidate) {
+            document.getElementById('host-offer').value = btoa(JSON.stringify(peerConn.localDescription));
+        }
+    };
+}
+
+async function finalizeHost() {
+    const answerRaw = document.getElementById('host-answer-input').value;
+    const answer = new RTCSessionDescription(JSON.parse(atob(answerRaw)));
+    await peerConn.setRemoteDescription(answer);
+}
+
+async function startJoiner() {
+    isHost = false;
+    const offerRaw = document.getElementById('client-offer-input').value;
+    const offer = new RTCSessionDescription(JSON.parse(atob(offerRaw)));
+
+    peerConn = new RTCPeerConnection(iceConfig);
+    peerConn.ondatachannel = (e) => {
+        dataChannel = e.channel;
+        setupDataChannel();
+    };
+
+    await peerConn.setRemoteDescription(offer);
+    const answer = await peerConn.createAnswer();
+    await peerConn.setLocalDescription(answer);
+
+    peerConn.onicecandidate = (e) => {
+        if (!e.candidate) {
+            document.getElementById('client-answer-output').value = btoa(JSON.stringify(peerConn.localDescription));
+            document.getElementById('client-response-area').classList.remove('hidden');
+        }
+    };
+}
+
+function setupDataChannel() {
+    dataChannel.onopen = () => startGame();
+    dataChannel.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'sync') {
+            opponent.position.set(msg.x, msg.y, msg.z);
+            opponent.rotation.y = msg.ry;
+        } else if (msg.type === 'slap') {
+            handleReceivedSlap(msg.power, msg.dir);
+        }
+    };
+}
+
+/**
+ * GAME ENGINE
+ */
+function startGame() {
+    document.getElementById('ui-layer').classList.add('hidden');
+    document.getElementById('hud').style.display = 'block';
+    initScene();
+    gameStarted = true;
+    animate();
+}
+
+function initScene() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Lights
+    const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambient);
+    const sun = new THREE.DirectionalLight(0xffffff, 0.5);
+    sun.position.set(5, 10, 5);
+    scene.add(sun);
+
+    // Arena
+    const arenaGeo = new THREE.CylinderGeometry(config.arenaSize, config.arenaSize, 1, 32);
+    const arenaMat = new THREE.MeshPhongMaterial({ color: 0x44aa44 });
+    arena = new THREE.Mesh(arenaGeo, arenaMat);
+    arena.position.y = -0.5;
+    scene.add(arena);
+
+    // Players
+    player = createCharacter(isHost ? 0xff0000 : 0x0000ff);
+    opponent = createCharacter(isHost ? 0x0000ff : 0xff0000);
+    
+    player.position.set(isHost ? -3 : 3, 1, 0);
+    opponent.position.set(isHost ? 3 : -3, 1, 0);
+    
+    scene.add(player);
+    scene.add(opponent);
+
+    clock = new THREE.Clock();
+}
+
+function createCharacter(col) {
+    const group = new THREE.Group();
+    // Body
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.2, 0.5), new THREE.MeshPhongMaterial({ color: col }));
+    group.add(body);
+    // Head
+    const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshPhongMaterial({ color: 0xffdbac }));
+    head.position.y = 0.9;
+    group.add(head);
+    // Hands (Exaggerated)
+    const handGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+    const handMat = new THREE.MeshPhongMaterial({ color: col });
+    group.leftHand = new THREE.Mesh(handGeo, handMat);
+    group.leftHand.position.set(-0.6, 0.2, 0.3);
+    group.add(group.leftHand);
+    
+    group.rightHand = new THREE.Mesh(handGeo, handMat);
+    group.rightHand.position.set(0.6, 0.2, 0.3);
+    group.add(group.rightHand);
+
+    group.velocity = new THREE.Vector3();
+    group.lastSlap = 0;
+    return group;
+}
+
+/**
+ * INPUT & LOOP
+ */
+window.addEventListener('keydown', (e) => keys[e.code] = true);
+window.addEventListener('keyup', (e) => keys[e.code] = false);
+
+function handleInput() {
+    let moveX = 0;
+    let moveZ = 0;
+
+    // Keyboard (WASD + Arrows)
+    if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
+
+    // Gamepad
+    const gamepad = navigator.getGamepads()[0];
+    if (gamepad) {
+        if (Math.abs(gamepad.axes[0]) > 0.1) moveX = gamepad.axes[0];
+        if (Math.abs(gamepad.axes[1]) > 0.1) moveZ = gamepad.axes[1];
+        if (gamepad.buttons[0].pressed) trySlap(); // Button A
+    }
+
+    if (keys['Space']) trySlap();
+
+    // Apply Movement
+    if (moveX !== 0 || moveZ !== 0) {
+        const angle = Math.atan2(moveX, moveZ);
+        player.rotation.y = angle;
+        player.position.x += Math.sin(angle) * config.moveSpeed;
+        player.position.z += Math.cos(angle) * config.moveSpeed;
+        
+        // Wobble effect
+        player.rotation.z = Math.sin(Date.now() * 0.01) * 0.1;
+    }
+}
+
+function trySlap() {
+    const now = Date.now();
+    if (now - player.lastSlap < config.slapCooldown) return;
+    player.lastSlap = now;
+
+    // Animation
+    player.rightHand.position.z = 1.2;
+    setTimeout(() => player.rightHand.position.z = 0.3, 200);
+
+    // Hit Detection
+    const dist = player.position.distanceTo(opponent.position);
+    if (dist < 2.0) {
+        const dir = new THREE.Vector3().subVectors(opponent.position, player.position).normalize();
+        dataChannel.send(JSON.stringify({ type: 'slap', power: config.knockback, dir: {x: dir.x, z: dir.z} }));
+    }
+}
+
+function handleReceivedSlap(power, dir) {
+    opponent.rightHand.position.z = 1.2;
+    setTimeout(() => opponent.rightHand.position.z = 0.3, 200);
+    
+    player.velocity.x += dir.x * power;
+    player.velocity.z += dir.z * power;
+    
+    // Shake camera
+    camera.position.x += (Math.random() - 0.5) * 0.5;
+}
+
+function animate() {
+    if (!gameStarted) return;
+    requestAnimationFrame(animate);
+
+    handleInput();
+
+    // Physics
+    player.position.add(player.velocity);
+    player.velocity.multiplyScalar(0.9); // Friction
+
+    if (player.position.y > 0 || player.position.length() > config.arenaSize) {
+        player.position.y -= config.gravity;
+    }
+
+    // Win/Loss Condition
+    if (player.position.y < -5) endGame(false);
+    if (opponent.position.y < -5) endGame(true);
+
+    // Camera follow
+    camera.position.lerp(new THREE.Vector3(player.position.x, player.position.y + 5, player.position.z + 8), 0.1);
+    camera.lookAt(player.position);
+
+    // Sync to peer
+    if (dataChannel.readyState === "open") {
+        dataChannel.send(JSON.stringify({
+            type: 'sync',
+            x: player.position.x, y: player.position.y, z: player.position.z,
+            ry: player.rotation.y
+        }));
+    }
+
+    renderer.render(scene, camera);
+}
+
+function endGame(win) {
+    gameStarted = false;
+    document.getElementById('ui-layer').classList.remove('hidden');
+    document.getElementById('menu-result').classList.remove('hidden');
+    document.getElementById('win-text').innerText = win ? "YOU KNOCKED THEM OUT!" : "YOU GOT SLAPPED OFF!";
+    document.getElementById('hud').style.display = 'none';
+}
+
+window.addEventListener('resize', () => {
+    if (!camera) return;
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
