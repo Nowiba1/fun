@@ -461,28 +461,40 @@
     </div>
 
     <script>
-        // ==================== ENHANCED TEXTURE MANAGER ====================
-        class EnhancedTextureManager {
+        // ==================== SIMPLE SEEDED RANDOM ====================
+        class SeededRandom {
+            constructor(seed = Date.now()) {
+                this.seed = seed;
+                this.current = seed;
+            }
+            
+            next() {
+                this.current = (this.current * 9301 + 49297) % 233280;
+                return this.current / 233280;
+            }
+            
+            random() {
+                return this.next();
+            }
+            
+            randomBetween(min, max) {
+                return min + this.next() * (max - min);
+            }
+            
+            randomInt(min, max) {
+                return Math.floor(min + this.next() * (max - min + 1));
+            }
+        }
+
+        // ==================== TEXTURE MANAGER ====================
+        class TextureManager {
             constructor() {
                 this.textures = {};
                 this.loader = new THREE.TextureLoader();
                 this.textureCache = {};
-                this.defaultMaterials = {};
-                
-                // Realistic texture colors
-                this.textureColors = {
-                    brick: 0xb7410e,
-                    concrete: 0x9e9e9e,
-                    wood: 0x8b4513,
-                    metal: 0x7d7d7d,
-                    glass: 0x87ceeb,
-                    road: 0x333333,
-                    grass: 0x2d8b2d,
-                    dirt: 0x8b7355
-                };
             }
 
-            createProceduralTexture(type, size = 512) {
+            createProceduralTexture(type, size = 256) {
                 const canvas = document.createElement('canvas');
                 canvas.width = size;
                 canvas.height = size;
@@ -493,7 +505,6 @@
                         ctx.fillStyle = '#b7410e';
                         ctx.fillRect(0, 0, size, size);
                         
-                        // Brick pattern
                         ctx.strokeStyle = '#8b310a';
                         ctx.lineWidth = 2;
                         const brickWidth = size / 8;
@@ -510,7 +521,6 @@
                         ctx.fillStyle = '#9e9e9e';
                         ctx.fillRect(0, 0, size, size);
                         
-                        // Concrete texture with aggregates
                         for(let i = 0; i < 500; i++) {
                             ctx.fillStyle = i % 2 === 0 ? '#777' : '#aaa';
                             const radius = Math.random() * 3 + 1;
@@ -527,13 +537,10 @@
                         break;
                         
                     case 'wood':
-                        // Wood grain texture
                         const woodColors = ['#8b4513', '#a0522d', '#d2691e'];
-                        const colorIndex = Math.floor(Math.random() * woodColors.length);
-                        ctx.fillStyle = woodColors[colorIndex];
+                        ctx.fillStyle = woodColors[Math.floor(Math.random() * woodColors.length)];
                         ctx.fillRect(0, 0, size, size);
                         
-                        // Wood grain lines
                         ctx.strokeStyle = '#5d2906';
                         ctx.lineWidth = 1;
                         for(let i = 0; i < 50; i++) {
@@ -549,7 +556,6 @@
                         break;
                         
                     case 'metal':
-                        // Metal plate texture
                         const gradient = ctx.createLinearGradient(0, 0, size, size);
                         gradient.addColorStop(0, '#8d8d8d');
                         gradient.addColorStop(0.5, '#a5a5a5');
@@ -557,7 +563,6 @@
                         ctx.fillStyle = gradient;
                         ctx.fillRect(0, 0, size, size);
                         
-                        // Screws and bolts
                         for(let i = 0; i < 20; i++) {
                             const x = Math.random() * size;
                             const y = Math.random() * size;
@@ -573,8 +578,23 @@
                         }
                         break;
                         
+                    case 'road':
+                        ctx.fillStyle = '#333333';
+                        ctx.fillRect(0, 0, size, size);
+                        
+                        for(let i = 0; i < 1000; i++) {
+                            const gray = 30 + Math.random() * 20;
+                            ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+                            ctx.fillRect(
+                                Math.random() * size,
+                                Math.random() * size,
+                                Math.random() * 3 + 1,
+                                Math.random() * 3 + 1
+                            );
+                        }
+                        break;
+                        
                     default:
-                        // Default texture
                         ctx.fillStyle = '#808080';
                         ctx.fillRect(0, 0, size, size);
                         for(let i = 0; i < 100; i++) {
@@ -603,8 +623,7 @@
                     this.textureCache[key] = new THREE.MeshStandardMaterial({
                         map: texture,
                         roughness: 0.8,
-                        metalness: type === 'metal' ? 0.6 : 0.1,
-                        side: THREE.DoubleSide
+                        metalness: type === 'metal' ? 0.6 : 0.1
                     });
                 }
                 return this.textureCache[key];
@@ -612,32 +631,7 @@
 
             getRoadMaterial() {
                 if (!this.textureCache.road) {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 512;
-                    canvas.height = 512;
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Asphalt texture
-                    ctx.fillStyle = '#333333';
-                    ctx.fillRect(0, 0, 512, 512);
-                    
-                    // Add asphalt details
-                    for(let i = 0; i < 1000; i++) {
-                        const gray = 30 + Math.random() * 20;
-                        ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
-                        ctx.fillRect(
-                            Math.random() * 512,
-                            Math.random() * 512,
-                            Math.random() * 3 + 1,
-                            Math.random() * 3 + 1
-                        );
-                    }
-                    
-                    const texture = new THREE.CanvasTexture(canvas);
-                    texture.wrapS = THREE.RepeatWrapping;
-                    texture.wrapT = THREE.RepeatWrapping;
-                    texture.repeat.set(4, 8);
-                    
+                    const texture = this.createProceduralTexture('road');
                     this.textureCache.road = new THREE.MeshStandardMaterial({
                         map: texture,
                         roughness: 0.9,
@@ -652,7 +646,7 @@
         // ==================== PROCEDURAL WORLD GENERATOR ====================
         class ProceduralWorld {
             constructor() {
-                this.seed = Date.now();
+                this.rng = new SeededRandom();
                 this.roadSegments = [];
                 this.buildings = [];
                 this.obstacles = [];
@@ -663,15 +657,15 @@
                 this.roadCurve = 0;
                 this.roadTurn = 0;
                 this.lastPlayerZ = 0;
+                this.lastRoadEnd = { position: new THREE.Vector3(0, 0, 0), rotation: 0 };
             }
 
             setSeed(seed) {
-                this.seed = seed;
-                Math.seedrandom(seed);
-            }
-
-            random() {
-                return Math.random();
+                this.rng = new SeededRandom(seed);
+                this.currentChunk = 0;
+                this.roadCurve = 0;
+                this.roadTurn = 0;
+                this.lastRoadEnd = { position: new THREE.Vector3(0, 0, 0), rotation: 0 };
             }
 
             generateChunk(zOffset) {
@@ -685,53 +679,64 @@
                 const segmentCount = 10;
                 const segmentLength = this.chunkSize / segmentCount;
 
+                let currentPosition = this.lastRoadEnd.position.clone();
+                let currentRotation = this.lastRoadEnd.rotation;
+
                 for (let i = 0; i < segmentCount; i++) {
-                    const zPos = zOffset - i * segmentLength;
-                    
                     // Generate road segment with variation
-                    const roadX = Math.sin(this.roadTurn) * this.roadCurve * 50;
-                    const roadSegment = this.createRoadSegment(roadX, zPos, segmentLength);
+                    const roadX = Math.sin(currentRotation) * this.roadCurve * 50;
+                    const roadSegment = this.createRoadSegment(
+                        currentPosition.x + roadX, 
+                        currentPosition.z - i * segmentLength, 
+                        segmentLength,
+                        currentRotation
+                    );
                     chunk.road.push(roadSegment);
 
                     // Generate buildings
                     if (i % 2 === 0) {
-                        const buildingCount = Math.floor(this.random() * 3) + 1;
+                        const buildingCount = Math.floor(this.rng.random() * 3) + 1;
                         for (let j = 0; j < buildingCount; j++) {
-                            const building = this.createBuilding(roadX, zPos);
+                            const building = this.createBuilding(roadX, currentPosition.z - i * segmentLength);
                             chunk.buildings.push(building);
                         }
                     }
 
                     // Generate obstacles
-                    if (i > 2 && this.random() > 0.3) {
-                        const obstacle = this.createObstacle(roadX, zPos, segmentLength);
+                    if (i > 2 && this.rng.random() > 0.3) {
+                        const obstacle = this.createObstacle(roadX, currentPosition.z - i * segmentLength, segmentLength);
                         if (obstacle) chunk.obstacles.push(obstacle);
                     }
 
                     // Generate environment props
-                    if (this.random() > 0.5) {
-                        const prop = this.createEnvironmentProp(roadX, zPos, segmentLength);
+                    if (this.rng.random() > 0.5) {
+                        const prop = this.createEnvironmentProp(roadX, currentPosition.z - i * segmentLength, segmentLength);
                         chunk.environment.push(prop);
                     }
 
                     // Update road curve for next segment
                     if (i % 3 === 0) {
-                        const curveChange = (this.random() - 0.5) * 0.1;
+                        const curveChange = (this.rng.random() - 0.5) * 0.1;
                         this.roadCurve = Math.max(-0.2, Math.min(0.2, this.roadCurve + curveChange));
                         
-                        const turnChange = (this.random() - 0.5) * 0.05;
+                        const turnChange = (this.rng.random() - 0.5) * 0.05;
                         this.roadTurn = Math.max(-Math.PI / 6, Math.min(Math.PI / 6, this.roadTurn + turnChange));
+                        currentRotation = this.roadTurn;
                     }
                 }
 
+                // Update last road end
+                this.lastRoadEnd.position.z -= this.chunkSize;
+                this.lastRoadEnd.rotation = currentRotation;
+                
                 this.currentChunk++;
                 return chunk;
             }
 
-            createRoadSegment(x, z, length) {
+            createRoadSegment(x, z, length, rotation) {
                 return {
                     position: new THREE.Vector3(x, 0.01, z),
-                    rotation: this.roadTurn,
+                    rotation: rotation,
                     length: length,
                     width: this.roadWidth
                 };
@@ -739,57 +744,56 @@
 
             createBuilding(roadX, z) {
                 const buildingTypes = ['apartment', 'office', 'house', 'shop', 'factory'];
-                const type = buildingTypes[Math.floor(this.random() * buildingTypes.length)];
+                const type = buildingTypes[Math.floor(this.rng.random() * buildingTypes.length)];
                 
-                const side = this.random() > 0.5 ? 1 : -1;
-                const distance = 15 + this.random() * 25;
+                const side = this.rng.random() > 0.5 ? 1 : -1;
+                const distance = 15 + this.rng.random() * 25;
                 const xPos = roadX + distance * side;
-                const zOffset = (this.random() - 0.5) * 30;
+                const zOffset = (this.rng.random() - 0.5) * 30;
                 
                 return {
                     type: type,
                     position: new THREE.Vector3(xPos, 0, z + zOffset),
-                    rotation: (this.random() - 0.5) * Math.PI / 4,
-                    scale: 0.8 + this.random() * 0.6,
+                    rotation: (this.rng.random() - 0.5) * Math.PI / 4,
+                    scale: 0.8 + this.rng.random() * 0.6,
                     side: side
                 };
             }
 
             createObstacle(roadX, z, segmentLength) {
-                const obstacleTypes = ['crate', 'lamp', 'barrier', 'construction', 'trash'];
-                const type = obstacleTypes[Math.floor(this.random() * obstacleTypes.length)];
+                const obstacleTypes = ['crate', 'lamp', 'barrier'];
+                const type = obstacleTypes[Math.floor(this.rng.random() * obstacleTypes.length)];
                 
-                const side = this.random() > 0.5 ? 1 : -1;
+                const side = this.rng.random() > 0.5 ? 1 : -1;
                 const distance = (this.roadWidth / 2 + 2) * side;
                 const xPos = roadX + distance;
-                const zOffset = (this.random() - 0.5) * segmentLength * 0.6;
+                const zOffset = (this.rng.random() - 0.5) * segmentLength * 0.6;
                 
                 return {
                     type: type,
                     position: new THREE.Vector3(xPos, 0, z + zOffset),
-                    rotation: this.roadTurn + (this.random() - 0.5) * Math.PI / 2,
+                    rotation: (this.rng.random() - 0.5) * Math.PI / 2,
                     damage: type === 'crate' ? 25 : type === 'lamp' ? 15 : 20
                 };
             }
 
             createEnvironmentProp(roadX, z, segmentLength) {
-                const propTypes = ['tree', 'bush', 'bench', 'sign', 'fence'];
-                const type = propTypes[Math.floor(this.random() * propTypes.length)];
+                const propTypes = ['tree', 'bush', 'bench', 'sign'];
+                const type = propTypes[Math.floor(this.rng.random() * propTypes.length)];
                 
-                const side = this.random() > 0.5 ? 1 : -1;
-                const distance = 25 + this.random() * 20;
+                const side = this.rng.random() > 0.5 ? 1 : -1;
+                const distance = 25 + this.rng.random() * 20;
                 const xPos = roadX + distance * side;
-                const zOffset = (this.random() - 0.5) * segmentLength;
+                const zOffset = (this.rng.random() - 0.5) * segmentLength;
                 
                 return {
                     type: type,
                     position: new THREE.Vector3(xPos, 0, z + zOffset),
-                    rotation: (this.random() - 0.5) * Math.PI
+                    rotation: (this.rng.random() - 0.5) * Math.PI
                 };
             }
 
             update(playerZ) {
-                // Generate new chunks as player moves
                 const chunksAhead = Math.ceil((this.lastPlayerZ - playerZ) / this.chunkSize) + 2;
                 
                 if (chunksAhead > this.currentChunk) {
@@ -804,71 +808,60 @@
             }
         }
 
-        // ==================== ENHANCED MODEL MANAGER ====================
-        class EnhancedModelManager {
+        // ==================== MODEL MANAGER ====================
+        class ModelManager {
             constructor() {
                 this.models = {};
                 this.loader = new THREE.GLTFLoader();
-                this.placeholderCache = {};
-                this.textureManager = new EnhancedTextureManager();
+                this.textureManager = new TextureManager();
             }
 
             async loadModel(type, path) {
-                try {
-                    if (!path) throw new Error('No path provided');
-                    
-                    return new Promise((resolve) => {
-                        this.loader.load(
-                            path,
-                            (gltf) => {
-                                console.log(`✓ Model loaded: ${type}`);
-                                this.models[type] = gltf;
-                                
-                                // Apply proper scaling and setup
-                                gltf.scene.traverse((child) => {
-                                    if (child.isMesh) {
-                                        child.castShadow = true;
-                                        child.receiveShadow = true;
-                                        
-                                        // Scale player to fit cart
-                                        if (type === 'player') {
-                                            child.scale.set(0.5, 0.5, 0.5);
-                                            child.position.y = 0.3;
-                                        }
-                                        
-                                        if (type === 'cart') {
-                                            child.scale.set(0.8, 0.8, 0.8);
-                                        }
-                                    }
-                                });
-                                
-                                resolve(gltf);
-                            },
-                            undefined,
-                            () => {
-                                console.warn(`✗ Model ${type} not found, using placeholder`);
-                                this.models[type] = this.createEnhancedPlaceholder(type);
-                                resolve(this.models[type]);
+                return new Promise((resolve) => {
+                    this.loader.load(
+                        path,
+                        (gltf) => {
+                            console.log(`Model loaded: ${type}`);
+                            
+                            // Scale models appropriately
+                            if (type === 'player') {
+                                gltf.scene.scale.set(0.5, 0.5, 0.5);
+                                gltf.scene.position.y = 0.3;
+                            } else if (type === 'cart') {
+                                gltf.scene.scale.set(0.8, 0.8, 0.8);
+                            } else if (type === 'crate') {
+                                gltf.scene.scale.set(0.8, 0.8, 0.8);
+                            } else if (type === 'lamp') {
+                                gltf.scene.scale.set(0.7, 0.7, 0.7);
+                            } else if (type === 'house') {
+                                gltf.scene.scale.set(0.6, 0.6, 0.6);
                             }
-                        );
-                    });
-                } catch (error) {
-                    console.warn(`Error loading ${type}, using placeholder:`, error);
-                    this.models[type] = this.createEnhancedPlaceholder(type);
-                    return this.models[type];
-                }
+                            
+                            gltf.scene.traverse((child) => {
+                                if (child.isMesh) {
+                                    child.castShadow = true;
+                                    child.receiveShadow = true;
+                                }
+                            });
+                            
+                            this.models[type] = gltf;
+                            resolve(gltf);
+                        },
+                        undefined,
+                        () => {
+                            console.log(`Using placeholder for ${type}`);
+                            this.models[type] = this.createPlaceholder(type);
+                            resolve(this.models[type]);
+                        }
+                    );
+                });
             }
 
-            createEnhancedPlaceholder(type) {
-                if (this.placeholderCache[type]) {
-                    return this.placeholderCache[type];
-                }
-
+            createPlaceholder(type) {
                 const group = new THREE.Group();
                 
                 switch(type) {
                     case 'cart':
-                        // Shopping cart with proper scale
                         const cartBody = new THREE.BoxGeometry(1.2, 0.6, 2);
                         const cartMaterial = new THREE.MeshStandardMaterial({ 
                             color: 0xff4757,
@@ -880,7 +873,6 @@
                         body.castShadow = true;
                         group.add(body);
                         
-                        // Cart handle
                         const handleGeometry = new THREE.CylinderGeometry(0.03, 0.03, 1);
                         const handle = new THREE.Mesh(handleGeometry, cartMaterial);
                         handle.position.set(0, 0.8, -0.8);
@@ -888,7 +880,6 @@
                         handle.castShadow = true;
                         group.add(handle);
                         
-                        // Wheels
                         const wheelGeometry = new THREE.CylinderGeometry(0.15, 0.15, 0.08);
                         const wheelMaterial = new THREE.MeshStandardMaterial({ 
                             color: 0x333333,
@@ -896,14 +887,7 @@
                             roughness: 0.2
                         });
                         
-                        const positions = [
-                            [0.5, 0.15, 0.6],
-                            [-0.5, 0.15, 0.6],
-                            [0.5, 0.15, -0.6],
-                            [-0.5, 0.15, -0.6]
-                        ];
-                        
-                        positions.forEach(pos => {
+                        [[0.5, 0.15, 0.6], [-0.5, 0.15, 0.6], [0.5, 0.15, -0.6], [-0.5, 0.15, -0.6]].forEach(pos => {
                             const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
                             wheel.position.set(pos[0], pos[1], pos[2]);
                             wheel.rotation.z = Math.PI / 2;
@@ -913,10 +897,6 @@
                         break;
                         
                     case 'player':
-                        // Player character - properly scaled to fit cart
-                        const playerGroup = new THREE.Group();
-                        
-                        // Body with animation skeleton
                         const torsoGeometry = new THREE.BoxGeometry(0.3, 0.4, 0.2);
                         const torsoMaterial = new THREE.MeshStandardMaterial({ 
                             color: 0x70a1ff,
@@ -926,54 +906,39 @@
                         const torso = new THREE.Mesh(torsoGeometry, torsoMaterial);
                         torso.position.y = 0.2;
                         torso.castShadow = true;
-                        playerGroup.add(torso);
+                        group.add(torso);
                         
-                        // Head
                         const headGeometry = new THREE.SphereGeometry(0.12);
                         const head = new THREE.Mesh(headGeometry, torsoMaterial);
                         head.position.y = 0.55;
                         head.castShadow = true;
-                        playerGroup.add(head);
+                        group.add(head);
                         
-                        // Arms (for animation)
                         const armGeometry = new THREE.BoxGeometry(0.08, 0.2, 0.08);
                         const leftArm = new THREE.Mesh(armGeometry, torsoMaterial);
                         leftArm.position.set(-0.2, 0.2, 0);
                         leftArm.castShadow = true;
-                        playerGroup.add(leftArm);
+                        group.add(leftArm);
                         
                         const rightArm = new THREE.Mesh(armGeometry, torsoMaterial);
                         rightArm.position.set(0.2, 0.2, 0);
                         rightArm.castShadow = true;
-                        playerGroup.add(rightArm);
+                        group.add(rightArm);
                         
-                        // Store animation references
-                        playerGroup.userData = {
-                            leftArm: leftArm,
-                            rightArm: rightArm,
-                            torso: torso,
-                            head: head,
-                            animationTime: 0
-                        };
-                        
-                        group.add(playerGroup);
+                        group.userData = { leftArm, rightArm, torso, head, animationTime: 0 };
                         break;
                         
                     case 'crate':
-                        // Wooden crate with texture
                         const crateGeometry = new THREE.BoxGeometry(1, 1, 1);
                         const crateMaterial = this.textureManager.getBuildingMaterial('wood');
                         const crate = new THREE.Mesh(crateGeometry, crateMaterial);
                         crate.castShadow = true;
-                        crate.receiveShadow = true;
                         group.add(crate);
                         break;
                         
                     case 'lamp':
-                        // Street lamp with light
                         const lampGroup = new THREE.Group();
                         
-                        // Metal pole
                         const poleGeometry = new THREE.CylinderGeometry(0.08, 0.12, 3.5);
                         const poleMaterial = new THREE.MeshStandardMaterial({ 
                             color: 0xaaaaaa,
@@ -984,7 +949,6 @@
                         pole.castShadow = true;
                         lampGroup.add(pole);
                         
-                        // Light fixture
                         const lightGeometry = new THREE.SphereGeometry(0.25);
                         const lightMaterial = new THREE.MeshStandardMaterial({ 
                             color: 0xffdd59,
@@ -996,27 +960,17 @@
                         light.castShadow = true;
                         lampGroup.add(light);
                         
-                        // Actual light source
                         const pointLight = new THREE.PointLight(0xffdd59, 1.5, 15);
                         pointLight.position.y = 2;
                         pointLight.castShadow = true;
                         lampGroup.add(pointLight);
                         
-                        // Lamp arm
-                        const arm = new THREE.CylinderGeometry(0.04, 0.04, 0.8);
-                        const armMesh = new THREE.Mesh(arm, poleMaterial);
-                        armMesh.position.set(0, 1.8, 0.4);
-                        armMesh.rotation.x = Math.PI / 2;
-                        lampGroup.add(armMesh);
-                        
                         group.add(lampGroup);
                         break;
                         
                     case 'house':
-                        // Building with realistic texture
                         const houseGroup = new THREE.Group();
                         
-                        // Main structure
                         const width = 4 + Math.random() * 2;
                         const height = 3 + Math.random() * 2;
                         const depth = 4 + Math.random() * 2;
@@ -1028,10 +982,8 @@
                         const house = new THREE.Mesh(houseGeometry, houseMaterial);
                         house.position.y = height / 2;
                         house.castShadow = true;
-                        house.receiveShadow = true;
                         houseGroup.add(house);
                         
-                        // Roof
                         const roofGeometry = new THREE.ConeGeometry(width * 0.9, 1.5, 4);
                         const roofMaterial = this.textureManager.getBuildingMaterial('wood');
                         const roof = new THREE.Mesh(roofGeometry, roofMaterial);
@@ -1040,38 +992,10 @@
                         roof.castShadow = true;
                         houseGroup.add(roof);
                         
-                        // Windows
-                        const windowGeometry = new THREE.PlaneGeometry(0.6, 0.8);
-                        const windowMaterial = new THREE.MeshStandardMaterial({ 
-                            color: 0x87ceeb,
-                            emissive: 0x1e90ff,
-                            emissiveIntensity: 0.3,
-                            transparent: true,
-                            opacity: 0.7
-                        });
-                        
-                        // Front windows
-                        for(let i = 0; i < 2; i++) {
-                            const window = new THREE.Mesh(windowGeometry, windowMaterial);
-                            window.position.set(
-                                (i === 0 ? -1 : 1),
-                                height * 0.6,
-                                depth / 2 + 0.01
-                            );
-                            houseGroup.add(window);
-                        }
-                        
-                        // Side windows
-                        const sideWindow = new THREE.Mesh(windowGeometry, windowMaterial);
-                        sideWindow.position.set(width / 2 + 0.01, height * 0.6, 0);
-                        sideWindow.rotation.y = Math.PI / 2;
-                        houseGroup.add(sideWindow);
-                        
                         group.add(houseGroup);
                         break;
                         
                     default:
-                        // Generic placeholder
                         const geometry = new THREE.BoxGeometry(1, 1, 1);
                         const material = new THREE.MeshStandardMaterial({ 
                             color: 0x808080,
@@ -1082,8 +1006,7 @@
                         group.add(mesh);
                 }
                 
-                this.placeholderCache[type] = { scene: group };
-                return this.placeholderCache[type];
+                return { scene: group };
             }
 
             getModel(type) {
@@ -1091,22 +1014,20 @@
             }
         }
 
-        // ==================== INTELLIGENT BOT AI ====================
-        class IntelligentBotAI {
+        // ==================== BOT AI ====================
+        class BotAI {
             constructor() {
                 this.targetPlayers = new Map();
                 this.damageCooldowns = new Map();
                 this.aggressionLevels = new Map();
-                this.spawnDelay = 100; // Start chasing after 100m
+                this.spawnDelay = 100;
             }
 
             initializeBot(bot, playerId) {
                 this.targetPlayers.set(bot.id, null);
                 this.damageCooldowns.set(bot.id, new Map());
                 this.aggressionLevels.set(bot.id, 0.5 + Math.random() * 0.5);
-                
-                // Set initial delay based on bot index
-                bot.spawnTimer = playerId * 20; // Stagger bot spawns
+                bot.spawnTimer = playerId * 20;
             }
 
             update(bot, players, deltaTime, playerDistance) {
@@ -1115,14 +1036,11 @@
                     return this.idleBehavior(bot, deltaTime);
                 }
 
-                // Choose target intelligently
                 const target = this.chooseTarget(bot, players);
                 if (!target) return this.idleBehavior(bot, deltaTime);
 
-                // Check cooldown for this player
                 const cooldown = this.damageCooldowns.get(bot.id)?.get(target.id) || 0;
                 if (cooldown > 0) {
-                    // During cooldown, maybe choose another target
                     const alternative = this.findAlternativeTarget(bot, players, target.id);
                     if (alternative) {
                         return this.chaseBehavior(bot, alternative, deltaTime);
@@ -1133,12 +1051,9 @@
             }
 
             idleBehavior(bot, deltaTime) {
-                // Drive straight at moderate speed
                 if (bot.speed < 15) {
                     bot.speed += bot.acceleration * 0.3 * deltaTime * 60;
                 }
-                
-                // Gentle random steering
                 bot.cart.rotation.y += (Math.random() - 0.5) * 0.05 * deltaTime * 60;
                 return false;
             }
@@ -1147,24 +1062,19 @@
                 const distance = bot.cart.position.distanceTo(target.cart.position);
                 const aggression = this.aggressionLevels.get(bot.id);
                 
-                // Calculate desired speed based on target speed and distance
                 let targetSpeed = target.speed;
                 
-                // Speed up if far away
                 if (distance > 30) {
                     targetSpeed *= 1.5;
                 }
                 
-                // Add aggression factor
                 targetSpeed *= (1 + aggression * 0.3);
                 
-                // Match target speed with some variance
                 const speedDiff = targetSpeed - bot.speed;
                 if (Math.abs(speedDiff) > 1) {
                     bot.speed += Math.sign(speedDiff) * bot.acceleration * deltaTime * 60 * 0.8;
                 }
                 
-                // Intelligent steering
                 const direction = new THREE.Vector3()
                     .subVectors(target.cart.position, bot.cart.position)
                     .normalize();
@@ -1174,11 +1084,9 @@
                 const cross = new THREE.Vector3().crossVectors(botForward, direction);
                 const steerDirection = cross.y > 0 ? 1 : -1;
                 
-                // Smart steering: sharper turns when far away, smoother when close
                 const steeringIntensity = Math.min(angle * 2, 1) * (distance > 20 ? 1.2 : 0.8);
                 bot.cart.rotation.y += steerDirection * bot.steering * steeringIntensity * deltaTime * 60;
                 
-                // Predict player movement for better chasing
                 if (distance > 15) {
                     const playerVelocity = target.speed;
                     const prediction = target.cart.position.clone().add(
@@ -1189,14 +1097,12 @@
                         .subVectors(prediction, bot.cart.position)
                         .normalize();
                     
-                    const predictedAngle = botForward.angleTo(predictedDirection);
                     const predictedCross = new THREE.Vector3().crossVectors(botForward, predictedDirection);
                     const predictedSteer = predictedCross.y > 0 ? 1 : -1;
                     
                     bot.cart.rotation.y += predictedSteer * bot.steering * 0.3 * deltaTime * 60;
                 }
                 
-                // Random "mistakes" for realism (less frequent for intelligent bots)
                 if (Math.random() > 0.995) {
                     bot.cart.rotation.y += (Math.random() - 0.5) * 0.5;
                     bot.speed *= 0.8;
@@ -1212,11 +1118,9 @@
                 for (const player of players) {
                     if (player.isBot || player.products <= 0) continue;
                     
-                    // Check cooldown
                     const cooldown = this.damageCooldowns.get(bot.id)?.get(player.id) || 0;
                     if (cooldown > 0) continue;
                     
-                    // Calculate score based on distance and aggression
                     const distance = bot.cart.position.distanceTo(player.cart.position);
                     const score = 1000 / (distance + 1) * this.aggressionLevels.get(bot.id);
                     
@@ -1250,7 +1154,7 @@
             recordDamage(bot, playerId) {
                 const cooldownMap = this.damageCooldowns.get(bot.id);
                 if (cooldownMap) {
-                    cooldownMap.set(playerId, 10); // 10 second cooldown
+                    cooldownMap.set(playerId, 10);
                 }
             }
 
@@ -1265,8 +1169,8 @@
             }
         }
 
-        // ==================== SMOOTH CAMERA SYSTEM ====================
-        class SmoothCamera {
+        // ==================== CAMERA SYSTEM ====================
+        class CameraSystem {
             constructor(camera) {
                 this.camera = camera;
                 this.target = null;
@@ -1294,7 +1198,7 @@
                 targetOffset.applyQuaternion(this.target.quaternion);
                 const desiredPosition = this.target.position.clone().add(targetOffset);
                 
-                // Calculate look-at point (slightly ahead of target)
+                // Calculate look-at point
                 const lookAtOffset = new THREE.Vector3(0, 1, 5);
                 lookAtOffset.applyQuaternion(this.target.quaternion);
                 const desiredLookAt = this.target.position.clone().add(lookAtOffset);
@@ -1319,57 +1223,39 @@
             shake(intensity = 0.5) {
                 this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
             }
-
-            setDistance(distance) {
-                this.offset.z = distance;
-            }
-
-            setHeight(height) {
-                this.offset.y = height;
-            }
         }
 
         // ==================== MAIN GAME CLASS ====================
         class CartRidersGame {
             constructor() {
-                // Enhanced systems
-                this.modelManager = new EnhancedModelManager();
-                this.textureManager = new EnhancedTextureManager();
+                this.modelManager = new ModelManager();
+                this.textureManager = new TextureManager();
                 this.worldGenerator = new ProceduralWorld();
-                this.botAI = new IntelligentBotAI();
+                this.botAI = new BotAI();
                 
-                // Game state
                 this.gameState = 'LOADING';
                 this.isMultiplayer = false;
                 this.botCount = 2;
-                this.seed = Date.now();
                 
-                // Three.js
                 this.scene = null;
                 this.camera = null;
                 this.renderer = null;
-                this.smoothCamera = null;
+                this.cameraSystem = null;
                 
-                // Game objects
                 this.carts = [];
                 this.players = [];
                 this.bots = [];
                 this.obstacles = [];
                 this.buildings = [];
-                this.environment = [];
                 this.roadSegments = [];
                 
-                // Game variables
                 this.playerCount = 0;
                 this.maxProducts = 15;
                 this.lastTime = 0;
                 this.gameTime = 0;
                 this.totalDistance = 0;
                 
-                // UI
                 this.uiElements = {};
-                
-                // Input
                 this.keys = {};
                 this.gamepads = {};
                 this.input = {
@@ -1379,7 +1265,6 @@
                     boost: false
                 };
                 
-                // Initialize
                 this.init();
             }
 
@@ -1392,58 +1277,7 @@
                 this.gameLoop();
             }
 
-            initThreeJS() {
-                const canvas = document.getElementById('gameCanvas');
-                
-                // Scene
-                this.scene = new THREE.Scene();
-                this.scene.fog = new THREE.Fog(0x1a1a2e, 10, 500);
-                
-                // Camera
-                this.camera = new THREE.PerspectiveCamera(
-                    75,
-                    window.innerWidth / window.innerHeight,
-                    0.1,
-                    2000
-                );
-                this.smoothCamera = new SmoothCamera(this.camera);
-                
-                // Renderer
-                this.renderer = new THREE.WebGLRenderer({
-                    canvas: canvas,
-                    antialias: true,
-                    alpha: true
-                });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                this.renderer.shadowMap.enabled = true;
-                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                
-                // Lighting
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                this.scene.add(ambientLight);
-                
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(100, 200, 100);
-                directionalLight.castShadow = true;
-                directionalLight.shadow.mapSize.width = 4096;
-                directionalLight.shadow.mapSize.height = 4096;
-                directionalLight.shadow.camera.left = -200;
-                directionalLight.shadow.camera.right = 200;
-                directionalLight.shadow.camera.top = 200;
-                directionalLight.shadow.camera.bottom = -200;
-                this.scene.add(directionalLight);
-                
-                // Window resize
-                window.addEventListener('resize', () => {
-                    this.camera.aspect = window.innerWidth / window.innerHeight;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
-                });
-            }
-
             bindUIElements() {
-                // Get all UI elements
                 const elements = [
                     'loadingScreen', 'startMenu', 'multiplayerLobby', 'hud', 'pauseMenu', 'endScreen',
                     'playSolo', 'multiplayer', 'createRoom', 'joinRoom', 'backToMenu', 'startGame',
@@ -1460,7 +1294,6 @@
             }
 
             setupEventListeners() {
-                // UI Events
                 this.uiElements.playSolo.addEventListener('click', () => this.startSoloGame());
                 this.uiElements.multiplayer.addEventListener('click', () => this.showScreen('multiplayerLobby'));
                 this.uiElements.createRoom.addEventListener('click', () => this.createMultiplayerRoom());
@@ -1474,13 +1307,11 @@
                 this.uiElements.playAgain.addEventListener('click', () => this.restartGame());
                 this.uiElements.endToMenu.addEventListener('click', () => this.quitToMenu());
                 
-                // Bot count slider
                 this.uiElements.botCount.addEventListener('input', (e) => {
                     this.botCount = parseInt(e.target.value);
                     this.uiElements.botCountDisplay.textContent = this.botCount;
                 });
                 
-                // Keyboard input
                 window.addEventListener('keydown', (e) => {
                     this.keys[e.key.toLowerCase()] = true;
                     if (e.key === 'Escape') this.togglePause();
@@ -1490,21 +1321,52 @@
                 window.addEventListener('keyup', (e) => {
                     this.keys[e.key.toLowerCase()] = false;
                 });
+            }
+
+            initThreeJS() {
+                const canvas = document.getElementById('gameCanvas');
                 
-                // Gamepad
-                window.addEventListener('gamepadconnected', (e) => {
-                    this.gamepads[e.gamepad.index] = e.gamepad;
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.Fog(0x1a1a2e, 10, 500);
+                
+                this.camera = new THREE.PerspectiveCamera(
+                    75,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    2000
+                );
+                this.cameraSystem = new CameraSystem(this.camera);
+                
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: true,
+                    alpha: true
                 });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 
-                window.addEventListener('gamepaddisconnected', (e) => {
-                    delete this.gamepads[e.gamepad.index];
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(100, 200, 100);
+                directionalLight.castShadow = true;
+                directionalLight.shadow.mapSize.width = 4096;
+                directionalLight.shadow.mapSize.height = 4096;
+                this.scene.add(directionalLight);
+                
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
                 });
             }
 
             async loadAssets() {
-                console.log('Loading game assets...');
+                console.log('Loading assets...');
                 
-                // Define model paths to try
                 const modelTypes = ['cart', 'player', 'crate', 'lamp', 'house'];
                 const pathsToTry = ['models/', 'assets/models/', './models/'];
                 
@@ -1512,7 +1374,6 @@
                     const type = modelTypes[i];
                     let loaded = false;
                     
-                    // Try different paths
                     for (const basePath of pathsToTry) {
                         try {
                             await this.modelManager.loadModel(type, `${basePath}${type}.glb`);
@@ -1523,7 +1384,11 @@
                         }
                     }
                     
-                    // Update loading progress
+                    if (!loaded) {
+                        console.log(`Using placeholder for ${type}`);
+                        this.modelManager.models[type] = this.modelManager.createPlaceholder(type);
+                    }
+                    
                     const progress = Math.floor((i + 1) / modelTypes.length * 90);
                     this.updateLoadingProgress(progress);
                     
@@ -1531,7 +1396,6 @@
                 }
                 
                 this.updateLoadingProgress(100);
-                console.log('✓ All assets loaded');
             }
 
             updateLoadingProgress(percent) {
@@ -1549,19 +1413,16 @@
             }
 
             showScreen(screenName) {
-                // Hide all screens
                 Object.values(this.uiElements).forEach(element => {
                     if (element && element.classList?.contains('screen')) {
                         element.classList.add('hidden');
                     }
                 });
                 
-                // Show requested screen
                 if (this.uiElements[screenName]) {
                     this.uiElements[screenName].classList.remove('hidden');
                 }
                 
-                // Update game state
                 switch(screenName) {
                     case 'startMenu': this.gameState = 'MENU'; break;
                     case 'multiplayerLobby': this.gameState = 'LOBBY'; break;
@@ -1577,19 +1438,15 @@
 
             startSoloGame() {
                 this.isMultiplayer = false;
-                this.seed = Date.now();
-                this.worldGenerator.setSeed(this.seed);
+                this.worldGenerator.setSeed(Date.now());
                 this.resetGame();
                 
-                // Create player
                 this.createPlayer(0, false);
                 
-                // Create bots
                 for (let i = 0; i < this.botCount; i++) {
                     this.createBot(i);
                 }
                 
-                // Generate initial world
                 this.generateInitialWorld();
                 this.startGame();
             }
@@ -1599,7 +1456,6 @@
                 this.uiElements.roomCode.textContent = this.roomCode;
                 this.uiElements.roomCodeSection.classList.remove('hidden');
                 
-                // For demo
                 this.createPlayer(0, true);
                 this.updatePlayerList();
             }
@@ -1640,28 +1496,24 @@
             }
 
             createPlayer(id, isMultiplayer) {
-                const cartModel = this.modelManager.getModel('cart');
-                const playerModel = this.modelManager.getModel('player');
+                let cartModel = this.modelManager.getModel('cart');
+                let playerModel = this.modelManager.getModel('player');
                 
                 if (!cartModel || !playerModel) {
-                    console.error('Models not found, using placeholders');
-                    cartModel = this.modelManager.createEnhancedPlaceholder('cart');
-                    playerModel = this.modelManager.createEnhancedPlaceholder('player');
+                    console.log('Using placeholder models');
+                    cartModel = this.modelManager.createPlaceholder('cart');
+                    playerModel = this.modelManager.createPlaceholder('player');
                 }
                 
                 const cart = cartModel.scene.clone();
                 const player = playerModel.scene.clone();
                 
-                // Position player in cart correctly
                 player.position.set(0, 0.2, 0);
-                player.scale.set(0.5, 0.5, 0.5);
                 cart.add(player);
                 
-                // Initial position
                 cart.position.set(id * 3 - 4.5, 0.3, 0);
                 cart.rotation.y = Math.PI;
                 
-                // Enable shadows
                 cart.traverse(child => {
                     if (child.isMesh) {
                         child.castShadow = true;
@@ -1671,7 +1523,6 @@
                 
                 this.scene.add(cart);
                 
-                // Player data
                 const playerData = {
                     id: id,
                     cart: cart,
@@ -1694,9 +1545,8 @@
                 this.carts.push(cart);
                 this.players.push(playerData);
                 
-                // Set camera target for first player
                 if (id === 0) {
-                    this.smoothCamera.setTarget(cart);
+                    this.cameraSystem.setTarget(cart);
                 }
                 
                 return playerData;
@@ -1712,14 +1562,12 @@
                 playerData.maxSpeed = 35 + Math.random() * 10;
                 playerData.steering = 0.04 + Math.random() * 0.02;
                 
-                // Color bot cart
                 playerData.cart.traverse(child => {
                     if (child.isMesh && child.material) {
                         child.material.color.setHex(playerData.color);
                     }
                 });
                 
-                // Initialize AI
                 this.botAI.initializeBot(playerData, id);
                 this.bots.push(playerData);
             }
@@ -1730,116 +1578,77 @@
                 this.input.brake = 0;
                 this.input.boost = false;
                 
-                // Keyboard
                 if (this.keys['w'] || this.keys['arrowup']) this.input.throttle = 1;
                 if (this.keys['s'] || this.keys['arrowdown']) this.input.brake = 1;
                 if (this.keys['a'] || this.keys['arrowleft']) this.input.steering = 1;
                 if (this.keys['d'] || this.keys['arrowright']) this.input.steering = -1;
                 if (this.keys[' ']) this.input.boost = true;
-                
-                // Gamepad
-                for (const index in this.gamepads) {
-                    const gamepad = navigator.getGamepads()[index];
-                    if (!gamepad) continue;
-                    
-                    if (Math.abs(gamepad.axes[0]) > 0.1) this.input.steering = -gamepad.axes[0];
-                    if (gamepad.buttons[0]?.pressed) this.input.boost = true;
-                    if (gamepad.buttons[9]?.pressed) this.togglePause();
-                }
             }
 
             updatePlayer(player, deltaTime) {
                 if (!player.cart) return;
                 
-                // Update boost cooldown
                 if (player.boostCooldown > 0) {
                     player.boostCooldown -= deltaTime;
                 }
                 
                 if (!player.isBot) {
-                    // Human player controls
                     const steering = this.input.steering;
                     const throttle = this.input.throttle;
                     const brake = this.input.brake;
                     const boost = this.input.boost;
                     
-                    // Boost
                     let boostMultiplier = 1;
                     if (boost && player.boostCooldown <= 0) {
                         boostMultiplier = 2.0;
                         player.boostCooldown = 3;
                     }
                     
-                    // Acceleration
                     if (throttle > 0 && player.speed < player.maxSpeed) {
                         player.speed += player.acceleration * throttle * deltaTime * 60 * boostMultiplier;
                     }
                     
-                    // Braking
                     if (brake > 0 && player.speed > -player.maxSpeed * 0.5) {
                         player.speed -= player.acceleration * player.braking * brake * deltaTime * 60;
                     }
                     
-                    // Friction
                     if (throttle === 0 && brake === 0) {
                         player.speed *= Math.pow(0.97, deltaTime * 60);
                     }
                     
-                    // Steering
                     const steeringEffect = Math.min(Math.abs(player.speed) / 10, 1);
                     if (Math.abs(player.speed) > 1) {
                         player.cart.rotation.y += steering * player.steering * steeringEffect * deltaTime * 60;
                     }
                     
-                    // Apply road curve
-                    const curveInfluence = Math.abs(player.speed) / player.maxSpeed;
-                    player.cart.position.x += this.worldGenerator.roadCurve * curveInfluence * deltaTime * 30;
-                    
-                    // Move cart
                     const direction = new THREE.Vector3(0, 0, 1);
                     direction.applyQuaternion(player.cart.quaternion);
                     player.cart.position.add(direction.multiplyScalar(player.speed * deltaTime));
                     
-                    // Bounce effect
                     const bounce = Math.sin(Date.now() * 0.01) * 0.05 * (player.speed / player.maxSpeed);
                     player.cart.position.y = 0.3 + bounce;
                     
-                    // Update distance
                     player.distance += Math.abs(player.speed) * deltaTime;
                     this.totalDistance = player.distance;
                     
-                    // Player animations
                     this.updatePlayerAnimation(player, deltaTime);
-                    
-                    // Update HUD
                     this.updateHUD(player);
                 } else {
-                    // Bot AI
                     const shouldDamage = this.botAI.update(player, this.players, deltaTime, this.totalDistance);
                     if (shouldDamage) {
                         this.handleBotCollision(this.players[0], player);
                     }
                     
-                    // Move bot
                     const direction = new THREE.Vector3(0, 0, 1);
                     direction.applyQuaternion(player.cart.quaternion);
                     player.cart.position.add(direction.multiplyScalar(player.speed * deltaTime));
-                    
-                    // Apply road curve
-                    const curveInfluence = Math.abs(player.speed) / player.maxSpeed;
-                    player.cart.position.x += this.worldGenerator.roadCurve * curveInfluence * deltaTime * 30;
                     
                     player.cart.position.y = 0.3;
                     player.distance += Math.abs(player.speed) * deltaTime;
                 }
                 
-                // Check collisions
                 this.checkCollisions(player);
-                
-                // Update world
                 this.updateWorld(player.cart.position.z);
-                
-                // Update cooldowns
                 this.botAI.updateCooldowns(deltaTime);
             }
 
@@ -1847,12 +1656,9 @@
                 if (!player.player) return;
                 
                 player.animationTime += deltaTime * 10;
-                
-                // Arm animation based on speed
                 const speedFactor = Math.abs(player.speed) / player.maxSpeed;
                 const armSwing = Math.sin(player.animationTime) * 0.2 * speedFactor;
                 
-                // Find arm meshes
                 player.player.traverse(child => {
                     if (child.userData?.leftArm) {
                         child.rotation.x = armSwing;
@@ -1862,37 +1668,29 @@
                     }
                 });
                 
-                // Head bobbing
                 const headBob = Math.sin(player.animationTime * 2) * 0.05 * speedFactor;
                 player.player.position.y = 0.2 + headBob;
             }
 
             updateHUD(player) {
-                // Speed
                 const speedKmh = Math.abs(player.speed * 3.6);
                 this.uiElements.speedValue.textContent = `${speedKmh.toFixed(0)} km/h`;
                 
-                // Speedometer
                 const maxSpeed = 150;
                 const angle = (speedKmh / maxSpeed) * Math.PI - Math.PI / 2;
                 this.uiElements.speedNeedle.style.transform = `translateX(-50%) rotate(${angle}rad)`;
                 
-                // Products
                 this.uiElements.productCount.textContent = `${player.products}/${this.maxProducts}`;
                 
-                // Profit
                 if (player.speed > 5) {
                     player.profit += (player.speed / 10) * (player.products / this.maxProducts) * 0.1;
                 }
                 this.uiElements.profitValue.textContent = `$${player.profit.toFixed(0)}`;
                 
-                // Distance
                 this.uiElements.distanceValue.textContent = `${this.totalDistance.toFixed(0)}m`;
                 
-                // Update product display
                 this.updateProductDamageDisplay(player);
                 
-                // End game if all products lost
                 if (player.products <= 0) {
                     this.endGame(player, false);
                 }
@@ -1920,13 +1718,9 @@
             }
 
             generateInitialWorld() {
-                // Clear existing
                 this.clearWorld();
-                
-                // Add ground
                 this.addGround();
                 
-                // Generate initial chunks
                 for (let i = 0; i < 3; i++) {
                     const chunk = this.worldGenerator.generateChunk(-i * this.worldGenerator.chunkSize);
                     this.addChunkToScene(chunk);
@@ -1944,7 +1738,6 @@
             }
 
             addChunkToScene(chunk) {
-                // Add road segments
                 chunk.road.forEach(road => {
                     const geometry = new THREE.PlaneGeometry(road.width, road.length);
                     const material = this.textureManager.getRoadMaterial();
@@ -1958,7 +1751,6 @@
                     this.roadSegments.push(roadMesh);
                 });
                 
-                // Add buildings
                 chunk.buildings.forEach(building => {
                     const model = this.modelManager.getModel('house');
                     if (model) {
@@ -1979,16 +1771,12 @@
                     }
                 });
                 
-                // Add obstacles (crates, lamps, etc.)
                 chunk.obstacles.forEach(obstacle => {
                     let model;
                     if (obstacle.type === 'crate') {
                         model = this.modelManager.getModel('crate');
                     } else if (obstacle.type === 'lamp') {
                         model = this.modelManager.getModel('lamp');
-                    } else {
-                        // Create generic obstacle
-                        model = this.modelManager.createEnhancedPlaceholder(obstacle.type);
                     }
                     
                     if (model) {
@@ -2011,10 +1799,8 @@
             }
 
             updateWorld(playerZ) {
-                // Generate new chunks as player moves
                 this.worldGenerator.update(playerZ);
                 
-                // Get new chunks if needed
                 if (this.worldGenerator.currentChunk > this.roadSegments.length / 10) {
                     const newChunk = this.worldGenerator.generateChunk(
                         -this.worldGenerator.currentChunk * this.worldGenerator.chunkSize
@@ -2022,14 +1808,12 @@
                     this.addChunkToScene(newChunk);
                 }
                 
-                // Clean up old objects far behind player
                 this.cleanupOldObjects(playerZ);
             }
 
             cleanupOldObjects(playerZ) {
                 const cleanupDistance = 200;
                 
-                // Clean obstacles
                 for (let i = this.obstacles.length - 1; i >= 0; i--) {
                     if (this.obstacles[i].position.z > playerZ + cleanupDistance) {
                         this.scene.remove(this.obstacles[i]);
@@ -2037,7 +1821,6 @@
                     }
                 }
                 
-                // Clean buildings
                 for (let i = this.buildings.length - 1; i >= 0; i--) {
                     if (this.buildings[i].position.z > playerZ + cleanupDistance) {
                         this.scene.remove(this.buildings[i]);
@@ -2045,7 +1828,6 @@
                     }
                 }
                 
-                // Clean road segments (keep more for visual continuity)
                 for (let i = this.roadSegments.length - 1; i >= 0; i--) {
                     if (this.roadSegments[i].position.z > playerZ + cleanupDistance * 2) {
                         this.scene.remove(this.roadSegments[i]);
@@ -2057,7 +1839,6 @@
             checkCollisions(player) {
                 if (!player.cart) return;
                 
-                // Check obstacle collisions
                 for (let i = this.obstacles.length - 1; i >= 0; i--) {
                     const obstacle = this.obstacles[i];
                     if (!obstacle.userData) continue;
@@ -2071,13 +1852,11 @@
                     }
                 }
                 
-                // Check road boundaries
                 const roadHalfWidth = 6;
                 if (Math.abs(player.cart.position.x) > roadHalfWidth + 3) {
-                    // Off road - chance to lose product
                     if (Math.random() > 0.95) {
                         player.products = Math.max(0, player.products - 1);
-                        this.smoothCamera.shake(0.3);
+                        this.cameraSystem.shake(0.3);
                         this.updateProductDamageDisplay(player);
                     }
                 }
@@ -2087,10 +1866,8 @@
                 const damage = obstacle.userData.damage || 10;
                 player.health -= damage;
                 
-                // Camera shake
-                this.smoothCamera.shake(0.5);
+                this.cameraSystem.shake(0.5);
                 
-                // Bounce effect
                 const bounceDirection = new THREE.Vector3()
                     .subVectors(player.cart.position, obstacle.position)
                     .normalize();
@@ -2098,7 +1875,6 @@
                 player.cart.position.add(bounceDirection.multiplyScalar(1.5));
                 player.speed *= -0.3;
                 
-                // Visual feedback
                 player.cart.traverse(child => {
                     if (child.isMesh && child.material) {
                         const originalColor = child.material.color.clone();
@@ -2118,13 +1894,10 @@
             }
 
             handleBotCollision(player, bot) {
-                // Reduce product by 1
                 player.products = Math.max(0, player.products - 1);
                 
-                // Camera shake
-                this.smoothCamera.shake(0.3);
+                this.cameraSystem.shake(0.3);
                 
-                // Push player
                 const pushDirection = new THREE.Vector3()
                     .subVectors(player.cart.position, bot.cart.position)
                     .normalize();
@@ -2133,21 +1906,17 @@
                 player.speed *= 0.7;
                 bot.speed *= 0.5;
                 
-                // Record damage for cooldown
                 this.botAI.recordDamage(bot, player.id);
-                
                 this.updateProductDamageDisplay(player);
             }
 
             clearWorld() {
-                // Remove all objects from scene
                 [...this.obstacles, ...this.buildings, ...this.roadSegments].forEach(obj => {
                     if (obj && obj.parent) {
                         this.scene.remove(obj);
                     }
                 });
                 
-                // Clear arrays
                 this.obstacles = [];
                 this.buildings = [];
                 this.roadSegments = [];
@@ -2178,7 +1947,6 @@
             }
 
             resetGame() {
-                // Remove players and bots
                 [...this.players, ...this.bots].forEach(player => {
                     if (player.cart && player.cart.parent) {
                         this.scene.remove(player.cart);
@@ -2189,15 +1957,9 @@
                 this.bots = [];
                 this.carts = [];
                 
-                // Clear world
                 this.clearWorld();
-                
-                // Reset AI
-                this.botAI = new IntelligentBotAI();
-                
-                // New seed for procedural generation
-                this.seed = Date.now();
-                this.worldGenerator.setSeed(this.seed);
+                this.botAI = new BotAI();
+                this.worldGenerator.setSeed(Date.now());
             }
 
             restartGame() {
@@ -2225,21 +1987,17 @@
                 if (this.gameState === 'PLAYING') {
                     this.gameTime += deltaTime;
                     
-                    // Update players
                     this.players.forEach(player => {
                         this.updatePlayer(player, fixedDelta);
                     });
                     
-                    // Update bots
                     this.bots.forEach(bot => {
                         this.updatePlayer(bot, fixedDelta);
                     });
                     
-                    // Update camera
-                    this.smoothCamera.update(fixedDelta);
+                    this.cameraSystem.update(fixedDelta);
                 }
                 
-                // Render
                 this.renderer.render(this.scene, this.camera);
                 requestAnimationFrame((time) => this.gameLoop(time));
             }
