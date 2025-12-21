@@ -9,6 +9,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- GLTFLoader CDN -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
+    <!-- Extra Three.js components -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/CapsuleGeometry.js"></script>
     
     <style>
         * {
@@ -107,6 +109,79 @@
             background: linear-gradient(45deg, #ff4757, #ff3838);
         }
 
+        /* Multiplayer Controls */
+        .multiplayer-controls {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #70a1ff;
+        }
+
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            margin-bottom: 8px;
+            color: #70a1ff;
+            font-weight: bold;
+        }
+
+        input, select {
+            padding: 10px 15px;
+            font-size: 1.1em;
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            width: 100%;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2ed573;
+        }
+
+        .room-code {
+            font-size: 2em;
+            letter-spacing: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #2ed573;
+            font-family: monospace;
+        }
+
+        .player-list {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .player-item {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-ready {
+            color: #2ed573;
+            font-weight: bold;
+        }
+
+        .player-not-ready {
+            color: #ff4757;
+        }
+
         /* HUD */
         #hud {
             position: absolute;
@@ -188,98 +263,6 @@
             margin-top: 20px;
             color: #70a1ff;
         }
-
-        /* Multiplayer Menu */
-        .input-group {
-            margin: 20px 0;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #70a1ff;
-            font-weight: bold;
-        }
-
-        .input-group input,
-        .input-group select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ff6b6b;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1em;
-        }
-
-        .input-group input:focus,
-        .input-group select:focus {
-            outline: none;
-            border-color: #ff4757;
-        }
-
-        .room-code {
-            font-size: 2em;
-            letter-spacing: 10px;
-            color: #2ed573;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            text-align: center;
-        }
-
-        .player-list {
-            margin: 20px 0;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .player-item {
-            padding: 10px;
-            margin: 5px 0;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .player-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-        }
-
-        /* Controller Indicators */
-        .controller-indicators {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .controller-indicator {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 10px;
-            border: 2px solid #ff6b6b;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-        }
-
-        .controller-icon {
-            width: 24px;
-            height: 24px;
-            background: #ff6b6b;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
     </style>
 </head>
 <body>
@@ -303,6 +286,16 @@
                     <button id="playSolo">Play Solo</button>
                     <button id="playMultiplayer">Multiplayer</button>
                 </div>
+                <div class="input-group">
+                    <label for="botCount">Number of Bots (0-4):</label>
+                    <select id="botCount">
+                        <option value="0">0 Bots</option>
+                        <option value="1">1 Bot</option>
+                        <option value="2" selected>2 Bots</option>
+                        <option value="3">3 Bots</option>
+                        <option value="4">4 Bots</option>
+                    </select>
+                </div>
                 <div class="hud-item">
                     <span class="hud-label">High Score:</span>
                     <span class="hud-value" id="highScore">0m</span>
@@ -316,73 +309,31 @@
                 <h1>Multiplayer</h1>
                 <div class="button-group">
                     <button id="createRoom">Create Room</button>
-                    <button id="joinRoom">Join Room</button>
-                    <button id="backToMain">Back</button>
+                    <button id="joinRoom">Join Available Room</button>
                 </div>
+                <div class="input-group" id="roomCodeGroup">
+                    <label for="roomCode">Room Code (Backup):</label>
+                    <input type="text" id="roomCode" maxlength="6" placeholder="Enter 6-digit code">
+                    <button id="connectRoom" style="margin-top: 15px;">Connect with Code</button>
+                </div>
+                <button id="backToMain" style="margin-top: 30px;">Back to Main</button>
             </div>
         </div>
 
-        <!-- Create Room -->
-        <div id="createRoomMenu" class="screen hidden">
-            <div class="menu-container">
-                <h1>Create Room</h1>
-                <div class="input-group">
-                    <label>Max Players (1-8):</label>
-                    <select id="maxPlayers">
-                        <option value="1">1 Player</option>
-                        <option value="2">2 Players</option>
-                        <option value="3">3 Players</option>
-                        <option value="4">4 Players</option>
-                        <option value="5">5 Players</option>
-                        <option value="6">6 Players</option>
-                        <option value="7">7 Players</option>
-                        <option value="8">8 Players</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label>Bots (0-4):</label>
-                    <select id="botCountSelect">
-                        <option value="0">0 Bots</option>
-                        <option value="1">1 Bot</option>
-                        <option value="2">2 Bots</option>
-                        <option value="3">3 Bots</option>
-                        <option value="4">4 Bots</option>
-                    </select>
-                </div>
-                <div class="button-group">
-                    <button id="createGame">Create Game</button>
-                    <button id="backToMultiplayer">Back</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Join Room -->
-        <div id="joinRoomMenu" class="screen hidden">
-            <div class="menu-container">
-                <h1>Join Room</h1>
-                <div class="input-group">
-                    <label>Room Code:</label>
-                    <input type="text" id="roomCodeInput" maxlength="6" placeholder="Enter 6-digit code">
-                </div>
-                <div class="button-group">
-                    <button id="joinGame">Join Game</button>
-                    <button id="backToMultiplayer2">Back</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Lobby -->
+        <!-- Lobby Screen -->
         <div id="lobbyScreen" class="screen hidden">
             <div class="menu-container">
-                <h1>Room Lobby</h1>
-                <div class="room-code" id="roomCodeDisplay">000000</div>
+                <h1>Lobby</h1>
+                <div class="room-code" id="lobbyRoomCode">XXXXXX</div>
                 <div class="player-list" id="playerList">
                     <!-- Players will be added here -->
                 </div>
                 <div class="button-group">
-                    <button id="startGame" style="background: #2ed573;">Start Game</button>
+                    <button id="readyButton">Ready</button>
+                    <button id="startGame" class="hidden">Start Game</button>
                     <button id="leaveLobby">Leave Lobby</button>
                 </div>
+                <div class="loading-text" id="lobbyStatus">Waiting for players...</div>
             </div>
         </div>
 
@@ -404,15 +355,11 @@
                 <span class="hud-label">Players:</span>
                 <span class="hud-value" id="playerCount">1/8</span>
             </div>
-            <div class="products-grid" id="productsGrid"></div>
-        </div>
-
-        <!-- Controller Indicators -->
-        <div id="controllerIndicators" class="controller-indicators hidden">
-            <div class="controller-indicator">
-                <div class="controller-icon">🎮</div>
-                <span>Controller 1</span>
+            <div class="hud-item">
+                <span class="hud-label">Bots:</span>
+                <span class="hud-value" id="botCount">0</span>
             </div>
+            <div class="products-grid" id="productsGrid"></div>
         </div>
 
         <!-- End Screen -->
@@ -421,7 +368,7 @@
                 <h1 id="endTitle">Game Over</h1>
                 <div style="font-size: 1.5em; margin: 20px 0;">
                     <div>Distance: <span id="finalDistance" style="color: #70a1ff;">0m</span></div>
-                    <div>Products Remaining: <span id="deliveredCount" style="color: #2ed573;">0/15</span></div>
+                    <div>Products Delivered: <span id="deliveredCount" style="color: #2ed573;">0/15</span></div>
                     <div>Time Survived: <span id="survivalTime" style="color: #ffdd59;">0s</span></div>
                 </div>
                 <div class="button-group">
@@ -433,15 +380,275 @@
     </div>
 
     <script>
-        // ==================== SIMPLE TEXTURE ATLAS ====================
-        class SimpleTextureAtlas {
+        // ==================== SIMPLE MULTIPLAYER MANAGER ====================
+        class SimpleMultiplayerManager {
             constructor() {
-                this.textures = new Map();
-                this.generateBuildingTextures();
+                this.peer = null;
+                this.connections = new Map();
+                this.isHost = false;
+                this.roomCode = '';
+                this.playerId = 'player_' + Math.random().toString(36).substr(2, 9);
+                this.playerName = `Player${Math.floor(Math.random() * 1000)}`;
+                this.players = new Map();
+                this.readyPlayers = new Set();
+                this.dataChannel = null;
+                this.availableRooms = new Set();
+                this.discoveryInterval = null;
+                
+                // For local network discovery
+                this.broadcastChannel = new BroadcastChannel('cart-riders-multiplayer');
             }
             
-            generateBuildingTextures() {
-                // Create simple colored textures for buildings
+            async initialize() {
+                try {
+                    // Setup broadcast channel for room discovery
+                    this.broadcastChannel.onmessage = (event) => {
+                        this.handleBroadcastMessage(event.data);
+                    };
+                    
+                    // Start room discovery
+                    this.startRoomDiscovery();
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Failed to initialize multiplayer:', error);
+                    return false;
+                }
+            }
+            
+            startRoomDiscovery() {
+                // Broadcast availability every 3 seconds
+                this.discoveryInterval = setInterval(() => {
+                    this.broadcastChannel.postMessage({
+                        type: 'discovery',
+                        playerId: this.playerId,
+                        isHost: this.isHost,
+                        roomCode: this.roomCode
+                    });
+                }, 3000);
+            }
+            
+            handleBroadcastMessage(data) {
+                switch(data.type) {
+                    case 'discovery':
+                        if (data.isHost && data.playerId !== this.playerId) {
+                            this.availableRooms.add(data.roomCode);
+                            if (window.updateAvailableRooms) {
+                                window.updateAvailableRooms(Array.from(this.availableRooms));
+                            }
+                        }
+                        break;
+                        
+                    case 'room-created':
+                        if (data.roomCode && data.playerId !== this.playerId) {
+                            this.availableRooms.add(data.roomCode);
+                        }
+                        break;
+                        
+                    case 'player-join':
+                        if (this.isHost && data.playerId !== this.playerId) {
+                            this.players.set(data.playerId, {
+                                id: data.playerId,
+                                name: data.playerName,
+                                ready: false
+                            });
+                            this.updateLobbyUI();
+                            // Broadcast updated player list
+                            this.broadcastChannel.postMessage({
+                                type: 'player-list',
+                                players: Array.from(this.players.values()),
+                                roomCode: this.roomCode
+                            });
+                        }
+                        break;
+                        
+                    case 'player-ready':
+                        if (this.players.has(data.playerId)) {
+                            if (data.ready) {
+                                this.readyPlayers.add(data.playerId);
+                            } else {
+                                this.readyPlayers.delete(data.playerId);
+                            }
+                            this.updateLobbyUI();
+                        }
+                        break;
+                        
+                    case 'player-list':
+                        if (!this.isHost && data.roomCode === this.roomCode) {
+                            // Update player list as a client
+                            this.players.clear();
+                            data.players.forEach(player => {
+                                this.players.set(player.id, player);
+                            });
+                            this.updateLobbyUI();
+                        }
+                        break;
+                        
+                    case 'game-start':
+                        if (data.roomCode === this.roomCode && window.onGameStart) {
+                            window.onGameStart(data);
+                        }
+                        break;
+                }
+            }
+            
+            async createRoom() {
+                this.isHost = true;
+                this.roomCode = Math.random().toString(36).substr(2, 6).toUpperCase();
+                
+                // Add self to players
+                this.players.set(this.playerId, {
+                    id: this.playerId,
+                    name: this.playerName,
+                    ready: false,
+                    isHost: true
+                });
+                
+                // Broadcast room creation
+                this.broadcastChannel.postMessage({
+                    type: 'room-created',
+                    roomCode: this.roomCode,
+                    playerId: this.playerId
+                });
+                
+                return this.roomCode;
+            }
+            
+            async joinRoom(roomCode = null) {
+                if (!roomCode && this.availableRooms.size > 0) {
+                    // Join first available room
+                    roomCode = Array.from(this.availableRooms)[0];
+                }
+                
+                if (!roomCode) {
+                    throw new Error('No rooms available');
+                }
+                
+                this.roomCode = roomCode;
+                this.isHost = false;
+                
+                // Broadcast join request
+                this.broadcastChannel.postMessage({
+                    type: 'player-join',
+                    playerId: this.playerId,
+                    playerName: this.playerName,
+                    roomCode: this.roomCode
+                });
+                
+                return true;
+            }
+            
+            setReady(ready) {
+                this.readyPlayers.add(this.playerId);
+                this.broadcastChannel.postMessage({
+                    type: 'player-ready',
+                    playerId: this.playerId,
+                    ready: ready,
+                    roomCode: this.roomCode
+                });
+            }
+            
+            canStartGame() {
+                if (!this.isHost) return false;
+                
+                // All players must be ready
+                const allPlayers = Array.from(this.players.values());
+                const allReady = allPlayers.every(player => this.readyPlayers.has(player.id));
+                
+                return allReady && allPlayers.length > 0;
+            }
+            
+            startGame(gameState) {
+                if (!this.isHost) return;
+                
+                this.broadcastChannel.postMessage({
+                    type: 'game-start',
+                    roomCode: this.roomCode,
+                    gameState: gameState
+                });
+            }
+            
+            updateLobbyUI() {
+                if (window.updateLobbyUI) {
+                    window.updateLobbyUI(
+                        Array.from(this.players.values()),
+                        this.readyPlayers,
+                        this.isHost
+                    );
+                }
+            }
+            
+            disconnect() {
+                if (this.discoveryInterval) {
+                    clearInterval(this.discoveryInterval);
+                }
+                this.broadcastChannel.close();
+                this.players.clear();
+                this.readyPlayers.clear();
+                this.availableRooms.clear();
+            }
+        }
+
+        // ==================== OPTIMIZED ASSET POOL ====================
+        class AssetPool {
+            constructor() {
+                this.pools = new Map();
+                this.active = new Set();
+            }
+            
+            createPool(type, createFn, size = 50) {
+                const pool = [];
+                for (let i = 0; i < size; i++) {
+                    pool.push(createFn());
+                }
+                this.pools.set(type, { pool, createFn });
+                return pool;
+            }
+            
+            get(type) {
+                const poolData = this.pools.get(type);
+                if (!poolData) return null;
+                
+                const obj = poolData.pool.pop() || poolData.createFn();
+                this.active.add(obj);
+                return obj;
+            }
+            
+            release(obj) {
+                if (!obj || !this.active.has(obj)) return;
+                
+                this.active.delete(obj);
+                const type = obj.userData?.type;
+                if (type && this.pools.has(type)) {
+                    this.pools.get(type).pool.push(obj);
+                }
+            }
+            
+            releaseAll() {
+                for (const obj of this.active) {
+                    const type = obj.userData?.type;
+                    if (type && this.pools.has(type)) {
+                        this.pools.get(type).pool.push(obj);
+                    }
+                }
+                this.active.clear();
+            }
+        }
+
+        // ==================== SIMPLIFIED TEXTURE ATLAS ====================
+        class TextureAtlas {
+            constructor() {
+                this.atlasCanvas = document.createElement('canvas');
+                this.atlasCanvas.width = 1024;
+                this.atlasCanvas.height = 1024;
+                this.ctx = this.atlasCanvas.getContext('2d');
+                this.textures = new Map();
+                
+                // Generate simple building textures
+                this.generateSimpleTextures();
+            }
+            
+            generateSimpleTextures() {
                 const buildingTypes = [
                     { name: 'brick', color: '#b7410e' },
                     { name: 'concrete', color: '#9e9e9e' },
@@ -452,26 +659,31 @@
                     { name: 'factory', color: '#696969' }
                 ];
                 
+                const size = 128;
+                let x = 0, y = 0;
+                
                 buildingTypes.forEach(type => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 256;
-                    canvas.height = 256;
-                    const ctx = canvas.getContext('2d');
-                    
-                    // Fill with base color
-                    ctx.fillStyle = type.color;
-                    ctx.fillRect(0, 0, 256, 256);
-                    
-                    // Add simple pattern
-                    ctx.fillStyle = this.adjustColor(type.color, -30);
-                    for (let y = 0; y < 256; y += 32) {
-                        for (let x = 0; x < 256; x += 32) {
-                            ctx.fillRect(x + 2, y + 2, 28, 28);
-                        }
+                    if (x + size > this.atlasCanvas.width) {
+                        x = 0;
+                        y += size;
                     }
                     
-                    const texture = new THREE.CanvasTexture(canvas);
-                    this.textures.set(type.name, texture);
+                    // Create simple texture
+                    this.ctx.fillStyle = type.color;
+                    this.ctx.fillRect(x, y, size, size);
+                    
+                    // Add some pattern
+                    this.ctx.fillStyle = this.adjustColor(type.color, -30);
+                    this.ctx.fillRect(x + 2, y + 2, size - 4, size - 4);
+                    
+                    this.textures.set(type.name, {
+                        x: x / this.atlasCanvas.width,
+                        y: y / this.atlasCanvas.height,
+                        width: size / this.atlasCanvas.width,
+                        height: size / this.atlasCanvas.height
+                    });
+                    
+                    x += size;
                 });
             }
             
@@ -487,27 +699,44 @@
                 return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
             }
             
-            getTexture(name) {
-                return this.textures.get(name);
+            getAtlasTexture() {
+                const texture = new THREE.CanvasTexture(this.atlasCanvas);
+                texture.needsUpdate = true;
+                return texture;
+            }
+            
+            getTextureUV(name) {
+                return this.textures.get(name) || this.textures.get('brick');
             }
         }
 
         // ==================== SIMPLE BUILDING MANAGER ====================
         class SimpleBuildingManager {
-            constructor() {
-                this.buildingTypes = ['brick', 'concrete', 'glass', 'office', 'apartment', 'shop', 'factory'];
+            constructor(textureAtlas) {
+                this.textureAtlas = textureAtlas;
+                this.buildingTemplates = [];
+                this.createTemplates();
             }
             
-            createBuilding() {
-                const type = this.buildingTypes[Math.floor(Math.random() * this.buildingTypes.length)];
-                const width = 8 + Math.random() * 6;
-                const height = 12 + Math.random() * 20;
-                const depth = 8 + Math.random() * 6;
+            createTemplates() {
+                // Create 5 different building templates
+                for (let i = 0; i < 5; i++) {
+                    this.buildingTemplates.push(this.createBuildingTemplate(i));
+                }
+            }
+            
+            createBuildingTemplate(index) {
+                const group = new THREE.Group();
                 
+                // Random building dimensions
+                const width = 6 + Math.random() * 4;
+                const height = 8 + Math.random() * 10;
+                const depth = 6 + Math.random() * 4;
+                
+                // Main building
                 const geometry = new THREE.BoxGeometry(width, height, depth);
-                const color = this.getColorForType(type);
-                const material = new THREE.MeshStandardMaterial({ 
-                    color: color,
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0x777777,
                     roughness: 0.8,
                     metalness: 0.2
                 });
@@ -516,36 +745,53 @@
                 building.position.y = height / 2;
                 building.castShadow = true;
                 building.receiveShadow = true;
+                group.add(building);
                 
-                // Add simple roof
-                const roofGeometry = new THREE.BoxGeometry(width + 1, 1, depth + 1);
-                const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                // Simple roof
+                const roofGeometry = new THREE.BoxGeometry(width + 0.5, 0.5, depth + 0.5);
+                const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x444444 });
                 const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-                roof.position.y = height + 0.5;
+                roof.position.y = height + 0.25;
                 roof.castShadow = true;
-                building.add(roof);
+                group.add(roof);
                 
-                building.userData = { 
-                    type: 'building', 
-                    width: width, 
-                    height: height, 
-                    depth: depth 
-                };
+                // Add simple windows
+                this.addSimpleWindows(group, width, height, depth);
                 
-                return building;
+                group.userData = { type: 'building', width, height, depth };
+                return group;
             }
             
-            getColorForType(type) {
-                const colors = {
-                    'brick': 0xb7410e,
-                    'concrete': 0x9e9e9e,
-                    'glass': 0x87ceeb,
-                    'office': 0xa9a9a9,
-                    'apartment': 0x8b7355,
-                    'shop': 0xff6b6b,
-                    'factory': 0x696969
-                };
-                return colors[type] || 0x808080;
+            addSimpleWindows(group, width, height, depth) {
+                const windowGeometry = new THREE.PlaneGeometry(0.8, 1.2);
+                const windowMaterial = new THREE.MeshBasicMaterial({
+                    color: 0x1e90ff,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                
+                const windowsPerSide = Math.floor(width / 2);
+                for (let i = 0; i < windowsPerSide; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        const window = new THREE.Mesh(windowGeometry, windowMaterial);
+                        const xPos = (i - (windowsPerSide - 1) / 2) * 2;
+                        const yPos = (j - 0.5) * 4 + height * 0.3;
+                        
+                        // Front
+                        window.position.set(xPos, yPos, depth / 2 + 0.05);
+                        group.add(window);
+                        
+                        // Back
+                        const backWindow = window.clone();
+                        backWindow.position.set(xPos, yPos, -depth / 2 - 0.05);
+                        group.add(backWindow);
+                    }
+                }
+            }
+            
+            getRandomBuilding() {
+                const index = Math.floor(Math.random() * this.buildingTemplates.length);
+                return this.buildingTemplates[index].clone();
             }
         }
 
@@ -553,41 +799,45 @@
         class SimpleRoadGenerator {
             constructor() {
                 this.segments = [];
-                this.currentZ = 0;
-                this.roadWidth = 24;
+                this.roadWidth = 20;
                 this.segmentLength = 50;
-                this.curve = 0;
-                this.nextCurveChange = 100;
+                this.lastZ = 0;
+                this.roadHeight = 0;
                 
-                this.generateInitialSegments(20);
+                this.generateInitialSegments(30);
             }
             
-            generateInitialSegments(count) {
+            generateInitialSegments(count = 30) {
                 for (let i = 0; i < count; i++) {
                     this.generateSegment();
                 }
             }
             
             generateSegment() {
-                // Add slight curves occasionally
-                if (Math.random() < 0.3 && Math.abs(this.curve) < 0.1) {
-                    this.curve += (Math.random() - 0.5) * 0.05;
+                // Simple straight road with occasional hills
+                if (Math.random() > 0.8) {
+                    this.roadHeight = Math.sin(this.lastZ * 0.02) * 2;
                 }
                 
-                // Straighten out curves over time
-                this.curve *= 0.98;
-                
                 const segment = {
-                    position: new THREE.Vector3(0, 0, this.currentZ),
-                    rotation: this.curve,
+                    position: new THREE.Vector3(0, this.roadHeight, this.lastZ),
+                    rotation: 0,
                     width: this.roadWidth,
                     length: this.segmentLength
                 };
                 
                 this.segments.push(segment);
-                this.currentZ -= this.segmentLength;
+                this.lastZ -= this.segmentLength;
                 
                 return segment;
+            }
+            
+            getSegmentAtZ(z) {
+                const segmentIndex = Math.floor(-z / this.segmentLength);
+                if (segmentIndex >= 0 && segmentIndex < this.segments.length) {
+                    return this.segments[segmentIndex];
+                }
+                return null;
             }
             
             update(playerZ) {
@@ -602,311 +852,182 @@
                     this.segments.shift();
                 }
             }
-            
-            getSegmentAtZ(z) {
-                const segmentIndex = Math.floor(-z / this.segmentLength);
-                if (segmentIndex >= 0 && segmentIndex < this.segments.length) {
-                    return this.segments[segmentIndex];
-                }
-                return null;
-            }
         }
 
-        // ==================== SIMPLE CAMERA ====================
+        // ==================== SIMPLE CAMERA SYSTEM ====================
         class SimpleCamera {
             constructor(camera) {
                 this.camera = camera;
                 this.target = null;
-                this.offset = new THREE.Vector3(0, 3, -10);
+                this.offset = new THREE.Vector3(0, 4, 8); // Behind and above player
+                this.smoothness = 0.1;
+                this.currentPosition = new THREE.Vector3();
+                this.shakeIntensity = 0;
+                this.shakeDecay = 0.9;
             }
             
             setTarget(target) {
                 this.target = target;
+                if (target) {
+                    this.currentPosition.copy(target.position).add(this.offset);
+                    this.camera.position.copy(this.currentPosition);
+                    this.camera.lookAt(target.position);
+                }
             }
             
-            update() {
+            update(deltaTime) {
                 if (!this.target) return;
                 
-                // Simple follow camera
+                // Calculate desired position
                 const desiredPosition = this.target.position.clone().add(this.offset);
-                this.camera.position.lerp(desiredPosition, 0.1);
+                
+                // Smooth interpolation
+                this.currentPosition.lerp(desiredPosition, this.smoothness);
+                
+                // Apply camera shake
+                if (this.shakeIntensity > 0) {
+                    this.currentPosition.x += (Math.random() - 0.5) * this.shakeIntensity;
+                    this.currentPosition.y += (Math.random() - 0.5) * this.shakeIntensity;
+                    this.shakeIntensity *= this.shakeDecay;
+                }
+                
+                this.camera.position.copy(this.currentPosition);
                 this.camera.lookAt(this.target.position);
             }
             
             shake(intensity = 0.3) {
-                // Simple shake effect
-                this.camera.position.x += (Math.random() - 0.5) * intensity;
-                this.camera.position.y += (Math.random() - 0.5) * intensity;
+                this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
             }
         }
 
-        // ==================== SIMPLE BOT AI ====================
-        class SimpleBotAI {
-            constructor(maxBots = 4) {
+        // ==================== SIMPLE BOT SYSTEM ====================
+        class SimpleBotSystem {
+            constructor() {
                 this.bots = [];
-                this.maxBots = maxBots;
+                this.maxBots = 4;
+                this.lastSpawnTime = 0;
                 this.botMeshes = [];
             }
             
-            update(player, deltaTime) {
-                // Spawn bots if needed
-                if (this.bots.length < this.maxBots && Math.random() < 0.01) {
-                    this.spawnBot(player);
-                }
+            update(gameTime, player) {
+                if (!player) return this.bots.length;
                 
                 // Update existing bots
                 for (let i = this.bots.length - 1; i >= 0; i--) {
                     const bot = this.bots[i];
-                    
-                    // Simple chasing behavior
-                    const targetX = player.group.position.x;
-                    const currentX = bot.position.x;
-                    
-                    // Move toward player
-                    if (Math.abs(targetX - currentX) > 0.5) {
-                        bot.position.x += Math.sign(targetX - currentX) * 0.05;
-                    }
-                    
-                    // Move forward
-                    bot.position.z += 20 * deltaTime;
-                    
-                    // Update mesh position
-                    if (bot.mesh) {
-                        bot.mesh.position.copy(bot.position);
-                        bot.mesh.position.y = 0.5;
-                    }
-                    
-                    // Remove if too far behind
-                    if (bot.position.z > player.group.position.z + 100) {
-                        if (bot.mesh) {
-                            bot.mesh.parent.remove(bot.mesh);
-                        }
+                    if (!bot.active) {
                         this.bots.splice(i, 1);
+                        continue;
                     }
+                    this.updateBot(bot, player, gameTime);
                 }
+                
+                // Spawn new bots
+                if (this.shouldSpawnBot(gameTime)) {
+                    this.spawnBot(player);
+                    this.lastSpawnTime = gameTime;
+                }
+                
+                return this.bots.length;
+            }
+            
+            shouldSpawnBot(gameTime) {
+                if (this.bots.length >= this.maxBots) return false;
+                if (gameTime - this.lastSpawnTime < 5000) return false;
+                return Math.random() > 0.95;
             }
             
             spawnBot(player) {
                 const bot = {
+                    id: this.bots.length,
+                    active: true,
                     position: new THREE.Vector3(
-                        (Math.random() - 0.5) * 20,
+                        (Math.random() - 0.5) * 12,
                         0.5,
                         player.group.position.z - 50 - Math.random() * 50
                     ),
                     speed: 15 + Math.random() * 10,
-                    mesh: null
+                    lane: Math.floor(Math.random() * 3) - 1,
+                    color: new THREE.Color().setHSL(Math.random(), 0.8, 0.5)
                 };
                 
-                // Create bot mesh
+                this.bots.push(bot);
+                
+                // Create visual representation
                 const geometry = new THREE.BoxGeometry(1.5, 0.7, 2.5);
                 const material = new THREE.MeshStandardMaterial({
-                    color: 0xff0000,
+                    color: bot.color,
                     metalness: 0.6,
                     roughness: 0.4
                 });
                 
-                bot.mesh = new THREE.Mesh(geometry, material);
-                bot.mesh.position.copy(bot.position);
-                bot.mesh.castShadow = true;
-                bot.mesh.receiveShadow = true;
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.copy(bot.position);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                mesh.userData = { type: 'bot', botId: bot.id };
                 
-                this.bots.push(bot);
+                this.botMeshes.push(mesh);
                 return bot;
             }
             
+            updateBot(bot, player, gameTime) {
+                // Simple movement
+                const targetX = bot.lane * 6;
+                const dx = targetX - bot.position.x;
+                if (Math.abs(dx) > 0.1) {
+                    bot.position.x += Math.sign(dx) * 0.1;
+                }
+                
+                // Move forward
+                bot.position.z += bot.speed * 0.016;
+                
+                // Update mesh position
+                const mesh = this.botMeshes.find(m => m.userData.botId === bot.id);
+                if (mesh) {
+                    mesh.position.copy(bot.position);
+                    mesh.position.y = 0.5 + Math.sin(gameTime * 0.01) * 0.05;
+                }
+                
+                // Remove if too far behind
+                if (bot.position.z > player.group.position.z + 100) {
+                    bot.active = false;
+                    const meshIndex = this.botMeshes.findIndex(m => m.userData.botId === bot.id);
+                    if (meshIndex > -1) {
+                        this.botMeshes.splice(meshIndex, 1);
+                    }
+                }
+                
+                // Check collision with player
+                if (player && bot.position.distanceTo(player.group.position) < 2.5) {
+                    return true;
+                }
+                
+                return false;
+            }
+            
             getBotMeshes() {
-                return this.bots.map(bot => bot.mesh);
+                return this.botMeshes;
             }
             
-            clear() {
-                this.bots.forEach(bot => {
-                    if (bot.mesh && bot.mesh.parent) {
-                        bot.mesh.parent.remove(bot.mesh);
-                    }
-                });
+            reset() {
                 this.bots = [];
+                this.botMeshes = [];
+                this.lastSpawnTime = 0;
             }
         }
 
-        // ==================== INPUT MANAGER ====================
-        class InputManager {
-            constructor() {
-                this.keys = {};
-                this.controllers = [];
-                this.connectedControllers = 0;
-                
-                this.setupEventListeners();
-            }
-            
-            setupEventListeners() {
-                // Keyboard
-                window.addEventListener('keydown', (e) => {
-                    this.keys[e.key.toLowerCase()] = true;
-                });
-                
-                window.addEventListener('keyup', (e) => {
-                    this.keys[e.key.toLowerCase()] = false;
-                });
-                
-                // Gamepad
-                window.addEventListener('gamepadconnected', (e) => {
-                    console.log('Gamepad connected:', e.gamepad.id);
-                    this.controllers[e.gamepad.index] = e.gamepad;
-                    this.connectedControllers++;
-                    this.updateControllerIndicators();
-                });
-                
-                window.addEventListener('gamepaddisconnected', (e) => {
-                    console.log('Gamepad disconnected:', e.gamepad.id);
-                    this.controllers[e.gamepad.index] = null;
-                    this.connectedControllers--;
-                    this.updateControllerIndicators();
-                });
-            }
-            
-            updateControllerIndicators() {
-                const indicators = document.getElementById('controllerIndicators');
-                if (!indicators) return;
-                
-                if (this.connectedControllers > 0) {
-                    indicators.classList.remove('hidden');
-                    indicators.innerHTML = '';
-                    
-                    for (let i = 0; i < this.connectedControllers; i++) {
-                        const indicator = document.createElement('div');
-                        indicator.className = 'controller-indicator';
-                        indicator.innerHTML = `
-                            <div class="controller-icon">🎮</div>
-                            <span>Controller ${i + 1}</span>
-                        `;
-                        indicators.appendChild(indicator);
-                    }
-                } else {
-                    indicators.classList.add('hidden');
-                }
-            }
-            
-            getPlayerInput(playerIndex = 0) {
-                const input = {
-                    throttle: 0,
-                    brake: 0,
-                    steering: 0,
-                    boost: false
-                };
-                
-                // Check gamepad first
-                const gamepad = navigator.getGamepads()[playerIndex];
-                if (gamepad) {
-                    // Left stick for steering and throttle
-                    input.steering = Math.abs(gamepad.axes[0]) > 0.1 ? gamepad.axes[0] : 0;
-                    input.throttle = gamepad.buttons[7]?.value || 0;
-                    input.brake = gamepad.buttons[6]?.value || 0;
-                    input.boost = gamepad.buttons[0]?.pressed || gamepad.buttons[1]?.pressed;
-                }
-                
-                // Fallback to keyboard
-                if (playerIndex === 0) {
-                    if (this.keys['w'] || this.keys['arrowup']) input.throttle = 1;
-                    if (this.keys['s'] || this.keys['arrowdown']) input.brake = 1;
-                    if (this.keys['a'] || this.keys['arrowleft']) input.steering = 1;
-                    if (this.keys['d'] || this.keys['arrowright']) input.steering = -1;
-                    if (this.keys[' ']) input.boost = true;
-                    
-                    // Lane switching
-                    if (this.keys['q']) return { ...input, laneChange: -1 };
-                    if (this.keys['e']) return { ...input, laneChange: 1 };
-                }
-                
-                return input;
-            }
-        }
-
-        // ==================== SIMPLE MULTIPLAYER ====================
-        class SimpleMultiplayer {
-            constructor() {
-                this.peer = null;
-                this.connections = [];
-                this.roomCode = '';
-                this.isHost = false;
-                this.players = new Map();
-                this.localPlayerId = this.generateId();
-            }
-            
-            generateId() {
-                return Math.random().toString(36).substr(2, 9);
-            }
-            
-            generateRoomCode() {
-                return Math.random().toString(36).substr(2, 6).toUpperCase();
-            }
-            
-            async createRoom(maxPlayers = 8, botCount = 0) {
-                this.isHost = true;
-                this.roomCode = this.generateRoomCode();
-                this.maxPlayers = maxPlayers;
-                this.botCount = botCount;
-                
-                // Add local player
-                this.players.set(this.localPlayerId, {
-                    id: this.localPlayerId,
-                    name: 'Player 1',
-                    color: 0xff4757,
-                    connected: true
-                });
-                
-                return this.roomCode;
-            }
-            
-            async joinRoom(roomCode) {
-                this.isHost = false;
-                this.roomCode = roomCode;
-                
-                // Simulate connection
-                setTimeout(() => {
-                    if (typeof window.game !== 'undefined') {
-                        window.game.showLobby();
-                    }
-                }, 1000);
-                
-                return true;
-            }
-            
-            addPlayer(playerId, playerData) {
-                this.players.set(playerId, playerData);
-            }
-            
-            removePlayer(playerId) {
-                this.players.delete(playerId);
-            }
-            
-            getPlayerCount() {
-                return this.players.size;
-            }
-            
-            broadcast(data) {
-                // In a real implementation, this would send to all connected peers
-                console.log('Broadcasting:', data);
-            }
-            
-            disconnect() {
-                this.connections = [];
-                this.players = new Map();
-                this.roomCode = '';
-                this.isHost = false;
-            }
-        }
-
-        // ==================== GAME ENGINE ====================
+        // ==================== MAIN GAME ENGINE ====================
         class CartRidersGame {
             constructor() {
                 // Core systems
-                this.textureAtlas = new SimpleTextureAtlas();
-                this.buildingManager = new SimpleBuildingManager();
-                this.roadGenerator = new SimpleRoadGenerator();
+                this.assetPool = new AssetPool();
+                this.textureAtlas = new TextureAtlas();
+                this.buildingManager = null;
+                this.roadGenerator = null;
                 this.cameraSystem = null;
-                this.botAI = new SimpleBotAI(0);
-                this.inputManager = new InputManager();
-                this.multiplayer = new SimpleMultiplayer();
+                this.botSystem = new SimpleBotSystem();
+                this.multiplayer = new SimpleMultiplayerManager();
                 
                 // Game state
                 this.gameState = 'LOADING';
@@ -919,10 +1040,10 @@
                 this.maxProducts = 15;
                 this.highScore = localStorage.getItem('cartRidersHighScore') || 0;
                 
-                // Game mode
-                this.gameMode = 'solo'; // 'solo' or 'multiplayer'
-                this.maxPlayers = 1;
-                this.botCount = 0;
+                // Multiplayer state
+                this.isMultiplayer = false;
+                this.numBots = 2;
+                this.remotePlayers = new Map();
                 
                 // Three.js
                 this.scene = null;
@@ -931,9 +1052,22 @@
                 
                 // Game objects
                 this.player = null;
-                this.otherPlayers = new Map();
                 this.roadMeshes = [];
                 this.buildingMeshes = [];
+                this.activeBuildings = new Set();
+                
+                // Input
+                this.keys = {};
+                this.input = {
+                    steering: 0,
+                    throttle: 0,
+                    brake: 0,
+                    boost: false
+                };
+                
+                // Lighting
+                this.sunLight = null;
+                this.ambientLight = null;
                 
                 this.init();
             }
@@ -942,24 +1076,24 @@
                 this.setupUI();
                 this.initThreeJS();
                 await this.preloadAssets();
+                await this.multiplayer.initialize();
+                this.setupMultiplayerEvents();
                 this.showScreen('startMenu');
                 this.gameLoop();
             }
             
             setupUI() {
-                // Get UI elements
                 this.uiElements = {};
                 const ids = [
-                    'loadingScreen', 'startMenu', 'hud', 'endScreen',
-                    'playSolo', 'playMultiplayer', 'createRoom', 'joinRoom',
-                    'backToMain', 'createGame', 'joinGame', 'backToMultiplayer',
-                    'backToMultiplayer2', 'startGame', 'leaveLobby',
-                    'loadingProgress', 'loadingText', 'speedValue', 'productCount',
-                    'distanceValue', 'playerCount', 'productsGrid', 'highScore',
-                    'finalDistance', 'deliveredCount', 'survivalTime', 'endTitle',
-                    'multiplayerMenu', 'createRoomMenu', 'joinRoomMenu', 'lobbyScreen',
-                    'maxPlayers', 'botCountSelect', 'roomCodeInput', 'roomCodeDisplay',
-                    'playerList', 'playAgain', 'mainMenu'
+                    'loadingScreen', 'startMenu', 'multiplayerMenu', 'lobbyScreen', 'hud', 'endScreen',
+                    'playSolo', 'playMultiplayer', 'playAgain', 'mainMenu', 'createRoom', 'joinRoom',
+                    'roomCodeGroup', 'roomCode', 'connectRoom', 'backToMain', 'lobbyRoomCode',
+                    'readyButton', 'startGame', 'leaveLobby', 'lobbyStatus', 'playerList',
+                    'loadingProgress', 'loadingText',
+                    'speedValue', 'productCount', 'distanceValue', 'playerCount', 'botCount',
+                    'productsGrid', 'highScore',
+                    'finalDistance', 'deliveredCount', 'survivalTime',
+                    'endTitle'
                 ];
                 
                 ids.forEach(id => {
@@ -969,27 +1103,171 @@
                 // Event listeners
                 this.uiElements.playSolo?.addEventListener('click', () => this.startSoloGame());
                 this.uiElements.playMultiplayer?.addEventListener('click', () => this.showScreen('multiplayerMenu'));
-                this.uiElements.createRoom?.addEventListener('click', () => this.showScreen('createRoomMenu'));
-                this.uiElements.joinRoom?.addEventListener('click', () => this.showScreen('joinRoomMenu'));
-                this.uiElements.backToMain?.addEventListener('click', () => this.showScreen('startMenu'));
-                this.uiElements.backToMultiplayer?.addEventListener('click', () => this.showScreen('multiplayerMenu'));
-                this.uiElements.backToMultiplayer2?.addEventListener('click', () => this.showScreen('multiplayerMenu'));
+                this.uiElements.playAgain?.addEventListener('click', () => this.restartGame());
+                this.uiElements.mainMenu?.addEventListener('click', () => this.showScreen('startMenu'));
                 
-                this.uiElements.createGame?.addEventListener('click', () => this.createMultiplayerRoom());
-                this.uiElements.joinGame?.addEventListener('click', () => this.joinMultiplayerRoom());
+                this.uiElements.createRoom?.addEventListener('click', () => this.createMultiplayerRoom());
+                this.uiElements.joinRoom?.addEventListener('click', () => this.joinMultiplayerRoom());
+                this.uiElements.connectRoom?.addEventListener('click', () => this.joinWithCode());
+                this.uiElements.backToMain?.addEventListener('click', () => this.showScreen('startMenu'));
+                
+                this.uiElements.readyButton?.addEventListener('click', () => this.toggleReady());
                 this.uiElements.startGame?.addEventListener('click', () => this.startMultiplayerGame());
                 this.uiElements.leaveLobby?.addEventListener('click', () => this.leaveLobby());
-                
-                this.uiElements.playAgain?.addEventListener('click', () => this.restartGame());
-                this.uiElements.mainMenu?.addEventListener('click', () => {
-                    this.showScreen('startMenu');
-                    this.resetGame();
-                });
                 
                 // Update high score display
                 if (this.uiElements.highScore) {
                     this.uiElements.highScore.textContent = `${this.highScore}m`;
                 }
+                
+                // Bot count selector
+                const botSelect = document.getElementById('botCount');
+                if (botSelect) {
+                    this.numBots = parseInt(botSelect.value);
+                    botSelect.addEventListener('change', (e) => {
+                        this.numBots = parseInt(e.target.value);
+                    });
+                }
+            }
+            
+            setupMultiplayerEvents() {
+                // Set up multiplayer callbacks
+                window.onGameStart = (data) => {
+                    this.startGame(data.gameState);
+                };
+                
+                window.updateLobbyUI = (players, readyPlayers, isHost) => {
+                    this.updateLobbyUI(players, readyPlayers, isHost);
+                };
+                
+                window.updateAvailableRooms = (rooms) => {
+                    // Could show available rooms
+                    console.log('Available rooms:', rooms);
+                };
+            }
+            
+            async createMultiplayerRoom() {
+                try {
+                    const roomCode = await this.multiplayer.createRoom();
+                    if (this.uiElements.lobbyRoomCode) {
+                        this.uiElements.lobbyRoomCode.textContent = roomCode;
+                    }
+                    this.showScreen('lobbyScreen');
+                } catch (error) {
+                    alert('Failed to create room: ' + error.message);
+                }
+            }
+            
+            async joinMultiplayerRoom() {
+                try {
+                    const success = await this.multiplayer.joinRoom();
+                    if (success) {
+                        if (this.uiElements.lobbyRoomCode) {
+                            this.uiElements.lobbyRoomCode.textContent = this.multiplayer.roomCode;
+                        }
+                        this.showScreen('lobbyScreen');
+                    }
+                } catch (error) {
+                    alert('No rooms available on network. Please create a room or use backup code.');
+                }
+            }
+            
+            async joinWithCode() {
+                const roomCode = this.uiElements.roomCode?.value;
+                if (!roomCode || roomCode.length !== 6) {
+                    alert('Please enter a valid 6-digit room code');
+                    return;
+                }
+                
+                try {
+                    const success = await this.multiplayer.joinRoom(roomCode.toUpperCase());
+                    if (success) {
+                        if (this.uiElements.lobbyRoomCode) {
+                            this.uiElements.lobbyRoomCode.textContent = roomCode.toUpperCase();
+                        }
+                        this.showScreen('lobbyScreen');
+                    }
+                } catch (error) {
+                    alert('Failed to join room: ' + error.message);
+                }
+            }
+            
+            toggleReady() {
+                const isReady = this.multiplayer.readyPlayers.has(this.multiplayer.playerId);
+                this.multiplayer.setReady(!isReady);
+                
+                // Update button text
+                if (this.uiElements.readyButton) {
+                    this.uiElements.readyButton.textContent = isReady ? 'Ready' : 'Cancel Ready';
+                }
+            }
+            
+            leaveLobby() {
+                this.multiplayer.disconnect();
+                this.showScreen('startMenu');
+            }
+            
+            updateLobbyUI(players, readyPlayers, isHost) {
+                const playerList = this.uiElements.playerList;
+                if (!playerList) return;
+                
+                playerList.innerHTML = '';
+                
+                players.forEach(player => {
+                    const div = document.createElement('div');
+                    div.className = 'player-item';
+                    div.innerHTML = `
+                        <span>${player.name} ${player.isHost ? '(Host)' : ''}</span>
+                        <span class="${readyPlayers.has(player.id) ? 'player-ready' : 'player-not-ready'}">
+                            ${readyPlayers.has(player.id) ? 'Ready' : 'Not Ready'}
+                        </span>
+                    `;
+                    playerList.appendChild(div);
+                });
+                
+                // Update player count
+                if (this.uiElements.playerCount) {
+                    this.uiElements.playerCount.textContent = `${players.length}/8`;
+                }
+                
+                // Show/hide start game button for host
+                if (this.uiElements.startGame) {
+                    if (isHost) {
+                        this.uiElements.startGame.classList.remove('hidden');
+                        
+                        // Check if all players are ready
+                        const allReady = players.length > 0 && players.every(p => readyPlayers.has(p.id));
+                        this.uiElements.startGame.disabled = !allReady;
+                        this.uiElements.startGame.textContent = allReady ? 'Start Game' : 'Waiting for Players...';
+                    } else {
+                        this.uiElements.startGame.classList.add('hidden');
+                    }
+                }
+            }
+            
+            startMultiplayerGame() {
+                if (!this.multiplayer.canStartGame()) {
+                    alert('All players must be ready!');
+                    return;
+                }
+                
+                this.isMultiplayer = true;
+                this.botSystem.maxBots = 0;
+                
+                const gameState = {
+                    mode: 'multiplayer',
+                    players: Array.from(this.multiplayer.players.values()),
+                    timestamp: Date.now()
+                };
+                
+                this.multiplayer.startGame(gameState);
+                this.startGame(gameState);
+            }
+            
+            startSoloGame() {
+                this.isMultiplayer = false;
+                this.botSystem.maxBots = this.numBots;
+                this.startGame({ mode: 'solo' });
             }
             
             initThreeJS() {
@@ -1001,6 +1279,7 @@
                 
                 // Camera
                 this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+                this.camera.position.set(0, 10, 20);
                 this.cameraSystem = new SimpleCamera(this.camera);
                 
                 // Renderer
@@ -1015,22 +1294,57 @@
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 
                 // Lighting
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                this.scene.add(ambientLight);
+                this.setupLighting();
                 
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(100, 200, 100);
-                directionalLight.castShadow = true;
-                this.scene.add(directionalLight);
-                
-                // Fog
-                this.scene.fog = new THREE.Fog(0x87CEEB, 100, 500);
+                // Simple ground to ensure we see something
+                const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+                const groundMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x2d5016,
+                    roughness: 0.8,
+                    metalness: 0.2
+                });
+                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = -1;
+                ground.receiveShadow = true;
+                this.scene.add(ground);
                 
                 // Event listeners
                 window.addEventListener('resize', () => this.onResize());
+                window.addEventListener('keydown', (e) => this.onKeyDown(e));
+                window.addEventListener('keyup', (e) => this.onKeyUp(e));
+                
+                window.addEventListener('keydown', (e) => {
+                    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+            
+            setupLighting() {
+                this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(this.ambientLight);
+                
+                this.sunLight = new THREE.DirectionalLight(0xffffff, 1);
+                this.sunLight.position.set(50, 100, 50);
+                this.sunLight.castShadow = true;
+                this.sunLight.shadow.mapSize.width = 1024;
+                this.sunLight.shadow.mapSize.height = 1024;
+                this.scene.add(this.sunLight);
+                
+                const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+                fillLight.position.set(-50, 50, -50);
+                this.scene.add(fillLight);
             }
             
             async preloadAssets() {
+                this.buildingManager = new SimpleBuildingManager(this.textureAtlas);
+                this.roadGenerator = new SimpleRoadGenerator();
+                
+                // Create asset pools
+                this.assetPool.createPool('road', () => this.createRoadSegment(), 50);
+                this.assetPool.createPool('building', () => this.buildingManager.getRandomBuilding(), 100);
+                
                 // Simulate loading
                 for (let i = 0; i <= 100; i += 10) {
                     this.updateLoadingProgress(i);
@@ -1050,23 +1364,9 @@
             }
             
             createRoadSegment() {
-                const geometry = new THREE.PlaneGeometry(24, 50);
-                const texture = this.createRoadTexture();
-                const material = new THREE.MeshStandardMaterial({
-                    map: texture,
-                    roughness: 0.9,
-                    metalness: 0.1,
-                    side: THREE.DoubleSide
-                });
+                const geometry = new THREE.PlaneGeometry(20, 50);
                 
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.rotation.x = -Math.PI / 2;
-                mesh.receiveShadow = true;
-                
-                return mesh;
-            }
-            
-            createRoadTexture() {
+                // Create road texture
                 const canvas = document.createElement('canvas');
                 canvas.width = 256;
                 canvas.height = 256;
@@ -1090,13 +1390,13 @@
                 // Lane dividers
                 ctx.setLineDash([]);
                 ctx.beginPath();
-                ctx.moveTo(85, 0);
-                ctx.lineTo(85, 256);
+                ctx.moveTo(64, 0);
+                ctx.lineTo(64, 256);
                 ctx.stroke();
                 
                 ctx.beginPath();
-                ctx.moveTo(171, 0);
-                ctx.lineTo(171, 256);
+                ctx.moveTo(192, 0);
+                ctx.lineTo(192, 256);
                 ctx.stroke();
                 
                 const texture = new THREE.CanvasTexture(canvas);
@@ -1104,78 +1404,22 @@
                 texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(1, 10);
                 
-                return texture;
-            }
-            
-            startSoloGame() {
-                this.gameMode = 'solo';
-                this.maxPlayers = 1;
-                this.botCount = 0;
-                this.startGame();
-            }
-            
-            createMultiplayerRoom() {
-                const maxPlayers = parseInt(this.uiElements.maxPlayers?.value || '8');
-                const botCount = parseInt(this.uiElements.botCountSelect?.value || '0');
-                
-                this.gameMode = 'multiplayer';
-                this.maxPlayers = maxPlayers;
-                this.botCount = botCount;
-                
-                const roomCode = this.multiplayer.createRoom(maxPlayers, botCount);
-                this.showLobby();
-            }
-            
-            joinMultiplayerRoom() {
-                const roomCode = this.uiElements.roomCodeInput?.value || '';
-                if (roomCode.length !== 6) {
-                    alert('Please enter a 6-digit room code');
-                    return;
-                }
-                
-                this.gameMode = 'multiplayer';
-                this.multiplayer.joinRoom(roomCode);
-            }
-            
-            showLobby() {
-                this.showScreen('lobbyScreen');
-                
-                // Update room code display
-                if (this.uiElements.roomCodeDisplay) {
-                    this.uiElements.roomCodeDisplay.textContent = this.multiplayer.roomCode;
-                }
-                
-                // Update player list
-                this.updatePlayerList();
-            }
-            
-            updatePlayerList() {
-                if (!this.uiElements.playerList) return;
-                
-                this.uiElements.playerList.innerHTML = '';
-                
-                this.multiplayer.players.forEach((player, id) => {
-                    const playerElement = document.createElement('div');
-                    playerElement.className = 'player-item';
-                    playerElement.innerHTML = `
-                        <div class="player-color" style="background: #${player.color.toString(16).padStart(6, '0')}"></div>
-                        <span>${player.name}</span>
-                        ${id === this.multiplayer.localPlayerId ? '<span style="color: #2ed573;">(You)</span>' : ''}
-                    `;
-                    this.uiElements.playerList.appendChild(playerElement);
+                const material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    roughness: 0.9,
+                    metalness: 0.1,
+                    side: THREE.DoubleSide
                 });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.receiveShadow = true;
+                mesh.userData = { type: 'road' };
+                
+                return mesh;
             }
             
-            startMultiplayerGame() {
-                this.startGame();
-            }
-            
-            leaveLobby() {
-                this.multiplayer.disconnect();
-                this.showScreen('startMenu');
-            }
-            
-            startGame() {
+            startGame(gameState) {
                 this.resetGame();
                 this.createPlayer();
                 this.generateInitialBuildings();
@@ -1183,41 +1427,48 @@
                 this.gameState = 'PLAYING';
                 this.showScreen('playing');
                 this.lastTime = performance.now();
-                
-                // Set bot count
-                this.botAI = new SimpleBotAI(this.botCount);
             }
             
             resetGame() {
-                // Clear scene
-                while(this.scene.children.length > 0) { 
-                    this.scene.remove(this.scene.children[0]); 
-                }
+                // Clear scene except lights and ground
+                const toRemove = [];
+                this.scene.children.forEach(child => {
+                    if (child.type !== 'AmbientLight' && child.type !== 'DirectionalLight' && child.type !== 'Mesh') {
+                        toRemove.push(child);
+                    } else if (child.type === 'Mesh' && child.position.y !== -1) {
+                        toRemove.push(child);
+                    }
+                });
+                toRemove.forEach(child => this.scene.remove(child));
                 
-                // Reinitialize
-                this.initThreeJS();
-                
-                // Reset state
+                // Reset game state
                 this.gameTime = 0;
                 this.playerDistance = 0;
                 this.playerSpeed = 0;
                 this.playerProducts = 15;
-                this.botAI.clear();
-                this.otherPlayers.clear();
-                
-                // Reset road generator
-                this.roadGenerator = new SimpleRoadGenerator();
+                this.botSystem.reset();
+                this.remotePlayers.clear();
                 
                 // Clear arrays
                 this.roadMeshes = [];
                 this.buildingMeshes = [];
+                this.activeBuildings.clear();
+                
+                // Reset road generator
+                this.roadGenerator = new SimpleRoadGenerator();
                 
                 // Update UI
                 this.updateProductsDisplay();
+                if (this.uiElements.botCount) {
+                    this.uiElements.botCount.textContent = '0';
+                }
+                if (this.uiElements.playerCount) {
+                    this.uiElements.playerCount.textContent = '1/8';
+                }
             }
             
             createPlayer() {
-                // Create cart using BoxGeometry instead of CapsuleGeometry
+                // Create cart
                 const cartGeometry = new THREE.BoxGeometry(1.5, 0.7, 2.5);
                 const cartMaterial = new THREE.MeshStandardMaterial({
                     color: 0xff4757,
@@ -1230,27 +1481,27 @@
                 cart.castShadow = true;
                 cart.receiveShadow = true;
                 
-                // Create player (simple box instead of capsule)
-                const playerGeometry = new THREE.BoxGeometry(0.6, 0.8, 0.3);
+                // Create player - simple cube since CapsuleGeometry might not work
+                const playerGeometry = new THREE.BoxGeometry(0.5, 1.2, 0.3);
                 const playerMaterial = new THREE.MeshStandardMaterial({
                     color: 0x70a1ff,
                     metalness: 0.2,
                     roughness: 0.6
                 });
                 
-                const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
-                playerMesh.position.set(0, 1.2, 0);
-                playerMesh.castShadow = true;
+                const player = new THREE.Mesh(playerGeometry, playerMaterial);
+                player.position.set(0, 1.3, 0);
+                player.castShadow = true;
                 
                 const playerGroup = new THREE.Group();
                 playerGroup.add(cart);
-                playerGroup.add(playerMesh);
+                playerGroup.add(player);
                 this.scene.add(playerGroup);
                 
                 this.player = {
                     group: playerGroup,
                     cart: cart,
-                    player: playerMesh,
+                    player: player,
                     speed: 0,
                     maxSpeed: 60,
                     acceleration: 0.8,
@@ -1265,34 +1516,41 @@
             }
             
             generateInitialBuildings() {
-                const buildingSpacing = 15;
-                const rows = 40;
-                
-                for (let i = 0; i < rows; i++) {
-                    const z = -i * buildingSpacing;
+                // Create buildings on both sides
+                for (let i = 0; i < 30; i++) {
+                    const z = -i * 20;
                     
-                    // Left side buildings
-                    for (let x = -40; x <= -20; x += buildingSpacing) {
+                    // Left side
+                    for (let x = -25; x <= -15; x += 15) {
                         this.spawnBuilding(x, z);
                     }
                     
-                    // Right side buildings
-                    for (let x = 20; x <= 40; x += buildingSpacing) {
+                    // Right side
+                    for (let x = 15; x <= 25; x += 15) {
                         this.spawnBuilding(x, z);
                     }
                 }
             }
             
             spawnBuilding(x, z) {
-                const building = this.buildingManager.createBuilding();
-                building.position.set(x, 0, z);
+                const building = this.assetPool.get('building');
+                if (!building) return;
+                
+                const xOffset = (Math.random() - 0.5) * 3;
+                const zOffset = (Math.random() - 0.5) * 3;
+                
+                building.position.set(x + xOffset, 0, z + zOffset);
                 building.rotation.y = Math.floor(Math.random() * 4) * Math.PI / 2;
                 
                 const scale = 0.8 + Math.random() * 0.4;
                 building.scale.setScalar(scale);
                 
+                building.userData.x = x;
+                building.userData.z = z;
+                
                 this.scene.add(building);
                 this.buildingMeshes.push(building);
+                this.activeBuildings.add(building);
             }
             
             updateBuildings(playerZ) {
@@ -1301,22 +1559,26 @@
                     const building = this.buildingMeshes[i];
                     if (building.position.z > playerZ + 100) {
                         this.scene.remove(building);
+                        this.assetPool.release(building);
                         this.buildingMeshes.splice(i, 1);
+                        this.activeBuildings.delete(building);
                     }
                 }
                 
                 // Add new buildings ahead
-                const farthestZ = Math.min(...this.buildingMeshes.map(b => b.position.z));
-                if (farthestZ > playerZ - 500) {
-                    const newZ = farthestZ - 15;
+                if (this.buildingMeshes.length === 0 || 
+                    this.buildingMeshes[this.buildingMeshes.length - 1].position.z > playerZ - 400) {
+                    const newZ = this.buildingMeshes.length > 0 ? 
+                        this.buildingMeshes[this.buildingMeshes.length - 1].position.z - 20 : 
+                        playerZ - 200;
                     
                     // Left side
-                    for (let x = -40; x <= -20; x += 15) {
+                    for (let x = -25; x <= -15; x += 15) {
                         this.spawnBuilding(x, newZ);
                     }
                     
                     // Right side
-                    for (let x = 20; x <= 40; x += 15) {
+                    for (let x = 15; x <= 25; x += 15) {
                         this.spawnBuilding(x, newZ);
                     }
                 }
@@ -1326,11 +1588,13 @@
                 this.roadGenerator.update(playerZ);
                 const segments = this.roadGenerator.segments;
                 
-                // Create road meshes if needed
+                // Ensure we have enough road meshes
                 while (this.roadMeshes.length < segments.length) {
-                    const road = this.createRoadSegment();
-                    this.scene.add(road);
-                    this.roadMeshes.push(road);
+                    const road = this.assetPool.get('road');
+                    if (road) {
+                        this.scene.add(road);
+                        this.roadMeshes.push(road);
+                    }
                 }
                 
                 // Update road positions
@@ -1339,28 +1603,25 @@
                     const roadMesh = this.roadMeshes[i];
                     
                     roadMesh.position.copy(segment.position);
-                    roadMesh.rotation.y = segment.rotation;
+                    roadMesh.position.y = segment.position.y;
                 }
                 
                 // Remove old roads
-                while (this.roadMeshes.length > segments.length + 10) {
+                while (this.roadMeshes.length > segments.length + 5) {
                     const road = this.roadMeshes.shift();
-                    this.scene.remove(road);
+                    if (road) {
+                        this.scene.remove(road);
+                        this.assetPool.release(road);
+                    }
                 }
             }
             
             updatePlayer(deltaTime) {
                 if (!this.player) return;
                 
-                const input = this.inputManager.getPlayerInput();
-                const throttle = input.throttle;
-                const brake = input.brake;
-                const steering = input.steering;
-                
-                // Lane switching
-                if (input.laneChange) {
-                    this.player.lane = Math.max(-1, Math.min(1, this.player.lane + input.laneChange));
-                }
+                const throttle = this.input.throttle;
+                const brake = this.input.brake;
+                const steering = this.input.steering;
                 
                 // Acceleration
                 if (throttle > 0 && this.player.speed < this.player.maxSpeed) {
@@ -1378,8 +1639,8 @@
                 }
                 
                 // Boost
-                if (input.boost) {
-                    this.player.speed = Math.min(this.player.speed * 1.5, this.player.maxSpeed * 1.2);
+                if (this.input.boost) {
+                    this.player.speed = Math.min(this.player.speed * 1.2, this.player.maxSpeed * 1.2);
                 }
                 
                 // Steering
@@ -1388,20 +1649,13 @@
                     this.player.rotation += steering * this.player.steering * steeringEffect * deltaTime * 60;
                 }
                 
-                // Get current road segment for curves
-                const currentZ = this.player.group.position.z;
-                const segment = this.roadGenerator.getSegmentAtZ(currentZ);
-                if (segment) {
-                    this.player.rotation += segment.rotation * 0.5;
-                }
-                
                 // Move player
                 const moveDistance = this.player.speed * deltaTime;
-                this.player.group.position.z += moveDistance;
-                this.playerDistance -= moveDistance;
+                this.player.group.position.z -= moveDistance; // Move forward (negative Z)
+                this.playerDistance += moveDistance;
                 
                 // Lane management
-                const targetX = this.player.lane * 8;
+                const targetX = this.player.lane * 6;
                 const currentX = this.player.group.position.x;
                 const xDiff = targetX - currentX;
                 
@@ -1413,14 +1667,9 @@
                 // Apply player rotation
                 this.player.group.rotation.y = this.player.rotation;
                 
-                // Apply road banking
-                if (segment) {
-                    this.player.group.position.y = 0.5;
-                }
-                
                 // Bounce effect
                 const bounce = Math.sin(Date.now() * 0.01) * 0.05 * (this.player.speed / this.player.maxSpeed);
-                this.player.group.position.y += bounce;
+                this.player.group.position.y = 0.5 + bounce;
                 
                 // Update speed for display
                 this.playerSpeed = Math.abs(this.player.speed * 3.6);
@@ -1435,29 +1684,24 @@
                 if (!this.player) return;
                 
                 const playerPos = this.player.group.position;
-                const playerRadius = 1.5;
+                const playerRadius = 1.2;
                 
                 for (const building of this.buildingMeshes) {
-                    if (!building.userData) continue;
+                    const dx = Math.abs(playerPos.x - building.position.x);
+                    const dz = Math.abs(playerPos.z - building.position.z);
                     
-                    const buildingWidth = building.userData.width || 8;
-                    const buildingDepth = building.userData.depth || 8;
-                    
-                    const dx = Math.abs(playerPos.x - building.position.x) - buildingWidth / 2;
-                    const dz = Math.abs(playerPos.z - building.position.z) - buildingDepth / 2;
-                    
-                    if (dx < playerRadius && dz < playerRadius) {
-                        // Collision detected
-                        this.player.speed *= -0.5;
+                    // Simple AABB collision
+                    if (dx < 4 && dz < 4) {
+                        this.player.speed *= -0.3;
                         this.playerProducts = Math.max(0, this.playerProducts - 1);
-                        this.cameraSystem.shake(0.5);
+                        this.cameraSystem.shake(0.3);
                         this.updateProductsDisplay();
                         
                         // Push player away
-                        const pushDir = new THREE.Vector3()
-                            .subVectors(playerPos, building.position)
-                            .normalize();
-                        this.player.group.position.add(pushDir.multiplyScalar(2));
+                        const pushX = Math.sign(playerPos.x - building.position.x) * 2;
+                        const pushZ = Math.sign(playerPos.z - building.position.z) * 2;
+                        this.player.group.position.x += pushX;
+                        this.player.group.position.z += pushZ;
                         
                         if (this.playerProducts <= 0) {
                             this.gameOver();
@@ -1468,16 +1712,14 @@
             }
             
             checkBotCollisions() {
-                const botMeshes = this.botAI.getBotMeshes();
-                
+                const botMeshes = this.botSystem.getBotMeshes();
                 for (const bot of botMeshes) {
                     if (!bot || !this.player) continue;
                     
                     const distance = this.player.group.position.distanceTo(bot.position);
-                    if (distance < 3) {
-                        // Collision with bot
+                    if (distance < 2.5) {
                         this.playerProducts = Math.max(0, this.playerProducts - 1);
-                        this.cameraSystem.shake(0.3);
+                        this.cameraSystem.shake(0.2);
                         this.updateProductsDisplay();
                         
                         // Push player
@@ -1485,7 +1727,7 @@
                             .subVectors(this.player.group.position, bot.position)
                             .normalize();
                         this.player.group.position.add(pushDir.multiplyScalar(1.5));
-                        this.player.speed *= 0.7;
+                        this.player.speed *= 0.8;
                         
                         if (this.playerProducts <= 0) {
                             this.gameOver();
@@ -1498,17 +1740,15 @@
             checkRoadBoundaries() {
                 if (!this.player) return;
                 
-                const roadHalfWidth = this.roadGenerator.roadWidth / 2;
                 const playerX = this.player.group.position.x;
                 
-                if (Math.abs(playerX) > roadHalfWidth) {
-                    // Player is off road - slow down and damage
-                    this.player.speed *= 0.9;
+                if (Math.abs(playerX) > 10) {
+                    this.player.speed *= 0.95;
                     
                     if (Math.random() > 0.98) {
                         this.playerProducts = Math.max(0, this.playerProducts - 1);
                         this.updateProductsDisplay();
-                        this.cameraSystem.shake(0.2);
+                        this.cameraSystem.shake(0.1);
                         
                         if (this.playerProducts <= 0) {
                             this.gameOver();
@@ -1516,26 +1756,28 @@
                     }
                     
                     // Push back to road
-                    const pushBack = -Math.sign(playerX) * 0.1;
+                    const pushBack = -Math.sign(playerX) * 0.05;
                     this.player.group.position.x += pushBack;
                 }
             }
             
             updateBots(deltaTime) {
-                if (this.player) {
-                    this.botAI.update(this.player, deltaTime);
-                    
-                    // Add bot meshes to scene
-                    const botMeshes = this.botAI.getBotMeshes();
-                    botMeshes.forEach(botMesh => {
-                        if (!botMesh.parent) {
-                            this.scene.add(botMesh);
-                        }
-                    });
+                const activeBots = this.botSystem.update(this.gameTime, this.player);
+                
+                // Add bot meshes to scene if not already added
+                const botMeshes = this.botSystem.getBotMeshes();
+                botMeshes.forEach(mesh => {
+                    if (!mesh.parent) {
+                        this.scene.add(mesh);
+                    }
+                });
+                
+                if (this.uiElements.botCount) {
+                    this.uiElements.botCount.textContent = activeBots;
                 }
             }
             
-            updateUI() {
+            updateUI(deltaTime) {  // FIXED: Added deltaTime parameter
                 // Update HUD
                 if (this.uiElements.speedValue) {
                     this.uiElements.speedValue.textContent = `${this.playerSpeed.toFixed(0)} km/h`;
@@ -1547,9 +1789,8 @@
                     this.uiElements.distanceValue.textContent = `${Math.abs(this.playerDistance).toFixed(0)}m`;
                 }
                 if (this.uiElements.playerCount) {
-                    const playerCount = this.gameMode === 'multiplayer' ? 
-                        this.multiplayer.getPlayerCount() : 1;
-                    this.uiElements.playerCount.textContent = `${playerCount}/${this.maxPlayers}`;
+                    const totalPlayers = 1 + this.remotePlayers.size;
+                    this.uiElements.playerCount.textContent = `${totalPlayers}/8`;
                 }
             }
             
@@ -1589,7 +1830,7 @@
                     this.uiElements.survivalTime.textContent = `${this.gameTime.toFixed(1)}s`;
                 }
                 if (this.uiElements.endTitle) {
-                    this.uiElements.endTitle.textContent = 'Game Over';
+                    this.uiElements.endTitle.textContent = this.isMultiplayer ? 'Game Over - Multiplayer' : 'Game Over';
                 }
                 
                 this.showScreen('endScreen');
@@ -1597,13 +1838,16 @@
             
             restartGame() {
                 this.resetGame();
-                this.startGame();
+                if (this.isMultiplayer) {
+                    this.startMultiplayerGame();
+                } else {
+                    this.startSoloGame();
+                }
             }
             
             showScreen(screenName) {
                 // Hide all screens
-                ['loadingScreen', 'startMenu', 'multiplayerMenu', 'createRoomMenu', 
-                 'joinRoomMenu', 'lobbyScreen', 'hud', 'endScreen'].forEach(screen => {
+                ['loadingScreen', 'startMenu', 'multiplayerMenu', 'lobbyScreen', 'hud', 'endScreen'].forEach(screen => {
                     if (this.uiElements[screen]) {
                         this.uiElements[screen].classList.add('hidden');
                     }
@@ -1627,43 +1871,67 @@
                 }
             }
             
+            onKeyDown(e) {
+                const key = e.key.toLowerCase();
+                this.keys[key] = true;
+                
+                if (key === 'w' || key === 'arrowup') this.input.throttle = 1;
+                if (key === 's' || key === 'arrowdown') this.input.brake = 1;
+                if (key === 'a' || key === 'arrowleft') this.input.steering = 1;
+                if (key === 'd' || key === 'arrowright') this.input.steering = -1;
+                if (key === ' ') this.input.boost = true;
+                
+                // Lane switching
+                if (key === 'q' && this.player) {
+                    this.player.lane = Math.max(-1, this.player.lane - 1);
+                }
+                if (key === 'e' && this.player) {
+                    this.player.lane = Math.min(1, this.player.lane + 1);
+                }
+            }
+            
+            onKeyUp(e) {
+                const key = e.key.toLowerCase();
+                this.keys[key] = false;
+                
+                if (key === 'w' || key === 'arrowup') this.input.throttle = 0;
+                if (key === 's' || key === 'arrowdown') this.input.brake = 0;
+                if (key === 'a' || key === 'arrowleft') this.input.steering = 0;
+                if (key === 'd' || key === 'arrowright') this.input.steering = 0;
+                if (key === ' ') this.input.boost = false;
+            }
+            
             gameLoop(currentTime = 0) {
                 const deltaTime = (currentTime - this.lastTime) / 1000;
                 this.lastTime = currentTime;
-                
                 const fixedDelta = Math.min(deltaTime, 0.033);
                 
                 if (this.gameState === 'PLAYING' && this.isPlaying) {
                     this.gameTime += fixedDelta;
                     
-                    // Update game systems
                     this.updatePlayer(fixedDelta);
                     
                     if (this.player) {
                         this.updateRoads(this.player.group.position.z);
                         this.updateBuildings(this.player.group.position.z);
+                        this.updateBots(fixedDelta);
+                        
+                        if (this.cameraSystem) {
+                            this.cameraSystem.update(fixedDelta);
+                        }
                     }
                     
-                    this.updateBots(fixedDelta);
+                    this.updateUI(fixedDelta);  // FIXED: Pass deltaTime
                     
-                    // Update camera
-                    this.cameraSystem.update();
-                    
-                    // Update UI
-                    this.updateUI();
-                    
-                    // Check game over condition
                     if (this.playerProducts <= 0) {
                         this.gameOver();
                     }
                 }
                 
-                // Render
                 if (this.renderer && this.scene && this.camera) {
                     this.renderer.render(this.scene, this.camera);
                 }
                 
-                // Continue loop
                 requestAnimationFrame((time) => this.gameLoop(time));
             }
         }
