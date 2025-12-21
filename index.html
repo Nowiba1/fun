@@ -9,8 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- GLTFLoader CDN -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
-    <!-- Extra Three.js components including CapsuleGeometry -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/CapsuleGeometry.js"></script>
     
     <style>
         * {
@@ -109,79 +107,6 @@
             background: linear-gradient(45deg, #ff4757, #ff3838);
         }
 
-        /* Multiplayer Controls */
-        .multiplayer-controls {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #70a1ff;
-        }
-
-        .input-group {
-            margin: 15px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        label {
-            margin-bottom: 8px;
-            color: #70a1ff;
-            font-weight: bold;
-        }
-
-        input, select {
-            padding: 10px 15px;
-            font-size: 1.1em;
-            border: 2px solid #ff6b6b;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            width: 100%;
-            max-width: 300px;
-            text-align: center;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #2ed573;
-        }
-
-        .room-code {
-            font-size: 2em;
-            letter-spacing: 5px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 2px solid #2ed573;
-            font-family: monospace;
-        }
-
-        .player-list {
-            width: 100%;
-            max-width: 400px;
-            margin: 20px auto;
-        }
-
-        .player-item {
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 5px 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .player-ready {
-            color: #2ed573;
-            font-weight: bold;
-        }
-
-        .player-not-ready {
-            color: #ff4757;
-        }
-
         /* HUD */
         #hud {
             position: absolute;
@@ -263,6 +188,98 @@
             margin-top: 20px;
             color: #70a1ff;
         }
+
+        /* Multiplayer Menu */
+        .input-group {
+            margin: 20px 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #70a1ff;
+            font-weight: bold;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1em;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #ff4757;
+        }
+
+        .room-code {
+            font-size: 2em;
+            letter-spacing: 10px;
+            color: #2ed573;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .player-list {
+            margin: 20px 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .player-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        /* Controller Indicators */
+        .controller-indicators {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .controller-indicator {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #ff6b6b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+        }
+
+        .controller-icon {
+            width: 24px;
+            height: 24px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
@@ -286,16 +303,6 @@
                     <button id="playSolo">Play Solo</button>
                     <button id="playMultiplayer">Multiplayer</button>
                 </div>
-                <div class="input-group">
-                    <label for="botCount">Number of Bots (0-4):</label>
-                    <select id="botCount">
-                        <option value="0">0 Bots</option>
-                        <option value="1">1 Bot</option>
-                        <option value="2" selected>2 Bots</option>
-                        <option value="3">3 Bots</option>
-                        <option value="4">4 Bots</option>
-                    </select>
-                </div>
                 <div class="hud-item">
                     <span class="hud-label">High Score:</span>
                     <span class="hud-value" id="highScore">0m</span>
@@ -310,29 +317,72 @@
                 <div class="button-group">
                     <button id="createRoom">Create Room</button>
                     <button id="joinRoom">Join Room</button>
+                    <button id="backToMain">Back</button>
                 </div>
-                <div class="input-group hidden" id="joinControls">
-                    <label for="roomCode">Room Code:</label>
-                    <input type="text" id="roomCode" maxlength="6" placeholder="Enter 6-digit code">
-                    <button id="connectRoom" style="margin-top: 15px;">Connect</button>
-                </div>
-                <button id="backToMain" style="margin-top: 30px;">Back to Main</button>
             </div>
         </div>
 
-        <!-- Lobby Screen -->
+        <!-- Create Room -->
+        <div id="createRoomMenu" class="screen hidden">
+            <div class="menu-container">
+                <h1>Create Room</h1>
+                <div class="input-group">
+                    <label>Max Players (1-8):</label>
+                    <select id="maxPlayers">
+                        <option value="1">1 Player</option>
+                        <option value="2">2 Players</option>
+                        <option value="3">3 Players</option>
+                        <option value="4">4 Players</option>
+                        <option value="5">5 Players</option>
+                        <option value="6">6 Players</option>
+                        <option value="7">7 Players</option>
+                        <option value="8">8 Players</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Bots (0-4):</label>
+                    <select id="botCountSelect">
+                        <option value="0">0 Bots</option>
+                        <option value="1">1 Bot</option>
+                        <option value="2">2 Bots</option>
+                        <option value="3">3 Bots</option>
+                        <option value="4">4 Bots</option>
+                    </select>
+                </div>
+                <div class="button-group">
+                    <button id="createGame">Create Game</button>
+                    <button id="backToMultiplayer">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Join Room -->
+        <div id="joinRoomMenu" class="screen hidden">
+            <div class="menu-container">
+                <h1>Join Room</h1>
+                <div class="input-group">
+                    <label>Room Code:</label>
+                    <input type="text" id="roomCodeInput" maxlength="6" placeholder="Enter 6-digit code">
+                </div>
+                <div class="button-group">
+                    <button id="joinGame">Join Game</button>
+                    <button id="backToMultiplayer2">Back</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lobby -->
         <div id="lobbyScreen" class="screen hidden">
             <div class="menu-container">
-                <h1>Lobby</h1>
-                <div class="room-code" id="lobbyRoomCode">XXXXXX</div>
+                <h1>Room Lobby</h1>
+                <div class="room-code" id="roomCodeDisplay">000000</div>
                 <div class="player-list" id="playerList">
                     <!-- Players will be added here -->
                 </div>
                 <div class="button-group">
-                    <button id="readyButton">Ready</button>
+                    <button id="startGame" style="background: #2ed573;">Start Game</button>
                     <button id="leaveLobby">Leave Lobby</button>
                 </div>
-                <div class="loading-text" id="lobbyStatus">Waiting for players...</div>
             </div>
         </div>
 
@@ -354,11 +404,15 @@
                 <span class="hud-label">Players:</span>
                 <span class="hud-value" id="playerCount">1/8</span>
             </div>
-            <div class="hud-item">
-                <span class="hud-label">Bots:</span>
-                <span class="hud-value" id="botCount">0</span>
-            </div>
             <div class="products-grid" id="productsGrid"></div>
+        </div>
+
+        <!-- Controller Indicators -->
+        <div id="controllerIndicators" class="controller-indicators hidden">
+            <div class="controller-indicator">
+                <div class="controller-icon">🎮</div>
+                <span>Controller 1</span>
+            </div>
         </div>
 
         <!-- End Screen -->
@@ -367,7 +421,7 @@
                 <h1 id="endTitle">Game Over</h1>
                 <div style="font-size: 1.5em; margin: 20px 0;">
                     <div>Distance: <span id="finalDistance" style="color: #70a1ff;">0m</span></div>
-                    <div>Products Delivered: <span id="deliveredCount" style="color: #2ed573;">0/15</span></div>
+                    <div>Products Remaining: <span id="deliveredCount" style="color: #2ed573;">0/15</span></div>
                     <div>Time Survived: <span id="survivalTime" style="color: #ffdd59;">0s</span></div>
                 </div>
                 <div class="button-group">
@@ -379,484 +433,46 @@
     </div>
 
     <script>
-        // ==================== WEBRTC MULTIPLAYER MANAGER ====================
-        class MultiplayerManager {
+        // ==================== SIMPLE TEXTURE ATLAS ====================
+        class SimpleTextureAtlas {
             constructor() {
-                this.peer = null;
-                this.connections = new Map();
-                this.isHost = false;
-                this.roomCode = '';
-                this.playerId = this.generatePlayerId();
-                this.playerName = `Player${Math.floor(Math.random() * 1000)}`;
-                this.players = new Map();
-                this.readyPlayers = new Set();
-                this.dataChannel = null;
-                
-                // Game state sync
-                this.lastUpdate = 0;
-                this.updateInterval = 50; // 20 updates per second
-            }
-            
-            generatePlayerId() {
-                return 'player_' + Math.random().toString(36).substr(2, 9);
-            }
-            
-            generateRoomCode() {
-                return Math.random().toString(36).substr(2, 6).toUpperCase();
-            }
-            
-            async initialize() {
-                try {
-                    // Create peer connection configuration for local network
-                    const config = {
-                        iceServers: [
-                            { urls: 'stun:stun.l.google.com:19302' },
-                            { urls: 'stun:stun1.l.google.com:19302' }
-                        ],
-                        iceTransportPolicy: 'all'
-                    };
-                    
-                    this.peer = new RTCPeerConnection(config);
-                    
-                    // Handle incoming connections
-                    this.peer.ondatachannel = (event) => {
-                        const channel = event.channel;
-                        this.setupDataChannel(channel);
-                    };
-                    
-                    // Handle ICE candidates
-                    this.peer.onicecandidate = (event) => {
-                        if (event.candidate) {
-                            this.broadcast({
-                                type: 'ice-candidate',
-                                candidate: event.candidate,
-                                playerId: this.playerId
-                            });
-                        }
-                    };
-                    
-                    // Handle connection state changes
-                    this.peer.onconnectionstatechange = () => {
-                        console.log('Connection state:', this.peer.connectionState);
-                    };
-                    
-                    return true;
-                } catch (error) {
-                    console.error('Failed to initialize WebRTC:', error);
-                    return false;
-                }
-            }
-            
-            async createRoom() {
-                this.isHost = true;
-                this.roomCode = this.generateRoomCode();
-                this.players.set(this.playerId, {
-                    id: this.playerId,
-                    name: this.playerName,
-                    ready: false,
-                    isHost: true
-                });
-                
-                // Create data channel for broadcasting
-                this.dataChannel = this.peer.createDataChannel('gameData');
-                this.setupDataChannel(this.dataChannel);
-                
-                return this.roomCode;
-            }
-            
-            async joinRoom(roomCode) {
-                this.roomCode = roomCode;
-                this.isHost = false;
-                
-                // Create data channel for sending offers
-                this.dataChannel = this.peer.createDataChannel('gameData');
-                this.setupDataChannel(this.dataChannel);
-                
-                // Create and send offer to host
-                const offer = await this.peer.createOffer();
-                await this.peer.setLocalDescription(offer);
-                
-                // In a real implementation, you would send this offer to the host
-                // For simplicity, we'll simulate direct connection in browser
-                return true;
-            }
-            
-            setupDataChannel(channel) {
-                channel.onopen = () => {
-                    console.log('Data channel opened');
-                    
-                    // Send player info
-                    this.send({
-                        type: 'player-join',
-                        playerId: this.playerId,
-                        playerName: this.playerName,
-                        isHost: this.isHost
-                    });
-                };
-                
-                channel.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    this.handleMessage(data);
-                };
-                
-                channel.onerror = (error) => {
-                    console.error('Data channel error:', error);
-                };
-            }
-            
-            handleMessage(data) {
-                switch(data.type) {
-                    case 'player-join':
-                        this.players.set(data.playerId, {
-                            id: data.playerId,
-                            name: data.playerName,
-                            ready: false,
-                            isHost: data.isHost
-                        });
-                        this.updatePlayerList();
-                        break;
-                        
-                    case 'player-ready':
-                        if (data.ready) {
-                            this.readyPlayers.add(data.playerId);
-                        } else {
-                            this.readyPlayers.delete(data.playerId);
-                        }
-                        this.updatePlayerList();
-                        break;
-                        
-                    case 'game-start':
-                        if (this.onGameStart) {
-                            this.onGameStart(data.gameState);
-                        }
-                        break;
-                        
-                    case 'game-state':
-                        if (this.onGameStateUpdate) {
-                            this.onGameStateUpdate(data.state);
-                        }
-                        break;
-                        
-                    case 'player-action':
-                        if (this.onPlayerAction) {
-                            this.onPlayerAction(data.playerId, data.action);
-                        }
-                        break;
-                }
-            }
-            
-            send(data) {
-                if (this.dataChannel && this.dataChannel.readyState === 'open') {
-                    this.dataChannel.send(JSON.stringify(data));
-                }
-            }
-            
-            broadcast(data) {
-                // In a real implementation, this would broadcast to all connected peers
-                this.send(data);
-            }
-            
-            setReady(ready) {
-                this.readyPlayers.add(this.playerId);
-                this.broadcast({
-                    type: 'player-ready',
-                    playerId: this.playerId,
-                    ready: ready
-                });
-            }
-            
-            canStartGame() {
-                if (!this.isHost) return false;
-                return this.readyPlayers.size === this.players.size && this.players.size > 0;
-            }
-            
-            startGame(gameState) {
-                if (!this.isHost) return;
-                
-                this.broadcast({
-                    type: 'game-start',
-                    gameState: gameState
-                });
-            }
-            
-            updateGameState(state) {
-                const now = Date.now();
-                if (now - this.lastUpdate >= this.updateInterval) {
-                    this.broadcast({
-                        type: 'game-state',
-                        state: state,
-                        timestamp: now
-                    });
-                    this.lastUpdate = now;
-                }
-            }
-            
-            sendPlayerAction(action) {
-                this.broadcast({
-                    type: 'player-action',
-                    playerId: this.playerId,
-                    action: action,
-                    timestamp: Date.now()
-                });
-            }
-            
-            updatePlayerList() {
-                if (typeof window.updateLobbyUI === 'function') {
-                    window.updateLobbyUI(Array.from(this.players.values()), this.readyPlayers);
-                }
-            }
-            
-            disconnect() {
-                if (this.dataChannel) {
-                    this.dataChannel.close();
-                }
-                if (this.peer) {
-                    this.peer.close();
-                }
-                this.connections.clear();
-                this.players.clear();
-                this.readyPlayers.clear();
-            }
-        }
-
-        // ==================== OPTIMIZED ASSET POOL ====================
-        class AssetPool {
-            constructor() {
-                this.pools = new Map();
-                this.active = new Set();
-            }
-            
-            createPool(type, createFn, size = 50) {
-                const pool = [];
-                for (let i = 0; i < size; i++) {
-                    pool.push(createFn());
-                }
-                this.pools.set(type, { pool, createFn });
-                return pool;
-            }
-            
-            get(type) {
-                const poolData = this.pools.get(type);
-                if (!poolData) return null;
-                
-                const obj = poolData.pool.pop() || poolData.createFn();
-                this.active.add(obj);
-                return obj;
-            }
-            
-            release(obj) {
-                if (!obj || !this.active.has(obj)) return;
-                
-                this.active.delete(obj);
-                const type = obj.userData?.type;
-                if (type && this.pools.has(type)) {
-                    this.pools.get(type).pool.push(obj);
-                }
-            }
-            
-            releaseAll() {
-                for (const obj of this.active) {
-                    const type = obj.userData?.type;
-                    if (type && this.pools.has(type)) {
-                        this.pools.get(type).pool.push(obj);
-                    }
-                }
-                this.active.clear();
-            }
-        }
-
-        // ==================== OPTIMIZED TEXTURE ATLAS ====================
-        class TextureAtlas {
-            constructor() {
-                this.atlasCanvas = document.createElement('canvas');
-                this.atlasCanvas.width = 2048;
-                this.atlasCanvas.height = 2048;
-                this.ctx = this.atlasCanvas.getContext('2d');
                 this.textures = new Map();
-                this.currentX = 0;
-                this.currentY = 0;
-                this.rowHeight = 0;
-                
-                // Generate building textures
                 this.generateBuildingTextures();
             }
             
             generateBuildingTextures() {
+                // Create simple colored textures for buildings
                 const buildingTypes = [
-                    { name: 'brick', color: '#b7410e', pattern: 'brick' },
-                    { name: 'concrete', color: '#9e9e9e', pattern: 'dots' },
-                    { name: 'glass', color: '#87ceeb', pattern: 'grid' },
-                    { name: 'office', color: '#a9a9a9', pattern: 'windows' },
-                    { name: 'apartment', color: '#8b7355', pattern: 'brick' },
-                    { name: 'shop', color: '#ff6b6b', pattern: 'stripes' },
-                    { name: 'factory', color: '#696969', pattern: 'industrial' }
+                    { name: 'brick', color: '#b7410e' },
+                    { name: 'concrete', color: '#9e9e9e' },
+                    { name: 'glass', color: '#87ceeb' },
+                    { name: 'office', color: '#a9a9a9' },
+                    { name: 'apartment', color: '#8b7355' },
+                    { name: 'shop', color: '#ff6b6b' },
+                    { name: 'factory', color: '#696969' }
                 ];
                 
                 buildingTypes.forEach(type => {
-                    const texture = this.createBuildingTexture(type);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 256;
+                    canvas.height = 256;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Fill with base color
+                    ctx.fillStyle = type.color;
+                    ctx.fillRect(0, 0, 256, 256);
+                    
+                    // Add simple pattern
+                    ctx.fillStyle = this.adjustColor(type.color, -30);
+                    for (let y = 0; y < 256; y += 32) {
+                        for (let x = 0; x < 256; x += 32) {
+                            ctx.fillRect(x + 2, y + 2, 28, 28);
+                        }
+                    }
+                    
+                    const texture = new THREE.CanvasTexture(canvas);
                     this.textures.set(type.name, texture);
                 });
-            }
-            
-            createBuildingTexture(type) {
-                const size = 256;
-                const canvas = document.createElement('canvas');
-                canvas.width = size;
-                canvas.height = size;
-                const ctx = canvas.getContext('2d');
-                
-                // Base color
-                ctx.fillStyle = type.color;
-                ctx.fillRect(0, 0, size, size);
-                
-                // Add pattern
-                ctx.fillStyle = this.adjustColor(type.color, -30);
-                switch(type.pattern) {
-                    case 'brick':
-                        this.drawBrickPattern(ctx, size);
-                        break;
-                    case 'dots':
-                        this.drawDotPattern(ctx, size);
-                        break;
-                    case 'grid':
-                        this.drawGridPattern(ctx, size);
-                        break;
-                    case 'windows':
-                        this.drawWindowPattern(ctx, size);
-                        break;
-                    case 'stripes':
-                        this.drawStripePattern(ctx, size);
-                        break;
-                    case 'industrial':
-                        this.drawIndustrialPattern(ctx, size);
-                        break;
-                }
-                
-                // Add to atlas
-                if (this.currentX + size > this.atlasCanvas.width) {
-                    this.currentX = 0;
-                    this.currentY += this.rowHeight;
-                    this.rowHeight = 0;
-                }
-                
-                this.ctx.drawImage(canvas, this.currentX, this.currentY);
-                const uv = {
-                    x: this.currentX / this.atlasCanvas.width,
-                    y: this.currentY / this.atlasCanvas.height,
-                    width: size / this.atlasCanvas.width,
-                    height: size / this.atlasCanvas.height
-                };
-                
-                this.currentX += size;
-                this.rowHeight = Math.max(this.rowHeight, size);
-                
-                return { canvas, uv };
-            }
-            
-            drawBrickPattern(ctx, size) {
-                const brickWidth = size / 8;
-                const brickHeight = size / 4;
-                const mortar = 2;
-                
-                for(let y = 0; y < size; y += brickHeight) {
-                    for(let x = 0; x < size; x += brickWidth) {
-                        const offset = y % (brickHeight * 2) === 0 ? brickWidth/2 : 0;
-                        ctx.fillRect(x + offset + mortar/2, y + mortar/2, 
-                                   brickWidth - mortar, brickHeight - mortar);
-                    }
-                }
-            }
-            
-            drawDotPattern(ctx, size) {
-                const dotRadius = size / 20;
-                const spacing = size / 10;
-                
-                for(let y = dotRadius; y < size; y += spacing) {
-                    for(let x = dotRadius; x < size; x += spacing) {
-                        ctx.beginPath();
-                        ctx.arc(x, y, dotRadius, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-            }
-            
-            drawGridPattern(ctx, size) {
-                const gridSize = size / 10;
-                ctx.strokeStyle = ctx.fillStyle;
-                ctx.lineWidth = 2;
-                
-                // Vertical lines
-                for(let x = 0; x <= size; x += gridSize) {
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, size);
-                    ctx.stroke();
-                }
-                
-                // Horizontal lines
-                for(let y = 0; y <= size; y += gridSize) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(size, y);
-                    ctx.stroke();
-                }
-            }
-            
-            drawWindowPattern(ctx, size) {
-                const windowSize = size / 6;
-                const spacing = windowSize / 2;
-                
-                for(let y = spacing; y < size - windowSize; y += windowSize + spacing) {
-                    for(let x = spacing; x < size - windowSize; x += windowSize + spacing) {
-                        ctx.fillStyle = '#1e90ff';
-                        ctx.fillRect(x, y, windowSize, windowSize);
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(x + 2, y + 2, windowSize - 4, windowSize - 4);
-                    }
-                }
-            }
-            
-            drawStripePattern(ctx, size) {
-                const stripeWidth = size / 10;
-                for(let x = 0; x < size; x += stripeWidth * 2) {
-                    ctx.fillRect(x, 0, stripeWidth, size);
-                }
-            }
-            
-            drawIndustrialPattern(ctx, size) {
-                const circleRadius = size / 15;
-                const spacing = size / 7;
-                
-                // Draw circles at intersections
-                for(let y = spacing; y < size; y += spacing) {
-                    for(let x = spacing; x < size; x += spacing) {
-                        ctx.beginPath();
-                        ctx.arc(x, y, circleRadius, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-                
-                // Draw lines connecting circles
-                ctx.strokeStyle = ctx.fillStyle;
-                ctx.lineWidth = 2;
-                for(let y = spacing; y < size; y += spacing) {
-                    for(let x = spacing; x < size; x += spacing) {
-                        // Connect to right neighbor
-                        if (x + spacing < size) {
-                            ctx.beginPath();
-                            ctx.moveTo(x + circleRadius, y);
-                            ctx.lineTo(x + spacing - circleRadius, y);
-                            ctx.stroke();
-                        }
-                        // Connect to bottom neighbor
-                        if (y + spacing < size) {
-                            ctx.beginPath();
-                            ctx.moveTo(x, y + circleRadius);
-                            ctx.lineTo(x, y + spacing - circleRadius);
-                            ctx.stroke();
-                        }
-                    }
-                }
             }
             
             adjustColor(hex, amount) {
@@ -874,301 +490,104 @@
             getTexture(name) {
                 return this.textures.get(name);
             }
-            
-            getAtlasTexture() {
-                const texture = new THREE.CanvasTexture(this.atlasCanvas);
-                texture.needsUpdate = true;
-                return texture;
-            }
         }
 
-        // ==================== OPTIMIZED BUILDING MANAGER ====================
-        class BuildingManager {
-            constructor(textureAtlas) {
-                this.textureAtlas = textureAtlas;
-                this.buildingTemplates = [];
-                this.createTemplates();
+        // ==================== SIMPLE BUILDING MANAGER ====================
+        class SimpleBuildingManager {
+            constructor() {
+                this.buildingTypes = ['brick', 'concrete', 'glass', 'office', 'apartment', 'shop', 'factory'];
             }
             
-            createTemplates() {
-                // Create 10 different building templates
-                for (let i = 0; i < 10; i++) {
-                    const template = this.createBuildingTemplate(i);
-                    this.buildingTemplates.push(template);
-                }
-            }
-            
-            createBuildingTemplate(index) {
-                const group = new THREE.Group();
-                const buildingTypes = ['brick', 'concrete', 'glass', 'office', 'apartment', 'shop', 'factory'];
-                const type = buildingTypes[index % buildingTypes.length];
-                const textureData = this.textureAtlas.getTexture(type);
-                
-                // Random building dimensions
+            createBuilding() {
+                const type = this.buildingTypes[Math.floor(Math.random() * this.buildingTypes.length)];
                 const width = 8 + Math.random() * 6;
                 const height = 12 + Math.random() * 20;
                 const depth = 8 + Math.random() * 6;
                 
-                // Main building
                 const geometry = new THREE.BoxGeometry(width, height, depth);
-                const material = new THREE.MeshStandardMaterial({
-                    map: this.textureAtlas.getAtlasTexture(),
+                const color = this.getColorForType(type);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: color,
                     roughness: 0.8,
                     metalness: 0.2
                 });
-                
-                // Apply UV mapping for atlas
-                geometry.attributes.uv = this.createBuildingUVs(geometry, textureData.uv);
                 
                 const building = new THREE.Mesh(geometry, material);
                 building.position.y = height / 2;
                 building.castShadow = true;
                 building.receiveShadow = true;
-                group.add(building);
                 
-                // Roof (different styles)
-                const roofType = Math.random();
-                if (roofType < 0.3) {
-                    // Flat roof
-                    const roofGeometry = new THREE.BoxGeometry(width + 1, 1, depth + 1);
-                    const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
-                    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-                    roof.position.y = height + 0.5;
-                    roof.castShadow = true;
-                    group.add(roof);
-                } else if (roofType < 0.6) {
-                    // Pitched roof
-                    const roofGeometry = new THREE.ConeGeometry(width * 0.8, 4, 4);
-                    const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-                    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-                    roof.position.y = height + 2;
-                    roof.rotation.y = Math.PI / 4;
-                    roof.castShadow = true;
-                    group.add(roof);
-                } else {
-                    // Modern roof
-                    const roofGeometry = new THREE.BoxGeometry(width + 2, 2, depth + 2);
-                    const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a2e });
-                    const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-                    roof.position.y = height + 1;
-                    roof.castShadow = true;
-                    group.add(roof);
-                }
+                // Add simple roof
+                const roofGeometry = new THREE.BoxGeometry(width + 1, 1, depth + 1);
+                const roofMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+                const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+                roof.position.y = height + 0.5;
+                roof.castShadow = true;
+                building.add(roof);
                 
-                // Add details (windows, signs, etc.)
-                this.addBuildingDetails(group, width, height, depth);
+                building.userData = { 
+                    type: 'building', 
+                    width: width, 
+                    height: height, 
+                    depth: depth 
+                };
                 
-                group.userData = { type: 'building', width, height, depth, templateIndex: index };
-                return group;
+                return building;
             }
             
-            createBuildingUVs(geometry, uvData) {
-                const uvs = [];
-                const vertices = geometry.attributes.position.array;
-                
-                for (let i = 0; i < vertices.length; i += 3) {
-                    const x = vertices[i];
-                    const y = vertices[i + 1];
-                    const z = vertices[i + 2];
-                    
-                    // Map each face to the texture atlas
-                    const u = uvData.x + (Math.abs(x) / 10) * uvData.width;
-                    const v = uvData.y + (Math.abs(y) / 30) * uvData.height;
-                    uvs.push(u, v);
-                }
-                
-                return new THREE.Float32BufferAttribute(uvs, 2);
-            }
-            
-            addBuildingDetails(group, width, height, depth) {
-                // Windows
-                const windowGeometry = new THREE.PlaneGeometry(1, 1.5);
-                const windowMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x1e90ff,
-                    emissive: 0x1e90ff,
-                    emissiveIntensity: 0.3,
-                    transparent: true,
-                    opacity: 0.7
-                });
-                
-                const windowsPerSide = Math.floor(width / 3);
-                for (let i = 0; i < windowsPerSide; i++) {
-                    for (let j = 0; j < 3; j++) {
-                        const window = new THREE.Mesh(windowGeometry, windowMaterial);
-                        const xPos = (i - (windowsPerSide - 1) / 2) * 3;
-                        const yPos = (j - 1) * 4 + height * 0.3;
-                        
-                        // Front windows
-                        window.position.set(xPos, yPos, depth / 2 + 0.1);
-                        group.add(window.clone());
-                        
-                        // Back windows
-                        const backWindow = window.clone();
-                        backWindow.position.set(xPos, yPos, -depth / 2 - 0.1);
-                        group.add(backWindow);
-                        
-                        // Left windows
-                        const leftWindow = window.clone();
-                        leftWindow.rotation.y = Math.PI / 2;
-                        leftWindow.position.set(-width / 2 - 0.1, yPos, xPos);
-                        group.add(leftWindow);
-                        
-                        // Right windows
-                        const rightWindow = window.clone();
-                        rightWindow.rotation.y = Math.PI / 2;
-                        rightWindow.position.set(width / 2 + 0.1, yPos, xPos);
-                        group.add(rightWindow);
-                    }
-                }
-                
-                // Add signs/advertisements randomly
-                if (Math.random() > 0.5) {
-                    const signGeometry = new THREE.PlaneGeometry(4, 2);
-                    const signMaterial = new THREE.MeshStandardMaterial({
-                        color: Math.random() > 0.5 ? 0xff4757 : 0x2ed573,
-                        emissive: Math.random() > 0.5 ? 0xff4757 : 0x2ed573,
-                        emissiveIntensity: 0.5
-                    });
-                    const sign = new THREE.Mesh(signGeometry, signMaterial);
-                    sign.position.set(0, height * 0.8, depth / 2 + 0.2);
-                    group.add(sign);
-                }
-            }
-            
-            getRandomBuilding() {
-                const index = Math.floor(Math.random() * this.buildingTemplates.length);
-                return this.buildingTemplates[index].clone();
+            getColorForType(type) {
+                const colors = {
+                    'brick': 0xb7410e,
+                    'concrete': 0x9e9e9e,
+                    'glass': 0x87ceeb,
+                    'office': 0xa9a9a9,
+                    'apartment': 0x8b7355,
+                    'shop': 0xff6b6b,
+                    'factory': 0x696969
+                };
+                return colors[type] || 0x808080;
             }
         }
 
-        // ==================== OPTIMIZED ROAD GENERATOR ====================
-        class RoadGenerator {
+        // ==================== SIMPLE ROAD GENERATOR ====================
+        class SimpleRoadGenerator {
             constructor() {
                 this.segments = [];
-                this.currentSegment = 0;
-                this.roadWidth = 24; // 3 lanes
-                this.laneWidth = 8;
+                this.currentZ = 0;
+                this.roadWidth = 24;
                 this.segmentLength = 50;
-                this.roadCurve = 0;
-                this.roadBank = 0;
-                this.roadHeight = 0;
-                this.roadTurn = 0;
-                this.lastZ = 0;
-                this.nextTurn = 0;
-                this.nextHill = 0;
-                this.turnTimer = 0;
-                this.hillTimer = 0;
-                this.bumpTimer = 0;
+                this.curve = 0;
+                this.nextCurveChange = 100;
                 
-                // Road types with probabilities
-                this.roadTypes = [
-                    { type: 'straight', length: 200, prob: 0.4 },
-                    { type: 'gentle_curve', length: 150, prob: 0.2 },
-                    { type: 'sharp_curve', length: 100, prob: 0.1 },
-                    { type: 'hill', length: 100, prob: 0.15 },
-                    { type: 'dip', length: 80, prob: 0.1 },
-                    { type: 'bumps', length: 50, prob: 0.05 }
-                ];
-                
-                this.currentRoadType = 'straight';
-                this.roadTypeProgress = 0;
-                this.roadTypeLength = 200;
+                this.generateInitialSegments(20);
             }
             
-            generateInitialSegments(count = 20) {
+            generateInitialSegments(count) {
                 for (let i = 0; i < count; i++) {
                     this.generateSegment();
                 }
             }
             
             generateSegment() {
+                // Add slight curves occasionally
+                if (Math.random() < 0.3 && Math.abs(this.curve) < 0.1) {
+                    this.curve += (Math.random() - 0.5) * 0.05;
+                }
+                
+                // Straighten out curves over time
+                this.curve *= 0.98;
+                
                 const segment = {
-                    position: new THREE.Vector3(0, this.roadHeight, this.lastZ),
-                    rotation: this.roadTurn,
-                    bank: this.roadBank,
-                    curve: this.roadCurve,
-                    type: this.currentRoadType,
-                    lanes: 3,
+                    position: new THREE.Vector3(0, 0, this.currentZ),
+                    rotation: this.curve,
                     width: this.roadWidth,
-                    length: this.segmentLength,
-                    hasBump: false
+                    length: this.segmentLength
                 };
                 
-                // Update road parameters based on type
-                this.updateRoadType();
-                
-                // Apply current road parameters
-                this.roadTurn += this.roadCurve;
-                this.roadHeight += Math.sin(this.roadBank) * 2;
-                
-                // Keep road parameters within limits
-                this.roadCurve = Math.max(-0.1, Math.min(0.1, this.roadCurve));
-                this.roadTurn = Math.max(-Math.PI / 4, Math.min(Math.PI / 4, this.roadTurn));
-                this.roadBank = Math.max(-0.2, Math.min(0.2, this.roadBank));
-                this.roadHeight = Math.max(-5, Math.min(5, this.roadHeight));
-                
                 this.segments.push(segment);
-                this.lastZ -= this.segmentLength;
-                this.currentSegment++;
+                this.currentZ -= this.segmentLength;
                 
                 return segment;
-            }
-            
-            updateRoadType() {
-                this.roadTypeProgress++;
-                
-                // Change road type if current one is done
-                if (this.roadTypeProgress >= this.roadTypeLength) {
-                    this.selectNewRoadType();
-                    this.roadTypeProgress = 0;
-                }
-                
-                // Update parameters based on current type
-                switch(this.currentRoadType) {
-                    case 'straight':
-                        this.roadCurve *= 0.95; // Smooth out curves
-                        this.roadBank *= 0.95;
-                        break;
-                    case 'gentle_curve':
-                        this.roadCurve = Math.sin(this.roadTypeProgress * 0.05) * 0.03;
-                        break;
-                    case 'sharp_curve':
-                        this.roadCurve = Math.sin(this.roadTypeProgress * 0.1) * 0.08;
-                        this.roadBank = Math.sin(this.roadTypeProgress * 0.1) * 0.15;
-                        break;
-                    case 'hill':
-                        this.roadHeight = Math.sin(this.roadTypeProgress * 0.1) * 4;
-                        break;
-                    case 'dip':
-                        this.roadHeight = -Math.sin(this.roadTypeProgress * 0.1) * 3;
-                        break;
-                    case 'bumps':
-                        this.roadHeight = Math.sin(this.roadTypeProgress * 0.5) * 0.5;
-                        segment.hasBump = true;
-                        break;
-                }
-            }
-            
-            selectNewRoadType() {
-                const rand = Math.random();
-                let cumulativeProb = 0;
-                
-                for (const roadType of this.roadTypes) {
-                    cumulativeProb += roadType.prob;
-                    if (rand <= cumulativeProb) {
-                        this.currentRoadType = roadType.type;
-                        this.roadTypeLength = roadType.length;
-                        break;
-                    }
-                }
-            }
-            
-            getSegmentAtZ(z) {
-                const segmentIndex = Math.floor(-z / this.segmentLength);
-                if (segmentIndex >= 0 && segmentIndex < this.segments.length) {
-                    return this.segments[segmentIndex];
-                }
-                return null;
             }
             
             update(playerZ) {
@@ -1183,277 +602,311 @@
                     this.segments.shift();
                 }
             }
+            
+            getSegmentAtZ(z) {
+                const segmentIndex = Math.floor(-z / this.segmentLength);
+                if (segmentIndex >= 0 && segmentIndex < this.segments.length) {
+                    return this.segments[segmentIndex];
+                }
+                return null;
+            }
         }
 
-        // ==================== ENHANCED CAMERA SYSTEM ====================
-        class EnhancedCamera {
+        // ==================== SIMPLE CAMERA ====================
+        class SimpleCamera {
             constructor(camera) {
                 this.camera = camera;
                 this.target = null;
-                this.offset = new THREE.Vector3(0, 3, -10); // Behind player (negative Z)
-                this.lookOffset = new THREE.Vector3(0, 2, 5);
-                this.smoothness = 0.1;
-                this.currentPosition = new THREE.Vector3();
-                this.currentLookAt = new THREE.Vector3();
-                
-                // Camera effects
-                this.shakeIntensity = 0;
-                this.shakeDecay = 0.9;
-                this.leanAmount = 0;
-                this.zoomLevel = 1;
-                this.baseFOV = 75;
-                this.speedZoomFactor = 0;
-                
-                // Smoothing
-                this.positionSmoothing = new THREE.Vector3();
-                this.rotationSmoothing = new THREE.Vector3();
+                this.offset = new THREE.Vector3(0, 3, -10);
             }
             
             setTarget(target) {
                 this.target = target;
-                if (target) {
-                    // Calculate initial position behind player
-                    const behindOffset = this.offset.clone();
-                    behindOffset.applyQuaternion(target.quaternion);
-                    this.currentPosition.copy(target.position).add(behindOffset);
-                    this.currentLookAt.copy(target.position).add(this.lookOffset);
-                }
             }
             
-            update(deltaTime, playerSpeed, playerSteering) {
+            update() {
                 if (!this.target) return;
                 
-                // Calculate desired position (always behind player)
-                const desiredOffset = this.offset.clone().multiplyScalar(this.zoomLevel);
-                desiredOffset.applyQuaternion(this.target.quaternion);
-                const desiredPosition = this.target.position.clone().add(desiredOffset);
-                
-                // Calculate look-at point (ahead of player)
-                const lookAhead = this.lookOffset.clone();
-                lookAhead.applyQuaternion(this.target.quaternion);
-                const desiredLookAt = this.target.position.clone().add(lookAhead);
-                
-                // Apply camera lean based on player steering
-                this.leanAmount = playerSteering * 0.3;
-                
-                // Apply speed-based zoom
-                const maxSpeed = 60;
-                this.speedZoomFactor = Math.min(playerSpeed / maxSpeed, 1);
-                this.zoomLevel = 1 + this.speedZoomFactor * 0.5; // Zoom out at high speed
-                
-                // Update FOV based on speed
-                this.camera.fov = this.baseFOV + this.speedZoomFactor * 15;
-                this.camera.updateProjectionMatrix();
-                
-                // Smooth interpolation with velocity-based prediction
-                const smoothFactor = this.smoothness * (1 + playerSpeed * 0.01);
-                this.currentPosition.lerp(desiredPosition, smoothFactor);
-                this.currentLookAt.lerp(desiredLookAt, smoothFactor * 0.8);
-                
-                // Apply camera shake
-                if (this.shakeIntensity > 0) {
-                    this.currentPosition.x += (Math.random() - 0.5) * this.shakeIntensity;
-                    this.currentPosition.y += (Math.random() - 0.5) * this.shakeIntensity;
-                    this.currentPosition.z += (Math.random() - 0.5) * this.shakeIntensity;
-                    this.shakeIntensity *= this.shakeDecay;
-                }
-                
-                // Apply camera lean
-                this.camera.position.copy(this.currentPosition);
-                this.camera.lookAt(this.currentLookAt);
-                
-                // Add slight roll based on steering
-                this.camera.rotation.z = this.leanAmount;
-                
-                // Add subtle up/down movement based on speed
-                const bobAmount = Math.sin(Date.now() * 0.005) * 0.1 * this.speedZoomFactor;
-                this.camera.position.y += bobAmount;
+                // Simple follow camera
+                const desiredPosition = this.target.position.clone().add(this.offset);
+                this.camera.position.lerp(desiredPosition, 0.1);
+                this.camera.lookAt(this.target.position);
             }
             
             shake(intensity = 0.3) {
-                this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
-            }
-            
-            setZoom(zoom) {
-                this.zoomLevel = zoom;
+                // Simple shake effect
+                this.camera.position.x += (Math.random() - 0.5) * intensity;
+                this.camera.position.y += (Math.random() - 0.5) * intensity;
             }
         }
 
-        // ==================== INTELLIGENT BOT SYSTEM ====================
-        class IntelligentBotSystem {
-            constructor() {
+        // ==================== SIMPLE BOT AI ====================
+        class SimpleBotAI {
+            constructor(maxBots = 4) {
                 this.bots = [];
-                this.maxBots = 4;
-                this.spawnDistance = 100;
-                this.spawnInterval = 5000; // 5 seconds between spawns
-                this.lastSpawnTime = 0;
-                this.difficulty = 1;
-                this.targetPlayers = new Map();
+                this.maxBots = maxBots;
+                this.botMeshes = [];
             }
             
-            update(gameTime, player, playerSpeed, playerDistance) {
+            update(player, deltaTime) {
+                // Spawn bots if needed
+                if (this.bots.length < this.maxBots && Math.random() < 0.01) {
+                    this.spawnBot(player);
+                }
+                
                 // Update existing bots
                 for (let i = this.bots.length - 1; i >= 0; i--) {
                     const bot = this.bots[i];
-                    if (!bot.active) {
-                        this.bots.splice(i, 1);
-                        continue;
+                    
+                    // Simple chasing behavior
+                    const targetX = player.group.position.x;
+                    const currentX = bot.position.x;
+                    
+                    // Move toward player
+                    if (Math.abs(targetX - currentX) > 0.5) {
+                        bot.position.x += Math.sign(targetX - currentX) * 0.05;
                     }
-                    this.updateBot(bot, player, gameTime, playerSpeed);
+                    
+                    // Move forward
+                    bot.position.z += 20 * deltaTime;
+                    
+                    // Update mesh position
+                    if (bot.mesh) {
+                        bot.mesh.position.copy(bot.position);
+                        bot.mesh.position.y = 0.5;
+                    }
+                    
+                    // Remove if too far behind
+                    if (bot.position.z > player.group.position.z + 100) {
+                        if (bot.mesh) {
+                            bot.mesh.parent.remove(bot.mesh);
+                        }
+                        this.bots.splice(i, 1);
+                    }
                 }
-                
-                // Spawn new bots based on player performance
-                if (this.shouldSpawnBot(gameTime, playerSpeed, playerDistance)) {
-                    this.spawnBot(player);
-                    this.lastSpawnTime = gameTime;
-                }
-                
-                return this.bots.length;
-            }
-            
-            shouldSpawnBot(gameTime, playerSpeed, playerDistance) {
-                // Don't spawn if max bots reached
-                if (this.bots.length >= this.maxBots) return false;
-                
-                // Wait minimum time between spawns
-                if (gameTime - this.lastSpawnTime < this.spawnInterval) return false;
-                
-                // Only spawn after player reaches certain distance
-                if (playerDistance < this.spawnDistance) return false;
-                
-                // Spawn based on player speed (faster = more bots)
-                const speedThreshold = 20;
-                if (playerSpeed < speedThreshold) return false;
-                
-                // Random chance based on difficulty
-                const spawnChance = 0.01 * this.difficulty;
-                return Math.random() < spawnChance;
             }
             
             spawnBot(player) {
                 const bot = {
-                    id: this.bots.length,
-                    active: true,
                     position: new THREE.Vector3(
-                        (Math.random() - 0.5) * 16,
+                        (Math.random() - 0.5) * 20,
                         0.5,
-                        player.cart.position.z - 50 - Math.random() * 100
+                        player.group.position.z - 50 - Math.random() * 50
                     ),
-                    speed: playerSpeed * (0.8 + Math.random() * 0.4),
-                    targetSpeed: playerSpeed,
-                    acceleration: 0.5 + Math.random() * 0.3,
-                    steering: 0.04 + Math.random() * 0.02,
-                    aggression: 0.5 + Math.random() * 0.5,
-                    lane: Math.floor(Math.random() * 3) - 1, // -1, 0, or 1
-                    lastLaneChange: 0,
-                    reactionTime: 0.5 + Math.random(),
-                    prediction: new THREE.Vector3(),
-                    color: new THREE.Color().setHSL(Math.random(), 0.8, 0.5)
+                    speed: 15 + Math.random() * 10,
+                    mesh: null
                 };
+                
+                // Create bot mesh
+                const geometry = new THREE.BoxGeometry(1.5, 0.7, 2.5);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0xff0000,
+                    metalness: 0.6,
+                    roughness: 0.4
+                });
+                
+                bot.mesh = new THREE.Mesh(geometry, material);
+                bot.mesh.position.copy(bot.position);
+                bot.mesh.castShadow = true;
+                bot.mesh.receiveShadow = true;
                 
                 this.bots.push(bot);
                 return bot;
             }
             
-            updateBot(bot, player, gameTime, playerSpeed) {
-                const distanceToPlayer = bot.position.distanceTo(player.cart.position);
-                
-                // Adjust target speed based on player
-                if (distanceToPlayer > 50) {
-                    bot.targetSpeed = playerSpeed * 1.2; // Catch up
-                } else if (distanceToPlayer < 20) {
-                    bot.targetSpeed = playerSpeed * 0.9; // Back off
-                } else {
-                    bot.targetSpeed = playerSpeed * (0.95 + Math.random() * 0.1);
-                }
-                
-                // Adjust speed
-                const speedDiff = bot.targetSpeed - bot.speed;
-                if (Math.abs(speedDiff) > 0.1) {
-                    bot.speed += Math.sign(speedDiff) * bot.acceleration * 0.1;
-                }
-                
-                // Lane management
-                if (gameTime - bot.lastLaneChange > 3) {
-                    const shouldChangeLane = Math.random() > 0.7;
-                    if (shouldChangeLane) {
-                        const newLane = Math.floor(Math.random() * 3) - 1;
-                        if (newLane !== bot.lane) {
-                            bot.lane = newLane;
-                            bot.lastLaneChange = gameTime;
-                        }
-                    }
-                }
-                
-                // Calculate target position
-                const targetX = bot.lane * 8;
-                const currentX = bot.position.x;
-                const xDiff = targetX - currentX;
-                
-                // Smooth steering
-                if (Math.abs(xDiff) > 0.1) {
-                    const steerAmount = Math.sign(xDiff) * Math.min(Math.abs(xDiff) * 0.1, bot.steering);
-                    bot.position.x += steerAmount;
-                }
-                
-                // Move forward
-                bot.position.z += bot.speed * 0.016; // Assuming 60fps
-                
-                // Add randomness for realism
-                if (Math.random() > 0.99) {
-                    bot.position.x += (Math.random() - 0.5) * 2;
-                    bot.speed *= 0.9 + Math.random() * 0.2;
-                }
-                
-                // Check collision with player
-                if (distanceToPlayer < 3) {
-                    return true; // Collision occurred
-                }
-                
-                return false;
-            }
-            
             getBotMeshes() {
-                const meshes = [];
-                for (const bot of this.bots) {
-                    if (!bot.active) continue;
-                    
-                    const geometry = new THREE.BoxGeometry(2, 1, 3);
-                    const material = new THREE.MeshStandardMaterial({
-                        color: bot.color,
-                        metalness: 0.6,
-                        roughness: 0.4
-                    });
-                    
-                    const mesh = new THREE.Mesh(geometry, material);
-                    mesh.position.copy(bot.position);
-                    mesh.position.y = 0.5;
-                    mesh.castShadow = true;
-                    mesh.receiveShadow = true;
-                    mesh.userData = { type: 'bot', botId: bot.id };
-                    
-                    meshes.push(mesh);
-                }
-                return meshes;
+                return this.bots.map(bot => bot.mesh);
             }
             
-            reset() {
+            clear() {
+                this.bots.forEach(bot => {
+                    if (bot.mesh && bot.mesh.parent) {
+                        bot.mesh.parent.remove(bot.mesh);
+                    }
+                });
                 this.bots = [];
-                this.lastSpawnTime = 0;
             }
         }
 
-        // ==================== OPTIMIZED GAME ENGINE ====================
+        // ==================== INPUT MANAGER ====================
+        class InputManager {
+            constructor() {
+                this.keys = {};
+                this.controllers = [];
+                this.connectedControllers = 0;
+                
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                // Keyboard
+                window.addEventListener('keydown', (e) => {
+                    this.keys[e.key.toLowerCase()] = true;
+                });
+                
+                window.addEventListener('keyup', (e) => {
+                    this.keys[e.key.toLowerCase()] = false;
+                });
+                
+                // Gamepad
+                window.addEventListener('gamepadconnected', (e) => {
+                    console.log('Gamepad connected:', e.gamepad.id);
+                    this.controllers[e.gamepad.index] = e.gamepad;
+                    this.connectedControllers++;
+                    this.updateControllerIndicators();
+                });
+                
+                window.addEventListener('gamepaddisconnected', (e) => {
+                    console.log('Gamepad disconnected:', e.gamepad.id);
+                    this.controllers[e.gamepad.index] = null;
+                    this.connectedControllers--;
+                    this.updateControllerIndicators();
+                });
+            }
+            
+            updateControllerIndicators() {
+                const indicators = document.getElementById('controllerIndicators');
+                if (!indicators) return;
+                
+                if (this.connectedControllers > 0) {
+                    indicators.classList.remove('hidden');
+                    indicators.innerHTML = '';
+                    
+                    for (let i = 0; i < this.connectedControllers; i++) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'controller-indicator';
+                        indicator.innerHTML = `
+                            <div class="controller-icon">🎮</div>
+                            <span>Controller ${i + 1}</span>
+                        `;
+                        indicators.appendChild(indicator);
+                    }
+                } else {
+                    indicators.classList.add('hidden');
+                }
+            }
+            
+            getPlayerInput(playerIndex = 0) {
+                const input = {
+                    throttle: 0,
+                    brake: 0,
+                    steering: 0,
+                    boost: false
+                };
+                
+                // Check gamepad first
+                const gamepad = navigator.getGamepads()[playerIndex];
+                if (gamepad) {
+                    // Left stick for steering and throttle
+                    input.steering = Math.abs(gamepad.axes[0]) > 0.1 ? gamepad.axes[0] : 0;
+                    input.throttle = gamepad.buttons[7]?.value || 0;
+                    input.brake = gamepad.buttons[6]?.value || 0;
+                    input.boost = gamepad.buttons[0]?.pressed || gamepad.buttons[1]?.pressed;
+                }
+                
+                // Fallback to keyboard
+                if (playerIndex === 0) {
+                    if (this.keys['w'] || this.keys['arrowup']) input.throttle = 1;
+                    if (this.keys['s'] || this.keys['arrowdown']) input.brake = 1;
+                    if (this.keys['a'] || this.keys['arrowleft']) input.steering = 1;
+                    if (this.keys['d'] || this.keys['arrowright']) input.steering = -1;
+                    if (this.keys[' ']) input.boost = true;
+                    
+                    // Lane switching
+                    if (this.keys['q']) return { ...input, laneChange: -1 };
+                    if (this.keys['e']) return { ...input, laneChange: 1 };
+                }
+                
+                return input;
+            }
+        }
+
+        // ==================== SIMPLE MULTIPLAYER ====================
+        class SimpleMultiplayer {
+            constructor() {
+                this.peer = null;
+                this.connections = [];
+                this.roomCode = '';
+                this.isHost = false;
+                this.players = new Map();
+                this.localPlayerId = this.generateId();
+            }
+            
+            generateId() {
+                return Math.random().toString(36).substr(2, 9);
+            }
+            
+            generateRoomCode() {
+                return Math.random().toString(36).substr(2, 6).toUpperCase();
+            }
+            
+            async createRoom(maxPlayers = 8, botCount = 0) {
+                this.isHost = true;
+                this.roomCode = this.generateRoomCode();
+                this.maxPlayers = maxPlayers;
+                this.botCount = botCount;
+                
+                // Add local player
+                this.players.set(this.localPlayerId, {
+                    id: this.localPlayerId,
+                    name: 'Player 1',
+                    color: 0xff4757,
+                    connected: true
+                });
+                
+                return this.roomCode;
+            }
+            
+            async joinRoom(roomCode) {
+                this.isHost = false;
+                this.roomCode = roomCode;
+                
+                // Simulate connection
+                setTimeout(() => {
+                    if (typeof window.game !== 'undefined') {
+                        window.game.showLobby();
+                    }
+                }, 1000);
+                
+                return true;
+            }
+            
+            addPlayer(playerId, playerData) {
+                this.players.set(playerId, playerData);
+            }
+            
+            removePlayer(playerId) {
+                this.players.delete(playerId);
+            }
+            
+            getPlayerCount() {
+                return this.players.size;
+            }
+            
+            broadcast(data) {
+                // In a real implementation, this would send to all connected peers
+                console.log('Broadcasting:', data);
+            }
+            
+            disconnect() {
+                this.connections = [];
+                this.players = new Map();
+                this.roomCode = '';
+                this.isHost = false;
+            }
+        }
+
+        // ==================== GAME ENGINE ====================
         class CartRidersGame {
             constructor() {
                 // Core systems
-                this.assetPool = new AssetPool();
-                this.textureAtlas = new TextureAtlas();
-                this.buildingManager = null;
-                this.roadGenerator = new RoadGenerator();
+                this.textureAtlas = new SimpleTextureAtlas();
+                this.buildingManager = new SimpleBuildingManager();
+                this.roadGenerator = new SimpleRoadGenerator();
                 this.cameraSystem = null;
-                this.botSystem = new IntelligentBotSystem();
-                this.multiplayer = new MultiplayerManager();
+                this.botAI = new SimpleBotAI(0);
+                this.inputManager = new InputManager();
+                this.multiplayer = new SimpleMultiplayer();
                 
                 // Game state
                 this.gameState = 'LOADING';
@@ -1466,10 +919,10 @@
                 this.maxProducts = 15;
                 this.highScore = localStorage.getItem('cartRidersHighScore') || 0;
                 
-                // Multiplayer state
-                this.isMultiplayer = false;
-                this.numBots = 2;
-                this.remotePlayers = new Map();
+                // Game mode
+                this.gameMode = 'solo'; // 'solo' or 'multiplayer'
+                this.maxPlayers = 1;
+                this.botCount = 0;
                 
                 // Three.js
                 this.scene = null;
@@ -1478,32 +931,9 @@
                 
                 // Game objects
                 this.player = null;
+                this.otherPlayers = new Map();
                 this.roadMeshes = [];
                 this.buildingMeshes = [];
-                this.botMeshes = [];
-                this.activeBuildings = new Set();
-                this.activeRoads = new Set();
-                
-                // Input
-                this.keys = {};
-                this.input = {
-                    steering: 0,
-                    throttle: 0,
-                    brake: 0,
-                    boost: false
-                };
-                
-                // Weather and time
-                this.timeOfDay = 12; // 0-24 hours
-                this.weather = 'clear';
-                this.sunLight = null;
-                this.ambientLight = null;
-                this.fog = null;
-                
-                // Performance
-                this.frameCount = 0;
-                this.lastFPSUpdate = 0;
-                this.fps = 60;
                 
                 this.init();
             }
@@ -1512,24 +942,24 @@
                 this.setupUI();
                 this.initThreeJS();
                 await this.preloadAssets();
-                await this.multiplayer.initialize();
-                this.setupMultiplayerEvents();
                 this.showScreen('startMenu');
                 this.gameLoop();
             }
             
             setupUI() {
+                // Get UI elements
                 this.uiElements = {};
                 const ids = [
-                    'loadingScreen', 'startMenu', 'multiplayerMenu', 'lobbyScreen', 'hud', 'endScreen',
-                    'playSolo', 'playMultiplayer', 'playAgain', 'mainMenu', 'createRoom', 'joinRoom',
-                    'joinControls', 'roomCode', 'connectRoom', 'backToMain', 'lobbyRoomCode',
-                    'readyButton', 'leaveLobby', 'lobbyStatus', 'playerList',
-                    'loadingProgress', 'loadingText',
-                    'speedValue', 'productCount', 'distanceValue', 'playerCount', 'botCount',
-                    'productsGrid', 'highScore',
-                    'finalDistance', 'deliveredCount', 'survivalTime',
-                    'endTitle'
+                    'loadingScreen', 'startMenu', 'hud', 'endScreen',
+                    'playSolo', 'playMultiplayer', 'createRoom', 'joinRoom',
+                    'backToMain', 'createGame', 'joinGame', 'backToMultiplayer',
+                    'backToMultiplayer2', 'startGame', 'leaveLobby',
+                    'loadingProgress', 'loadingText', 'speedValue', 'productCount',
+                    'distanceValue', 'playerCount', 'productsGrid', 'highScore',
+                    'finalDistance', 'deliveredCount', 'survivalTime', 'endTitle',
+                    'multiplayerMenu', 'createRoomMenu', 'joinRoomMenu', 'lobbyScreen',
+                    'maxPlayers', 'botCountSelect', 'roomCodeInput', 'roomCodeDisplay',
+                    'playerList', 'playAgain', 'mainMenu'
                 ];
                 
                 ids.forEach(id => {
@@ -1539,280 +969,70 @@
                 // Event listeners
                 this.uiElements.playSolo?.addEventListener('click', () => this.startSoloGame());
                 this.uiElements.playMultiplayer?.addEventListener('click', () => this.showScreen('multiplayerMenu'));
-                this.uiElements.playAgain?.addEventListener('click', () => this.restartGame());
-                this.uiElements.mainMenu?.addEventListener('click', () => this.showScreen('startMenu'));
-                
-                this.uiElements.createRoom?.addEventListener('click', () => this.createMultiplayerRoom());
-                this.uiElements.joinRoom?.addEventListener('click', () => this.showJoinControls());
-                this.uiElements.connectRoom?.addEventListener('click', () => this.joinMultiplayerRoom());
+                this.uiElements.createRoom?.addEventListener('click', () => this.showScreen('createRoomMenu'));
+                this.uiElements.joinRoom?.addEventListener('click', () => this.showScreen('joinRoomMenu'));
                 this.uiElements.backToMain?.addEventListener('click', () => this.showScreen('startMenu'));
+                this.uiElements.backToMultiplayer?.addEventListener('click', () => this.showScreen('multiplayerMenu'));
+                this.uiElements.backToMultiplayer2?.addEventListener('click', () => this.showScreen('multiplayerMenu'));
                 
-                this.uiElements.readyButton?.addEventListener('click', () => this.toggleReady());
+                this.uiElements.createGame?.addEventListener('click', () => this.createMultiplayerRoom());
+                this.uiElements.joinGame?.addEventListener('click', () => this.joinMultiplayerRoom());
+                this.uiElements.startGame?.addEventListener('click', () => this.startMultiplayerGame());
                 this.uiElements.leaveLobby?.addEventListener('click', () => this.leaveLobby());
+                
+                this.uiElements.playAgain?.addEventListener('click', () => this.restartGame());
+                this.uiElements.mainMenu?.addEventListener('click', () => {
+                    this.showScreen('startMenu');
+                    this.resetGame();
+                });
                 
                 // Update high score display
                 if (this.uiElements.highScore) {
                     this.uiElements.highScore.textContent = `${this.highScore}m`;
                 }
-                
-                // Bot count selector
-                const botSelect = document.getElementById('botCount');
-                if (botSelect) {
-                    this.numBots = parseInt(botSelect.value);
-                    botSelect.addEventListener('change', (e) => {
-                        this.numBots = parseInt(e.target.value);
-                    });
-                }
-            }
-            
-            setupMultiplayerEvents() {
-                // Set up multiplayer callbacks
-                this.multiplayer.onGameStart = (gameState) => {
-                    this.startGame(gameState);
-                };
-                
-                this.multiplayer.onGameStateUpdate = (state) => {
-                    // Update remote players
-                    if (state.players) {
-                        for (const [id, playerData] of Object.entries(state.players)) {
-                            if (id !== this.multiplayer.playerId) {
-                                this.updateRemotePlayer(id, playerData);
-                            }
-                        }
-                    }
-                };
-                
-                this.multiplayer.onPlayerAction = (playerId, action) => {
-                    // Handle remote player actions
-                    if (playerId !== this.multiplayer.playerId) {
-                        this.handleRemotePlayerAction(playerId, action);
-                    }
-                };
-            }
-            
-            async createMultiplayerRoom() {
-                try {
-                    const roomCode = await this.multiplayer.createRoom();
-                    if (this.uiElements.lobbyRoomCode) {
-                        this.uiElements.lobbyRoomCode.textContent = roomCode;
-                    }
-                    this.showScreen('lobbyScreen');
-                    this.updateLobbyUI();
-                } catch (error) {
-                    alert('Failed to create room: ' + error.message);
-                }
-            }
-            
-            showJoinControls() {
-                const joinControls = this.uiElements.joinControls;
-                if (joinControls) {
-                    joinControls.classList.remove('hidden');
-                }
-            }
-            
-            async joinMultiplayerRoom() {
-                const roomCode = this.uiElements.roomCode?.value;
-                if (!roomCode || roomCode.length !== 6) {
-                    alert('Please enter a valid 6-digit room code');
-                    return;
-                }
-                
-                try {
-                    const success = await this.multiplayer.joinRoom(roomCode.toUpperCase());
-                    if (success) {
-                        if (this.uiElements.lobbyRoomCode) {
-                            this.uiElements.lobbyRoomCode.textContent = roomCode.toUpperCase();
-                        }
-                        this.showScreen('lobbyScreen');
-                        this.updateLobbyUI();
-                    }
-                } catch (error) {
-                    alert('Failed to join room: ' + error.message);
-                }
-            }
-            
-            toggleReady() {
-                const isReady = this.multiplayer.readyPlayers.has(this.multiplayer.playerId);
-                this.multiplayer.setReady(!isReady);
-                
-                // Update button text
-                if (this.uiElements.readyButton) {
-                    this.uiElements.readyButton.textContent = isReady ? 'Ready' : 'Cancel Ready';
-                }
-                
-                // If host and all players are ready, start game
-                if (this.multiplayer.isHost && this.multiplayer.canStartGame()) {
-                    this.startMultiplayerGame();
-                }
-            }
-            
-            leaveLobby() {
-                this.multiplayer.disconnect();
-                this.showScreen('startMenu');
-            }
-            
-            updateLobbyUI() {
-                const playerList = this.uiElements.playerList;
-                if (!playerList) return;
-                
-                playerList.innerHTML = '';
-                const players = Array.from(this.multiplayer.players.values());
-                
-                players.forEach(player => {
-                    const div = document.createElement('div');
-                    div.className = 'player-item';
-                    div.innerHTML = `
-                        <span>${player.name} ${player.isHost ? '(Host)' : ''}</span>
-                        <span class="${this.multiplayer.readyPlayers.has(player.id) ? 'player-ready' : 'player-not-ready'}">
-                            ${this.multiplayer.readyPlayers.has(player.id) ? 'Ready' : 'Not Ready'}
-                        </span>
-                    `;
-                    playerList.appendChild(div);
-                });
-                
-                // Update player count
-                if (this.uiElements.playerCount) {
-                    this.uiElements.playerCount.textContent = `${players.length}/8`;
-                }
-            }
-            
-            startMultiplayerGame() {
-                this.isMultiplayer = true;
-                this.botSystem.maxBots = 0; // No bots in multiplayer
-                
-                const gameState = {
-                    mode: 'multiplayer',
-                    players: Array.from(this.multiplayer.players.values()),
-                    timestamp: Date.now()
-                };
-                
-                this.multiplayer.startGame(gameState);
-                this.startGame(gameState);
-            }
-            
-            startSoloGame() {
-                this.isMultiplayer = false;
-                this.botSystem.maxBots = this.numBots;
-                this.startGame({ mode: 'solo' });
             }
             
             initThreeJS() {
                 const canvas = document.getElementById('gameCanvas');
                 
-                // Scene with optimized settings
+                // Scene
                 this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x87CEEB); // Sky blue
+                this.scene.background = new THREE.Color(0x87CEEB);
                 
-                // Camera with optimized FOV
+                // Camera
                 this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-                this.cameraSystem = new EnhancedCamera(this.camera);
+                this.cameraSystem = new SimpleCamera(this.camera);
                 
-                // Renderer with optimizations
+                // Renderer
                 this.renderer = new THREE.WebGLRenderer({
                     canvas: canvas,
                     antialias: true,
-                    alpha: false,
-                    powerPreference: "high-performance"
+                    alpha: false
                 });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 this.renderer.shadowMap.enabled = true;
                 this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                this.renderer.outputEncoding = THREE.sRGBEncoding;
                 
-                // Optimized lighting
-                this.setupLighting();
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
                 
-                // Fog for depth
-                this.fog = new THREE.Fog(0x87CEEB, 100, 500);
-                this.scene.fog = this.fog;
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(100, 200, 100);
+                directionalLight.castShadow = true;
+                this.scene.add(directionalLight);
                 
-                // Sky
-                this.createSky();
+                // Fog
+                this.scene.fog = new THREE.Fog(0x87CEEB, 100, 500);
                 
                 // Event listeners
                 window.addEventListener('resize', () => this.onResize());
-                window.addEventListener('keydown', (e) => this.onKeyDown(e));
-                window.addEventListener('keyup', (e) => this.onKeyUp(e));
-                
-                // Prevent default behavior for game keys
-                window.addEventListener('keydown', (e) => {
-                    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key)) {
-                        e.preventDefault();
-                    }
-                });
-            }
-            
-            setupLighting() {
-                // Dynamic ambient light based on time of day
-                this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                this.scene.add(this.ambientLight);
-                
-                // Sun light (directional)
-                this.sunLight = new THREE.DirectionalLight(0xffffff, 1);
-                this.sunLight.position.set(100, 200, 100);
-                this.sunLight.castShadow = true;
-                this.sunLight.shadow.mapSize.width = 1024;
-                this.sunLight.shadow.mapSize.height = 1024;
-                this.sunLight.shadow.camera.left = -100;
-                this.sunLight.shadow.camera.right = 100;
-                this.sunLight.shadow.camera.top = 100;
-                this.sunLight.shadow.camera.bottom = -100;
-                this.scene.add(this.sunLight);
-                
-                // Fill light
-                const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
-                fillLight.position.set(-100, 50, -100);
-                this.scene.add(fillLight);
-            }
-            
-            createSky() {
-                // Simple sky gradient
-                const skyGeometry = new THREE.SphereGeometry(1000, 32, 32);
-                const skyMaterial = new THREE.ShaderMaterial({
-                    vertexShader: `
-                        varying vec3 vWorldPosition;
-                        void main() {
-                            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-                            vWorldPosition = worldPosition.xyz;
-                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                        }
-                    `,
-                    fragmentShader: `
-                        varying vec3 vWorldPosition;
-                        uniform vec3 topColor;
-                        uniform vec3 bottomColor;
-                        uniform float offset;
-                        uniform float exponent;
-                        
-                        void main() {
-                            float h = normalize(vWorldPosition + offset).y;
-                            gl_FragColor = vec4(mix(bottomColor, topColor, max(pow(max(h, 0.0), exponent), 0.0)), 1.0);
-                        }
-                    `,
-                    uniforms: {
-                        topColor: { value: new THREE.Color(0x0077ff) },
-                        bottomColor: { value: new THREE.Color(0x87ceeb) },
-                        offset: { value: 33 },
-                        exponent: { value: 0.6 }
-                    },
-                    side: THREE.BackSide
-                });
-                
-                const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-                this.scene.add(sky);
             }
             
             async preloadAssets() {
-                // Initialize building manager
-                this.buildingManager = new BuildingManager(this.textureAtlas);
-                
-                // Create asset pools
-                this.assetPool.createPool('road', () => this.createRoadSegment(), 100);
-                this.assetPool.createPool('building', () => this.buildingManager.getRandomBuilding(), 200);
-                
                 // Simulate loading
-                for (let i = 0; i <= 100; i += 5) {
+                for (let i = 0; i <= 100; i += 10) {
                     this.updateLoadingProgress(i);
                     await new Promise(resolve => setTimeout(resolve, 50));
                 }
@@ -1831,8 +1051,22 @@
             
             createRoadSegment() {
                 const geometry = new THREE.PlaneGeometry(24, 50);
+                const texture = this.createRoadTexture();
+                const material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    roughness: 0.9,
+                    metalness: 0.1,
+                    side: THREE.DoubleSide
+                });
                 
-                // Create road texture with 3 lanes
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.receiveShadow = true;
+                
+                return mesh;
+            }
+            
+            createRoadTexture() {
                 const canvas = document.createElement('canvas');
                 canvas.width = 256;
                 canvas.height = 256;
@@ -1870,70 +1104,120 @@
                 texture.wrapT = THREE.RepeatWrapping;
                 texture.repeat.set(1, 10);
                 
-                const material = new THREE.MeshStandardMaterial({
-                    map: texture,
-                    roughness: 0.9,
-                    metalness: 0.1,
-                    side: THREE.DoubleSide
-                });
-                
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.rotation.x = -Math.PI / 2;
-                mesh.receiveShadow = true;
-                mesh.userData = { type: 'road' };
-                
-                return mesh;
+                return texture;
             }
             
-            startGame(gameState) {
+            startSoloGame() {
+                this.gameMode = 'solo';
+                this.maxPlayers = 1;
+                this.botCount = 0;
+                this.startGame();
+            }
+            
+            createMultiplayerRoom() {
+                const maxPlayers = parseInt(this.uiElements.maxPlayers?.value || '8');
+                const botCount = parseInt(this.uiElements.botCountSelect?.value || '0');
+                
+                this.gameMode = 'multiplayer';
+                this.maxPlayers = maxPlayers;
+                this.botCount = botCount;
+                
+                const roomCode = this.multiplayer.createRoom(maxPlayers, botCount);
+                this.showLobby();
+            }
+            
+            joinMultiplayerRoom() {
+                const roomCode = this.uiElements.roomCodeInput?.value || '';
+                if (roomCode.length !== 6) {
+                    alert('Please enter a 6-digit room code');
+                    return;
+                }
+                
+                this.gameMode = 'multiplayer';
+                this.multiplayer.joinRoom(roomCode);
+            }
+            
+            showLobby() {
+                this.showScreen('lobbyScreen');
+                
+                // Update room code display
+                if (this.uiElements.roomCodeDisplay) {
+                    this.uiElements.roomCodeDisplay.textContent = this.multiplayer.roomCode;
+                }
+                
+                // Update player list
+                this.updatePlayerList();
+            }
+            
+            updatePlayerList() {
+                if (!this.uiElements.playerList) return;
+                
+                this.uiElements.playerList.innerHTML = '';
+                
+                this.multiplayer.players.forEach((player, id) => {
+                    const playerElement = document.createElement('div');
+                    playerElement.className = 'player-item';
+                    playerElement.innerHTML = `
+                        <div class="player-color" style="background: #${player.color.toString(16).padStart(6, '0')}"></div>
+                        <span>${player.name}</span>
+                        ${id === this.multiplayer.localPlayerId ? '<span style="color: #2ed573;">(You)</span>' : ''}
+                    `;
+                    this.uiElements.playerList.appendChild(playerElement);
+                });
+            }
+            
+            startMultiplayerGame() {
+                this.startGame();
+            }
+            
+            leaveLobby() {
+                this.multiplayer.disconnect();
+                this.showScreen('startMenu');
+            }
+            
+            startGame() {
                 this.resetGame();
                 this.createPlayer();
-                this.roadGenerator.generateInitialSegments(30);
                 this.generateInitialBuildings();
                 this.isPlaying = true;
                 this.gameState = 'PLAYING';
                 this.showScreen('playing');
                 this.lastTime = performance.now();
+                
+                // Set bot count
+                this.botAI = new SimpleBotAI(this.botCount);
             }
             
             resetGame() {
-                // Clear existing objects
-                this.scene.children = [];
+                // Clear scene
+                while(this.scene.children.length > 0) { 
+                    this.scene.remove(this.scene.children[0]); 
+                }
                 
-                // Re-add lights and sky
-                this.setupLighting();
-                this.createSky();
+                // Reinitialize
+                this.initThreeJS();
                 
-                // Reset game state
+                // Reset state
                 this.gameTime = 0;
                 this.playerDistance = 0;
                 this.playerSpeed = 0;
                 this.playerProducts = 15;
-                this.botSystem.reset();
-                this.remotePlayers.clear();
+                this.botAI.clear();
+                this.otherPlayers.clear();
+                
+                // Reset road generator
+                this.roadGenerator = new SimpleRoadGenerator();
                 
                 // Clear arrays
                 this.roadMeshes = [];
                 this.buildingMeshes = [];
-                this.botMeshes = [];
-                this.activeBuildings.clear();
-                this.activeRoads.clear();
-                
-                // Reset road generator
-                this.roadGenerator = new RoadGenerator();
                 
                 // Update UI
                 this.updateProductsDisplay();
-                if (this.uiElements.botCount) {
-                    this.uiElements.botCount.textContent = '0';
-                }
-                if (this.uiElements.playerCount) {
-                    this.uiElements.playerCount.textContent = '1/8';
-                }
             }
             
             createPlayer() {
-                // Create cart
+                // Create cart using BoxGeometry instead of CapsuleGeometry
                 const cartGeometry = new THREE.BoxGeometry(1.5, 0.7, 2.5);
                 const cartMaterial = new THREE.MeshStandardMaterial({
                     color: 0xff4757,
@@ -1946,28 +1230,27 @@
                 cart.castShadow = true;
                 cart.receiveShadow = true;
                 
-                // Create player - FIX: Replace CapsuleGeometry with BoxGeometry
-                // const playerGeometry = new THREE.CapsuleGeometry(0.3, 0.8, 4, 8);
-                const playerGeometry = new THREE.BoxGeometry(0.5, 1.2, 0.3);
+                // Create player (simple box instead of capsule)
+                const playerGeometry = new THREE.BoxGeometry(0.6, 0.8, 0.3);
                 const playerMaterial = new THREE.MeshStandardMaterial({
                     color: 0x70a1ff,
                     metalness: 0.2,
                     roughness: 0.6
                 });
                 
-                const player = new THREE.Mesh(playerGeometry, playerMaterial);
-                player.position.set(0, 1.3, 0);
-                player.castShadow = true;
+                const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+                playerMesh.position.set(0, 1.2, 0);
+                playerMesh.castShadow = true;
                 
                 const playerGroup = new THREE.Group();
                 playerGroup.add(cart);
-                playerGroup.add(player);
+                playerGroup.add(playerMesh);
                 this.scene.add(playerGroup);
                 
                 this.player = {
                     group: playerGroup,
                     cart: cart,
-                    player: player,
+                    player: playerMesh,
                     speed: 0,
                     maxSpeed: 60,
                     acceleration: 0.8,
@@ -1982,49 +1265,34 @@
             }
             
             generateInitialBuildings() {
-                // Create dense buildings on both sides
-                const buildingSpacing = 10; // 1 meter gap between buildings
-                const rows = 50;
+                const buildingSpacing = 15;
+                const rows = 40;
                 
                 for (let i = 0; i < rows; i++) {
                     const z = -i * buildingSpacing;
                     
                     // Left side buildings
-                    for (let x = -40; x <= -15; x += buildingSpacing) {
+                    for (let x = -40; x <= -20; x += buildingSpacing) {
                         this.spawnBuilding(x, z);
                     }
                     
                     // Right side buildings
-                    for (let x = 15; x <= 40; x += buildingSpacing) {
+                    for (let x = 20; x <= 40; x += buildingSpacing) {
                         this.spawnBuilding(x, z);
                     }
                 }
             }
             
             spawnBuilding(x, z) {
-                const building = this.assetPool.get('building');
-                if (!building) return;
+                const building = this.buildingManager.createBuilding();
+                building.position.set(x, 0, z);
+                building.rotation.y = Math.floor(Math.random() * 4) * Math.PI / 2;
                 
-                // Random position variations
-                const xOffset = (Math.random() - 0.5) * 2;
-                const zOffset = (Math.random() - 0.5) * 2;
-                
-                building.position.set(x + xOffset, 0, z + zOffset);
-                
-                // Random rotation (0, 90, 180, or 270 degrees)
-                const rotation = Math.floor(Math.random() * 4) * Math.PI / 2;
-                building.rotation.y = rotation;
-                
-                // Random scale variation
                 const scale = 0.8 + Math.random() * 0.4;
                 building.scale.setScalar(scale);
                 
-                building.userData.x = x;
-                building.userData.z = z;
-                
                 this.scene.add(building);
                 this.buildingMeshes.push(building);
-                this.activeBuildings.add(building);
             }
             
             updateBuildings(playerZ) {
@@ -2033,82 +1301,66 @@
                     const building = this.buildingMeshes[i];
                     if (building.position.z > playerZ + 100) {
                         this.scene.remove(building);
-                        this.assetPool.release(building);
                         this.buildingMeshes.splice(i, 1);
-                        this.activeBuildings.delete(building);
                     }
                 }
                 
                 // Add new buildings ahead
                 const farthestZ = Math.min(...this.buildingMeshes.map(b => b.position.z));
                 if (farthestZ > playerZ - 500) {
-                    const newZ = farthestZ - 10;
+                    const newZ = farthestZ - 15;
                     
                     // Left side
-                    for (let x = -40; x <= -15; x += 10) {
+                    for (let x = -40; x <= -20; x += 15) {
                         this.spawnBuilding(x, newZ);
                     }
                     
                     // Right side
-                    for (let x = 15; x <= 40; x += 10) {
+                    for (let x = 20; x <= 40; x += 15) {
                         this.spawnBuilding(x, newZ);
                     }
                 }
             }
             
             updateRoads(playerZ) {
-                // Update road generator
                 this.roadGenerator.update(playerZ);
-                
-                // Update road meshes
                 const segments = this.roadGenerator.segments;
                 
-                // Ensure we have enough road meshes
+                // Create road meshes if needed
                 while (this.roadMeshes.length < segments.length) {
-                    const road = this.assetPool.get('road');
-                    if (road) {
-                        this.scene.add(road);
-                        this.roadMeshes.push(road);
-                        this.activeRoads.add(road);
-                    }
+                    const road = this.createRoadSegment();
+                    this.scene.add(road);
+                    this.roadMeshes.push(road);
                 }
                 
-                // Update road positions and rotations
+                // Update road positions
                 for (let i = 0; i < segments.length && i < this.roadMeshes.length; i++) {
                     const segment = segments[i];
                     const roadMesh = this.roadMeshes[i];
                     
                     roadMesh.position.copy(segment.position);
-                    roadMesh.rotation.z = segment.bank;
                     roadMesh.rotation.y = segment.rotation;
-                    
-                    // Apply road height
-                    roadMesh.position.y = segment.position.y;
                 }
                 
                 // Remove old roads
                 while (this.roadMeshes.length > segments.length + 10) {
                     const road = this.roadMeshes.shift();
-                    if (road) {
-                        this.scene.remove(road);
-                        this.assetPool.release(road);
-                        this.activeRoads.delete(road);
-                    }
+                    this.scene.remove(road);
                 }
             }
             
             updatePlayer(deltaTime) {
                 if (!this.player) return;
                 
-                // Get current road segment
-                const currentZ = this.player.group.position.z;
-                const segment = this.roadGenerator.getSegmentAtZ(currentZ);
+                const input = this.inputManager.getPlayerInput();
+                const throttle = input.throttle;
+                const brake = input.brake;
+                const steering = input.steering;
                 
-                // Apply input
-                const throttle = this.input.throttle;
-                const brake = this.input.brake;
-                const steering = this.input.steering;
-                const boost = this.input.boost;
+                // Lane switching
+                if (input.laneChange) {
+                    this.player.lane = Math.max(-1, Math.min(1, this.player.lane + input.laneChange));
+                }
                 
                 // Acceleration
                 if (throttle > 0 && this.player.speed < this.player.maxSpeed) {
@@ -2126,19 +1378,21 @@
                 }
                 
                 // Boost
-                if (boost) {
+                if (input.boost) {
                     this.player.speed = Math.min(this.player.speed * 1.5, this.player.maxSpeed * 1.2);
                 }
                 
-                // Steering with road constraints
+                // Steering
                 if (Math.abs(this.player.speed) > 1) {
                     const steeringEffect = Math.min(Math.abs(this.player.speed) / this.player.maxSpeed, 1);
                     this.player.rotation += steering * this.player.steering * steeringEffect * deltaTime * 60;
                 }
                 
-                // Apply road curve
+                // Get current road segment for curves
+                const currentZ = this.player.group.position.z;
+                const segment = this.roadGenerator.getSegmentAtZ(currentZ);
                 if (segment) {
-                    this.player.rotation += segment.curve * 0.5;
+                    this.player.rotation += segment.rotation * 0.5;
                 }
                 
                 // Move player
@@ -2161,8 +1415,7 @@
                 
                 // Apply road banking
                 if (segment) {
-                    this.player.group.rotation.z = segment.bank * 0.3;
-                    this.player.group.position.y = segment.position.y + 0.5;
+                    this.player.group.position.y = 0.5;
                 }
                 
                 // Bounce effect
@@ -2172,24 +1425,10 @@
                 // Update speed for display
                 this.playerSpeed = Math.abs(this.player.speed * 3.6);
                 
-                // Check collisions with buildings
+                // Check collisions
                 this.checkBuildingCollisions();
-                
-                // Check collisions with bots
                 this.checkBotCollisions();
-                
-                // Check road boundaries
                 this.checkRoadBoundaries();
-                
-                // Send multiplayer update
-                if (this.isMultiplayer) {
-                    this.multiplayer.updateGameState({
-                        position: this.player.group.position,
-                        rotation: this.player.group.rotation,
-                        speed: this.player.speed,
-                        products: this.playerProducts
-                    });
-                }
             }
             
             checkBuildingCollisions() {
@@ -2229,8 +1468,9 @@
             }
             
             checkBotCollisions() {
-                for (let i = 0; i < this.botMeshes.length; i++) {
-                    const bot = this.botMeshes[i];
+                const botMeshes = this.botAI.getBotMeshes();
+                
+                for (const bot of botMeshes) {
                     if (!bot || !this.player) continue;
                     
                     const distance = this.player.group.position.distanceTo(bot.position);
@@ -2282,86 +1522,17 @@
             }
             
             updateBots(deltaTime) {
-                // Update bot system
-                const activeBots = this.botSystem.update(
-                    this.gameTime,
-                    this.player,
-                    this.playerSpeed,
-                    this.playerDistance
-                );
-                
-                // Update bot count display
-                if (this.uiElements.botCount) {
-                    this.uiElements.botCount.textContent = activeBots;
+                if (this.player) {
+                    this.botAI.update(this.player, deltaTime);
+                    
+                    // Add bot meshes to scene
+                    const botMeshes = this.botAI.getBotMeshes();
+                    botMeshes.forEach(botMesh => {
+                        if (!botMesh.parent) {
+                            this.scene.add(botMesh);
+                        }
+                    });
                 }
-                
-                // Remove old bot meshes
-                for (const botMesh of this.botMeshes) {
-                    this.scene.remove(botMesh);
-                }
-                this.botMeshes = [];
-                
-                // Add new bot meshes
-                const newBotMeshes = this.botSystem.getBotMeshes();
-                for (const botMesh of newBotMeshes) {
-                    this.scene.add(botMesh);
-                    this.botMeshes.push(botMesh);
-                }
-            }
-            
-            updateRemotePlayer(playerId, playerData) {
-                // Create or update remote player
-                if (!this.remotePlayers.has(playerId)) {
-                    this.createRemotePlayer(playerId, playerData);
-                } else {
-                    const remotePlayer = this.remotePlayers.get(playerId);
-                    // Smooth interpolation
-                    remotePlayer.mesh.position.lerp(playerData.position, 0.2);
-                    remotePlayer.mesh.rotation.copy(playerData.rotation);
-                }
-            }
-            
-            createRemotePlayer(playerId, playerData) {
-                // Create remote player mesh
-                const cartGeometry = new THREE.BoxGeometry(1.5, 0.7, 2.5);
-                const cartMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x2ed573, // Different color for remote players
-                    metalness: 0.6,
-                    roughness: 0.4
-                });
-                
-                const cart = new THREE.Mesh(cartGeometry, cartMaterial);
-                cart.position.copy(playerData.position || new THREE.Vector3(0, 0.5, -10));
-                cart.castShadow = true;
-                cart.receiveShadow = true;
-                
-                // Create player
-                const playerGeometry = new THREE.BoxGeometry(0.5, 1.2, 0.3);
-                const playerMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x70a1ff,
-                    metalness: 0.2,
-                    roughness: 0.6
-                });
-                
-                const player = new THREE.Mesh(playerGeometry, playerMaterial);
-                player.position.set(0, 1.3, 0);
-                player.castShadow = true;
-                
-                const playerGroup = new THREE.Group();
-                playerGroup.add(cart);
-                playerGroup.add(player);
-                this.scene.add(playerGroup);
-                
-                this.remotePlayers.set(playerId, {
-                    mesh: playerGroup,
-                    data: playerData
-                });
-            }
-            
-            handleRemotePlayerAction(playerId, action) {
-                // Handle actions from remote players
-                // Could include boosts, collisions, etc.
-                console.log('Remote player action:', playerId, action);
             }
             
             updateUI() {
@@ -2376,63 +1547,10 @@
                     this.uiElements.distanceValue.textContent = `${Math.abs(this.playerDistance).toFixed(0)}m`;
                 }
                 if (this.uiElements.playerCount) {
-                    const totalPlayers = 1 + this.remotePlayers.size;
-                    this.uiElements.playerCount.textContent = `${totalPlayers}/8`;
+                    const playerCount = this.gameMode === 'multiplayer' ? 
+                        this.multiplayer.getPlayerCount() : 1;
+                    this.uiElements.playerCount.textContent = `${playerCount}/${this.maxPlayers}`;
                 }
-                
-                // Update time of day
-                this.updateTimeOfDay(deltaTime);
-            }
-            
-            updateTimeOfDay(deltaTime) {
-                // Slowly progress time (24 hour cycle in 30 minutes of game time)
-                this.timeOfDay += deltaTime * 0.05;
-                if (this.timeOfDay >= 24) this.timeOfDay -= 24;
-                
-                // Update lighting based on time
-                const hour = this.timeOfDay;
-                let sunIntensity = 0;
-                let ambientIntensity = 0;
-                let sunColor = 0xffffff;
-                let fogColor = 0x87CEEB;
-                
-                if (hour >= 6 && hour < 18) {
-                    // Daytime
-                    sunIntensity = Math.sin((hour - 6) * Math.PI / 12) * 0.8 + 0.2;
-                    ambientIntensity = 0.6;
-                } else if (hour >= 18 && hour < 20) {
-                    // Sunset
-                    sunIntensity = 0.3;
-                    ambientIntensity = 0.4;
-                    sunColor = 0xff6b6b;
-                    fogColor = 0xffb8b8;
-                } else if (hour >= 20 || hour < 6) {
-                    // Night
-                    sunIntensity = 0.1;
-                    ambientIntensity = 0.2;
-                    sunColor = 0x1a1a2e;
-                    fogColor = 0x1a1a2e;
-                } else if (hour >= 5 && hour < 6) {
-                    // Sunrise
-                    sunIntensity = 0.2;
-                    ambientIntensity = 0.3;
-                    sunColor = 0xffa500;
-                    fogColor = 0xffcc80;
-                }
-                
-                // Update lights
-                this.sunLight.intensity = sunIntensity;
-                this.sunLight.color.setHex(sunColor);
-                this.ambientLight.intensity = ambientIntensity;
-                
-                // Update fog
-                this.scene.fog.color.setHex(fogColor);
-                this.scene.background.setHex(fogColor);
-                
-                // Position sun based on time
-                const sunAngle = (hour / 24) * Math.PI * 2;
-                this.sunLight.position.x = Math.cos(sunAngle) * 200;
-                this.sunLight.position.y = Math.sin(sunAngle) * 200 + 100;
             }
             
             updateProductsDisplay() {
@@ -2471,7 +1589,7 @@
                     this.uiElements.survivalTime.textContent = `${this.gameTime.toFixed(1)}s`;
                 }
                 if (this.uiElements.endTitle) {
-                    this.uiElements.endTitle.textContent = this.isMultiplayer ? 'Game Over - Multiplayer' : 'Game Over';
+                    this.uiElements.endTitle.textContent = 'Game Over';
                 }
                 
                 this.showScreen('endScreen');
@@ -2479,16 +1597,13 @@
             
             restartGame() {
                 this.resetGame();
-                if (this.isMultiplayer) {
-                    this.startMultiplayerGame();
-                } else {
-                    this.startSoloGame();
-                }
+                this.startGame();
             }
             
             showScreen(screenName) {
                 // Hide all screens
-                ['loadingScreen', 'startMenu', 'multiplayerMenu', 'lobbyScreen', 'hud', 'endScreen'].forEach(screen => {
+                ['loadingScreen', 'startMenu', 'multiplayerMenu', 'createRoomMenu', 
+                 'joinRoomMenu', 'lobbyScreen', 'hud', 'endScreen'].forEach(screen => {
                     if (this.uiElements[screen]) {
                         this.uiElements[screen].classList.add('hidden');
                     }
@@ -2502,11 +1617,6 @@
                 } else if (this.uiElements[screenName]) {
                     this.uiElements[screenName].classList.remove('hidden');
                 }
-                
-                // Update global function for multiplayer
-                if (screenName === 'lobbyScreen') {
-                    window.updateLobbyUI = () => this.updateLobbyUI();
-                }
             }
             
             onResize() {
@@ -2517,101 +1627,27 @@
                 }
             }
             
-            onKeyDown(e) {
-                const key = e.key.toLowerCase();
-                this.keys[key] = true;
-                
-                // Update input state
-                if (key === 'w' || key === 'arrowup') this.input.throttle = 1;
-                if (key === 's' || key === 'arrowdown') this.input.brake = 1;
-                if (key === 'a' || key === 'arrowleft') this.input.steering = 1;
-                if (key === 'd' || key === 'arrowright') this.input.steering = -1;
-                if (key === ' ') this.input.boost = true;
-                
-                // Lane switching with Q/E
-                if (key === 'q' && this.player) {
-                    this.player.lane = Math.max(-1, this.player.lane - 1);
-                }
-                if (key === 'e' && this.player) {
-                    this.player.lane = Math.min(1, this.player.lane + 1);
-                }
-                
-                // Escape to pause
-                if (key === 'escape') {
-                    if (this.gameState === 'PLAYING') {
-                        this.isPlaying = !this.isPlaying;
-                    }
-                }
-                
-                // Send multiplayer action
-                if (this.isMultiplayer && ['w', 's', 'a', 'd', ' ', 'q', 'e'].includes(key)) {
-                    this.multiplayer.sendPlayerAction({
-                        type: 'input',
-                        key: key,
-                        state: 'down'
-                    });
-                }
-            }
-            
-            onKeyUp(e) {
-                const key = e.key.toLowerCase();
-                this.keys[key] = false;
-                
-                // Update input state
-                if (key === 'w' || key === 'arrowup') this.input.throttle = 0;
-                if (key === 's' || key === 'arrowdown') this.input.brake = 0;
-                if (key === 'a' || key === 'arrowleft') this.input.steering = 0;
-                if (key === 'd' || key === 'arrowright') this.input.steering = 0;
-                if (key === ' ') this.input.boost = false;
-                
-                // Send multiplayer action
-                if (this.isMultiplayer && ['w', 's', 'a', 'd', ' ', 'q', 'e'].includes(key)) {
-                    this.multiplayer.sendPlayerAction({
-                        type: 'input',
-                        key: key,
-                        state: 'up'
-                    });
-                }
-            }
-            
             gameLoop(currentTime = 0) {
-                // Calculate delta time
                 const deltaTime = (currentTime - this.lastTime) / 1000;
                 this.lastTime = currentTime;
                 
-                // Cap delta time for stability
                 const fixedDelta = Math.min(deltaTime, 0.033);
                 
-                // Update FPS counter
-                this.frameCount++;
-                if (currentTime - this.lastFPSUpdate > 1000) {
-                    this.fps = Math.round(this.frameCount * 1000 / (currentTime - this.lastFPSUpdate));
-                    this.frameCount = 0;
-                    this.lastFPSUpdate = currentTime;
-                }
-                
                 if (this.gameState === 'PLAYING' && this.isPlaying) {
-                    // Update game time
                     this.gameTime += fixedDelta;
                     
-                    // Update player
+                    // Update game systems
                     this.updatePlayer(fixedDelta);
                     
-                    // Update road and buildings
                     if (this.player) {
                         this.updateRoads(this.player.group.position.z);
                         this.updateBuildings(this.player.group.position.z);
                     }
                     
-                    // Update bots
-                    if (!this.isMultiplayer) {
-                        this.updateBots(fixedDelta);
-                    }
+                    this.updateBots(fixedDelta);
                     
                     // Update camera
-                    if (this.player && this.cameraSystem) {
-                        this.cameraSystem.update(fixedDelta, this.playerSpeed, this.input.steering);
-                    }
+                    this.cameraSystem.update();
                     
                     // Update UI
                     this.updateUI();
