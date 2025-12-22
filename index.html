@@ -64,7 +64,7 @@
 
         h2 {
             font-size: 2em;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
             color: #70a1ff;
         }
 
@@ -76,6 +76,8 @@
             border-radius: 20px;
             border: 3px solid #ff6b6b;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            max-height: 80vh;
+            overflow-y: auto;
         }
 
         .button-group {
@@ -107,25 +109,137 @@
             background: linear-gradient(45deg, #ff4757, #ff3838);
         }
 
-        .input-group {
+        /* Settings Controls */
+        .settings-group {
             margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            border: 1px solid #70a1ff;
+        }
+
+        .setting-item {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            color: #70a1ff;
+            font-weight: bold;
+        }
+
+        .setting-value {
+            color: #2ed573;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        /* Multiplayer Controls */
+        .multiplayer-controls {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #70a1ff;
+        }
+
+        .input-group {
+            margin: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
         label {
-            display: block;
             margin-bottom: 8px;
             color: #70a1ff;
             font-weight: bold;
         }
 
-        select {
-            width: 100%;
-            padding: 12px;
+        input, select {
+            padding: 10px 15px;
+            font-size: 1.1em;
             border: 2px solid #ff6b6b;
             border-radius: 8px;
             background: rgba(255, 255, 255, 0.1);
             color: white;
-            font-size: 1em;
+            width: 100%;
+            max-width: 300px;
+            text-align: center;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2ed573;
+        }
+
+        .room-code {
+            font-size: 2em;
+            letter-spacing: 5px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #2ed573;
+            font-family: monospace;
+        }
+
+        .player-list {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .player-item {
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-ready {
+            color: #2ed573;
+            font-weight: bold;
+        }
+
+        .player-not-ready {
+            color: #ff4757;
         }
 
         /* HUD */
@@ -209,11 +323,39 @@
             margin-top: 20px;
             color: #70a1ff;
         }
+
+        /* Settings Button */
+        #settingsButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #ff6b6b;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        #settingsButton:hover {
+            background: rgba(255, 107, 107, 0.7);
+            transform: rotate(30deg);
+        }
     </style>
 </head>
 <body>
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
+        
+        <!-- Settings Button -->
+        <button id="settingsButton" title="Settings">⚙️</button>
 
         <!-- Loading Screen -->
         <div id="loadingScreen" class="screen">
@@ -230,6 +372,8 @@
                 <h1>Delivery Chaos</h1>
                 <div class="button-group">
                     <button id="playSolo">Play Solo</button>
+                    <button id="playMultiplayer">Multiplayer</button>
+                    <button id="openSettings">Settings</button>
                 </div>
                 <div class="input-group">
                     <label for="botCount">Number of Bots (0-4):</label>
@@ -248,6 +392,148 @@
             </div>
         </div>
 
+        <!-- Settings Screen -->
+        <div id="settingsScreen" class="screen hidden">
+            <div class="menu-container">
+                <h1>Settings</h1>
+                
+                <div class="settings-group">
+                    <h2>Camera Settings</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Camera Height:</span>
+                            <span class="setting-value" id="cameraHeightValue">3.0</span>
+                        </div>
+                        <input type="range" id="cameraHeight" min="1" max="10" step="0.1" value="3.0">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Camera Distance:</span>
+                            <span class="setting-value" id="cameraDistanceValue">8.0</span>
+                        </div>
+                        <input type="range" id="cameraDistance" min="3" max="15" step="0.1" value="8.0">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Camera Smoothness:</span>
+                            <span class="setting-value" id="cameraSmoothnessValue">0.08</span>
+                        </div>
+                        <input type="range" id="cameraSmoothness" min="0.01" max="0.2" step="0.01" value="0.08">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Field of View:</span>
+                            <span class="setting-value" id="fovValue">60</span>
+                        </div>
+                        <input type="range" id="fov" min="30" max="90" step="1" value="60">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Camera Shake Intensity:</span>
+                            <span class="setting-value" id="shakeValue">0.5</span>
+                        </div>
+                        <input type="range" id="shakeIntensity" min="0" max="1" step="0.1" value="0.5">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Camera Bob Intensity:</span>
+                            <span class="setting-value" id="bobValue">0.02</span>
+                        </div>
+                        <input type="range" id="bobIntensity" min="0" max="0.1" step="0.001" value="0.02">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Camera Lean Amount:</span>
+                            <span class="setting-value" id="leanValue">0.2</span>
+                        </div>
+                        <input type="range" id="leanAmount" min="0" max="0.5" step="0.01" value="0.2">
+                    </div>
+                </div>
+                
+                <div class="settings-group">
+                    <h2>Game Settings</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Mouse Sensitivity:</span>
+                            <span class="setting-value" id="sensitivityValue">1.0</span>
+                        </div>
+                        <input type="range" id="mouseSensitivity" min="0.1" max="3" step="0.1" value="1.0">
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Max Speed:</span>
+                            <span class="setting-value" id="maxSpeedValue">80</span>
+                        </div>
+                        <input type="range" id="maxSpeed" min="40" max="120" step="5" value="80">
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="vibration" checked>
+                        <label for="vibration">Enable Vibration Effects</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="shadows" checked>
+                        <label for="shadows">Enable Shadows</label>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="weatherEffects" checked>
+                        <label for="weatherEffects">Enable Weather Effects</label>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button id="saveSettings">Save Settings</button>
+                    <button id="resetSettings">Reset to Default</button>
+                    <button id="backToMenuFromSettings">Back to Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Multiplayer Menu -->
+        <div id="multiplayerMenu" class="screen hidden">
+            <div class="menu-container">
+                <h1>Multiplayer</h1>
+                <div class="button-group">
+                    <button id="createRoom">Create Room</button>
+                    <button id="joinRoom">Join Available Room</button>
+                </div>
+                <div class="input-group" id="roomCodeGroup">
+                    <label for="roomCode">Room Code (Backup):</label>
+                    <input type="text" id="roomCode" maxlength="6" placeholder="Enter 6-digit code">
+                    <button id="connectRoom" style="margin-top: 15px;">Connect with Code</button>
+                </div>
+                <button id="backToMain" style="margin-top: 30px;">Back to Main</button>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="screen hidden">
+            <div class="menu-container">
+                <h1>Lobby</h1>
+                <div class="room-code" id="lobbyRoomCode">XXXXXX</div>
+                <div class="player-list" id="playerList">
+                    <!-- Players will be added here -->
+                </div>
+                <div class="button-group">
+                    <button id="readyButton">Ready</button>
+                    <button id="startGame" class="hidden">Start Game</button>
+                    <button id="leaveLobby">Leave Lobby</button>
+                </div>
+                <div class="loading-text" id="lobbyStatus">Waiting for players...</div>
+            </div>
+        </div>
+
         <!-- Game HUD -->
         <div id="hud" class="hidden">
             <div class="hud-item">
@@ -263,8 +549,12 @@
                 <span class="hud-value" id="distanceValue">0m</span>
             </div>
             <div class="hud-item">
+                <span class="hud-label">Players:</span>
+                <span class="hud-value" id="playerCount">1/8</span>
+            </div>
+            <div class="hud-item">
                 <span class="hud-label">Bots:</span>
-                <span class="hud-value" id="botCountValue">0</span>
+                <span class="hud-value" id="botCount">0</span>
             </div>
             <div class="products-grid" id="productsGrid"></div>
         </div>
@@ -280,179 +570,338 @@
                 </div>
                 <div class="button-group">
                     <button id="playAgain">Play Again</button>
-                    <button id="mainMenuBtn">Main Menu</button>
+                    <button id="mainMenu">Main Menu</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== ASSET LOADER ====================
-        class AssetLoader {
+        // ==================== GAME SETTINGS MANAGER ====================
+        class GameSettings {
             constructor() {
-                this.loader = new THREE.GLTFLoader();
-                this.models = {};
-                this.textures = {};
+                // Default settings
+                this.cameraHeight = 3.0;
+                this.cameraDistance = 8.0;
+                this.cameraSmoothness = 0.08;
+                this.cameraFOV = 60;
+                this.cameraShakeIntensity = 0.5;
+                this.cameraBobIntensity = 0.02;
+                this.cameraLeanAmount = 0.2;
+                
+                this.mouseSensitivity = 1.0;
+                this.maxSpeed = 80;
+                this.enableVibration = true;
+                this.enableShadows = true;
+                this.enableWeather = true;
+                
+                this.load();
             }
             
-            async loadModel(name, path) {
-                return new Promise((resolve, reject) => {
-                    this.loader.load(
-                        path,
-                        (gltf) => {
-                            this.models[name] = gltf.scene;
-                            resolve(gltf.scene);
-                        },
-                        undefined,
-                        (error) => {
-                            console.error(`Error loading model ${name}:`, error);
-                            // Create fallback geometry
-                            this.createFallbackModel(name);
-                            resolve(this.models[name]);
-                        }
-                    );
-                });
-            }
-            
-            createFallbackModel(name) {
-                let geometry, material;
-                
-                switch(name) {
-                    case 'cart':
-                        geometry = new THREE.BoxGeometry(2.5, 1.5, 4);
-                        material = new THREE.MeshStandardMaterial({ color: 0xff4757 });
-                        break;
-                    case 'player':
-                        geometry = new THREE.BoxGeometry(0.6, 1.5, 0.4);
-                        material = new THREE.MeshStandardMaterial({ color: 0x70a1ff });
-                        break;
-                    case 'house':
-                        geometry = new THREE.BoxGeometry(10, 15, 10);
-                        material = new THREE.MeshStandardMaterial({ color: 0x8b7355 });
-                        break;
-                    case 'road_straight':
-                        geometry = new THREE.BoxGeometry(24, 0.1, 50);
-                        material = new THREE.MeshStandardMaterial({ color: 0x333333 });
-                        break;
-                    case 'road_left':
-                        geometry = new THREE.BoxGeometry(24, 0.1, 50);
-                        material = new THREE.MeshStandardMaterial({ color: 0x444444 });
-                        break;
-                    case 'road_right':
-                        geometry = new THREE.BoxGeometry(24, 0.1, 50);
-                        material = new THREE.MeshStandardMaterial({ color: 0x555555 });
-                        break;
-                    default:
-                        geometry = new THREE.BoxGeometry(1, 1, 1);
-                        material = new THREE.MeshStandardMaterial({ color: 0x808080 });
-                }
-                
-                const mesh = new THREE.Mesh(geometry, material);
-                this.models[name] = mesh;
-                return mesh;
-            }
-            
-            createBuildingTextures() {
-                // Create various building textures
-                const textures = [
-                    { name: 'brick', color: 0xb7410e },
-                    { name: 'concrete', color: 0x9e9e9e },
-                    { name: 'glass', color: 0x87ceeb },
-                    { name: 'office', color: 0xa9a9a9 },
-                    { name: 'apartment', color: 0x8b7355 },
-                    { name: 'shop', color: 0xff6b6b },
-                    { name: 'factory', color: 0x696969 }
-                ];
-                
-                textures.forEach(texture => {
-                    this.createTexture(texture.name, texture.color);
-                });
-            }
-            
-            createTexture(name, baseColor) {
-                const canvas = document.createElement('canvas');
-                const size = 256;
-                canvas.width = size;
-                canvas.height = size;
-                const ctx = canvas.getContext('2d');
-                
-                // Fill with base color
-                ctx.fillStyle = `#${baseColor.toString(16).padStart(6, '0')}`;
-                ctx.fillRect(0, 0, size, size);
-                
-                // Add simple pattern
-                ctx.fillStyle = this.adjustColor(baseColor, -30);
-                for (let y = 0; y < size; y += 32) {
-                    for (let x = 0; x < size; x += 32) {
-                        ctx.fillRect(x + 2, y + 2, 28, 28);
+            load() {
+                const saved = localStorage.getItem('cartRidersSettings');
+                if (saved) {
+                    try {
+                        const settings = JSON.parse(saved);
+                        Object.assign(this, settings);
+                    } catch (e) {
+                        console.log('Failed to load settings:', e);
                     }
                 }
-                
-                const texture = new THREE.CanvasTexture(canvas);
-                this.textures[name] = texture;
-                return texture;
             }
             
-            adjustColor(color, amount) {
-                let r = (color >> 16) & 0xff;
-                let g = (color >> 8) & 0xff;
-                let b = color & 0xff;
-                
-                r = Math.max(0, Math.min(255, r + amount));
-                g = Math.max(0, Math.min(255, g + amount));
-                b = Math.max(0, Math.min(255, b + amount));
-                
-                return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+            save() {
+                localStorage.setItem('cartRidersSettings', JSON.stringify(this));
             }
             
-            getModel(name) {
-                return this.models[name] ? this.models[name].clone() : null;
-            }
-            
-            getTexture(name) {
-                return this.textures[name];
+            reset() {
+                // Reset to defaults
+                this.cameraHeight = 3.0;
+                this.cameraDistance = 8.0;
+                this.cameraSmoothness = 0.08;
+                this.cameraFOV = 60;
+                this.cameraShakeIntensity = 0.5;
+                this.cameraBobIntensity = 0.02;
+                this.cameraLeanAmount = 0.2;
+                
+                this.mouseSensitivity = 1.0;
+                this.maxSpeed = 80;
+                this.enableVibration = true;
+                this.enableShadows = true;
+                this.enableWeather = true;
+                
+                this.save();
             }
         }
 
-        // ==================== SIMPLE ROAD GENERATOR WITH ROAD MODELS ====================
-        class SimpleRoadGenerator {
-            constructor(assetLoader) {
-                this.assetLoader = assetLoader;
-                this.segments = [];
-                this.currentZ = 0;
-                this.segmentLength = 50;
-                this.curve = 0;
-                this.curveTimer = 0;
-                this.nextCurveChange = 50;
-                
-                // Road types from road.glb
-                this.roadModels = {
-                    'straight': null,
-                    'left': null,
-                    'right': null
-                };
-                
-                this.loadRoadModels();
+        // ==================== OPTIMIZED ASSET MANAGER ====================
+        class AssetManager {
+            constructor() {
+                this.models = new Map();
+                this.textures = new Map();
+                this.loader = new THREE.GLTFLoader();
+                this.textureLoader = new THREE.TextureLoader();
+                this.loadedCount = 0;
+                this.totalAssets = 0;
             }
             
-            async loadRoadModels() {
-                try {
-                    await this.assetLoader.loadModel('road_straight', 'models/road.glb');
-                    await this.assetLoader.loadModel('road_left', 'models/road.glb');
-                    await this.assetLoader.loadModel('road_right', 'models/road.glb');
-                    
-                    // We'll use the same model for all types but rotate them
-                    const roadBase = this.assetLoader.getModel('road_straight');
-                    if (roadBase) {
-                        this.roadModels.straight = roadBase;
-                        this.roadModels.left = roadBase.clone();
-                        this.roadModels.right = roadBase.clone();
-                    }
-                } catch (error) {
-                    console.warn('Could not load road models, using fallback');
+            async loadModel(name, path) {
+                this.totalAssets++;
+                return new Promise((resolve, reject) => {
+                    this.loader.load(path, (gltf) => {
+                        // Optimize model
+                        gltf.scene.traverse((child) => {
+                            if (child.isMesh) {
+                                child.castShadow = true;
+                                child.receiveShadow = true;
+                                child.frustumCulled = true;
+                                
+                                // Optimize materials
+                                if (child.material) {
+                                    child.material = child.material.clone();
+                                }
+                            }
+                        });
+                        
+                        this.models.set(name, gltf.scene);
+                        this.loadedCount++;
+                        resolve(gltf.scene);
+                    }, 
+                    (xhr) => {
+                        // Progress callback
+                        console.log(`${name}: ${(xhr.loaded / xhr.total * 100)}% loaded`);
+                    },
+                    reject);
+                });
+            }
+            
+            async loadTexture(name, path) {
+                this.totalAssets++;
+                return new Promise((resolve, reject) => {
+                    this.textureLoader.load(path, (texture) => {
+                        texture.wrapS = THREE.RepeatWrapping;
+                        texture.wrapT = THREE.RepeatWrapping;
+                        texture.minFilter = THREE.LinearMipMapLinearFilter;
+                        texture.magFilter = THREE.LinearFilter;
+                        texture.anisotropy = 2;
+                        
+                        this.textures.set(name, texture);
+                        this.loadedCount++;
+                        resolve(texture);
+                    }, undefined, reject);
+                });
+            }
+            
+            getModel(name) {
+                const model = this.models.get(name);
+                return model ? model.clone() : null;
+            }
+            
+            getTexture(name) {
+                return this.textures.get(name);
+            }
+            
+            getProgress() {
+                return this.totalAssets > 0 ? (this.loadedCount / this.totalAssets) * 100 : 0;
+            }
+        }
+
+        // ==================== SMOOTH CAMERA SYSTEM ====================
+        class SmoothCameraSystem {
+            constructor(camera, settings) {
+                this.camera = camera;
+                this.settings = settings;
+                this.target = null;
+                
+                // Camera properties with smooth interpolation
+                this.currentPosition = new THREE.Vector3();
+                this.currentLookAt = new THREE.Vector3();
+                this.targetPosition = new THREE.Vector3();
+                this.targetLookAt = new THREE.Vector3();
+                
+                // Camera effects with minimal vibration
+                this.shakeIntensity = 0;
+                this.shakeDecay = 0.85;
+                this.leanAmount = 0;
+                this.zoomLevel = 1;
+                
+                // Smoothing velocity
+                this.positionVelocity = new THREE.Vector3();
+                this.lookAtVelocity = new THREE.Vector3();
+                
+                // No bob effect by default (causes vibration)
+                this.bobEnabled = false;
+                
+                // Last known values for smooth interpolation
+                this.lastPlayerSpeed = 0;
+                this.lastPlayerSteering = 0;
+                
+                this.updateCameraOffset();
+            }
+            
+            setTarget(target) {
+                this.target = target;
+                if (target) {
+                    this.updateCameraOffset();
+                    this.currentPosition.copy(target.position).add(this.offset);
+                    this.currentLookAt.copy(target.position).add(this.lookOffset);
+                    this.camera.position.copy(this.currentPosition);
+                    this.camera.lookAt(this.currentLookAt);
+                }
+            }
+            
+            updateCameraOffset() {
+                // Calculate offset based on settings
+                this.offset = new THREE.Vector3(0, this.settings.cameraHeight, this.settings.cameraDistance);
+                this.lookOffset = new THREE.Vector3(0, 0.5, -this.settings.cameraDistance * 0.6);
+                
+                // Update camera FOV
+                this.camera.fov = this.settings.cameraFOV;
+                this.camera.updateProjectionMatrix();
+            }
+            
+            update(deltaTime, playerSpeed, playerSteering) {
+                if (!this.target) return;
+                
+                // Smooth out input changes to reduce vibration
+                this.lastPlayerSpeed += (playerSpeed - this.lastPlayerSpeed) * 0.1;
+                this.lastPlayerSteering += (playerSteering - this.lastPlayerSteering) * 0.1;
+                
+                // Calculate desired position
+                const desiredOffset = this.offset.clone().multiplyScalar(this.zoomLevel);
+                this.targetPosition.copy(this.target.position).add(desiredOffset);
+                
+                // Calculate look-at point (slightly ahead for forward view)
+                this.targetLookAt.copy(this.target.position).add(this.lookOffset);
+                
+                // Smooth position interpolation with velocity damping
+                const smoothFactor = this.settings.cameraSmoothness;
+                
+                // Use spring physics for smoother movement
+                this.currentPosition.x = this.lerpWithDamping(
+                    this.currentPosition.x, 
+                    this.targetPosition.x, 
+                    smoothFactor, 
+                    deltaTime
+                );
+                this.currentPosition.y = this.lerpWithDamping(
+                    this.currentPosition.y, 
+                    this.targetPosition.y, 
+                    smoothFactor, 
+                    deltaTime
+                );
+                this.currentPosition.z = this.lerpWithDamping(
+                    this.currentPosition.z, 
+                    this.targetPosition.z, 
+                    smoothFactor * 0.8, // Slower Z movement
+                    deltaTime
+                );
+                
+                this.currentLookAt.x = this.lerpWithDamping(
+                    this.currentLookAt.x, 
+                    this.targetLookAt.x, 
+                    smoothFactor * 1.2, // Faster look-at movement
+                    deltaTime
+                );
+                this.currentLookAt.y = this.lerpWithDamping(
+                    this.currentLookAt.y, 
+                    this.targetLookAt.y, 
+                    smoothFactor * 1.2,
+                    deltaTime
+                );
+                this.currentLookAt.z = this.lerpWithDamping(
+                    this.currentLookAt.z, 
+                    this.targetLookAt.z, 
+                    smoothFactor * 1.2,
+                    deltaTime
+                );
+                
+                // Apply camera shake (if enabled and minimal)
+                if (this.shakeIntensity > 0 && this.settings.enableVibration) {
+                    const shakeX = (Math.random() - 0.5) * this.shakeIntensity * 0.1;
+                    const shakeY = (Math.random() - 0.5) * this.shakeIntensity * 0.1;
+                    this.currentPosition.x += shakeX;
+                    this.currentPosition.y += shakeY;
+                    this.shakeIntensity *= this.shakeDecay;
                 }
                 
-                this.generateInitialSegments(20);
+                // Apply very subtle lean based on steering (reduced intensity)
+                this.leanAmount = this.lastPlayerSteering * this.settings.cameraLeanAmount * 0.1;
+                
+                // Set camera position and rotation
+                this.camera.position.copy(this.currentPosition);
+                this.camera.lookAt(this.currentLookAt);
+                
+                // Apply minimal lean (roll)
+                this.camera.rotation.z = this.leanAmount;
+                
+                // Apply speed-based zoom (very subtle)
+                const speedFactor = Math.min(this.lastPlayerSpeed / 80, 1);
+                this.zoomLevel = 1 - speedFactor * 0.1; // Very subtle zoom
+                
+                // Apply minimal, smooth bob effect only if enabled
+                if (this.bobEnabled && this.settings.cameraBobIntensity > 0) {
+                    const bobFrequency = 0.003; // Very slow frequency
+                    const bobAmount = Math.sin(Date.now() * bobFrequency) * 
+                                    this.settings.cameraBobIntensity * 
+                                    speedFactor * 0.1; // Very reduced
+                    this.camera.position.y += bobAmount;
+                }
+            }
+            
+            lerpWithDamping(current, target, factor, deltaTime) {
+                // Damped interpolation for smooth movement
+                const dt = Math.min(deltaTime * 60, 1);
+                return current + (target - current) * factor * dt;
+            }
+            
+            shake(intensity = 0.3) {
+                if (this.settings.enableVibration) {
+                    this.shakeIntensity = Math.max(this.shakeIntensity, intensity * this.settings.cameraShakeIntensity);
+                }
+            }
+            
+            enableBob(enable) {
+                this.bobEnabled = enable;
+            }
+            
+            updateSettings(settings) {
+                this.settings = settings;
+                this.updateCameraOffset();
+            }
+        }
+
+        // ==================== OPTIMIZED ROAD GENERATOR ====================
+        class OptimizedRoadGenerator {
+            constructor() {
+                this.segments = [];
+                this.segmentLength = 100;
+                this.roadWidth = 21;
+                this.laneWidth = 7;
+                this.currentZ = 0;
+                this.totalGenerated = 0;
+                
+                // Road types with smooth transitions
+                this.roadTypes = [
+                    { type: 'straight', length: 200, weight: 40 },
+                    { type: 'gentle_left', length: 150, weight: 15, curve: -0.015 },
+                    { type: 'gentle_right', length: 150, weight: 15, curve: 0.015 },
+                    { type: 'sharp_left', length: 120, weight: 8, curve: -0.035, bank: -0.08 },
+                    { type: 'sharp_right', length: 120, weight: 8, curve: 0.035, bank: 0.08 },
+                    { type: 'uphill', length: 180, weight: 10, slope: 0.04 },
+                    { type: 'downhill', length: 180, weight: 10, slope: -0.04 },
+                    { type: 's_curve', length: 200, weight: 6, curve: 0.02, curveChange: 0.04 }
+                ];
+                
+                this.currentType = 'straight';
+                this.typeProgress = 0;
+                this.typeDuration = 200;
+                this.currentSlope = 0;
+                this.currentCurve = 0;
+                this.currentBank = 0;
+                this.currentHeight = 0;
+                
+                this.generateInitialSegments(30);
             }
             
             generateInitialSegments(count) {
@@ -462,49 +911,94 @@
             }
             
             generateSegment() {
-                this.curveTimer++;
+                this.typeProgress++;
                 
-                // Change curve direction occasionally
-                if (this.curveTimer >= this.nextCurveChange) {
-                    this.nextCurveChange += 20 + Math.random() * 30;
-                    this.curve = (Math.random() - 0.5) * 0.15;
+                // Smoothly transition between road types
+                if (this.typeProgress >= this.typeDuration) {
+                    this.selectNextRoadType();
+                    this.typeProgress = 0;
                 }
                 
-                let roadType = 'straight';
-                let rotation = 0;
-                
-                // Determine road type based on curve
-                if (this.curve > 0.1) {
-                    roadType = 'left';
-                    rotation = this.curve * 10;
-                } else if (this.curve < -0.1) {
-                    roadType = 'right';
-                    rotation = this.curve * 10;
-                }
+                // Apply smooth parameter changes
+                this.applyRoadType();
                 
                 const segment = {
-                    position: new THREE.Vector3(0, 0, this.currentZ),
-                    rotation: rotation,
-                    curve: this.curve,
-                    type: roadType,
+                    id: this.totalGenerated++,
+                    position: new THREE.Vector3(
+                        Math.sin(this.currentCurve) * 50,
+                        this.currentHeight,
+                        this.currentZ
+                    ),
+                    rotation: this.currentCurve,
+                    bank: this.currentBank,
+                    curve: this.currentCurve,
+                    slope: this.currentSlope,
+                    type: this.currentType,
+                    width: this.roadWidth,
+                    laneWidth: this.laneWidth,
+                    lanes: 3,
                     length: this.segmentLength
                 };
                 
-                this.segments.push(segment);
+                // Update for next segment
                 this.currentZ -= this.segmentLength;
+                this.currentHeight += this.currentSlope * this.segmentLength;
                 
+                // Smooth out extreme values
+                this.currentCurve *= 0.98;
+                this.currentBank *= 0.95;
+                this.currentSlope *= 0.96;
+                
+                this.segments.push(segment);
                 return segment;
             }
             
+            selectNextRoadType() {
+                const totalWeight = this.roadTypes.reduce((sum, type) => sum + type.weight, 0);
+                let random = Math.random() * totalWeight;
+                
+                for (const type of this.roadTypes) {
+                    random -= type.weight;
+                    if (random <= 0) {
+                        this.currentType = type.type;
+                        this.typeDuration = type.length || 200;
+                        
+                        // Apply type parameters gradually
+                        this.currentCurve = type.curve || 0;
+                        this.currentSlope = type.slope || 0;
+                        this.currentBank = type.bank || 0;
+                        break;
+                    }
+                }
+            }
+            
+            applyRoadType() {
+                // Smooth parameter application
+                switch(this.currentType) {
+                    case 's_curve':
+                        if (this.typeProgress < this.typeDuration / 2) {
+                            this.currentCurve += 0.0002;
+                        } else {
+                            this.currentCurve -= 0.0002;
+                        }
+                        break;
+                }
+                
+                // Clamp values
+                this.currentCurve = Math.max(-Math.PI/8, Math.min(Math.PI/8, this.currentCurve));
+                this.currentBank = Math.max(-0.15, Math.min(0.15, this.currentBank));
+                this.currentHeight = Math.max(-8, Math.min(8, this.currentHeight));
+            }
+            
             update(playerZ) {
-                // Generate new segments ahead
-                const segmentsNeeded = Math.floor(-playerZ / this.segmentLength) + 30 - this.segments.length;
+                // Generate ahead
+                const segmentsNeeded = Math.floor(-playerZ / this.segmentLength) + 25 - this.segments.length;
                 for (let i = 0; i < segmentsNeeded; i++) {
                     this.generateSegment();
                 }
                 
-                // Remove old segments
-                while (this.segments.length > 0 && this.segments[0].position.z > playerZ + 500) {
+                // Remove behind
+                while (this.segments.length > 0 && this.segments[0].position.z > playerZ + 800) {
                     this.segments.shift();
                 }
             }
@@ -517,388 +1011,222 @@
                 return null;
             }
             
-            createRoadMesh(segment) {
-                let roadMesh;
-                
-                if (this.roadModels[segment.type]) {
-                    roadMesh = this.roadModels[segment.type].clone();
-                } else {
-                    // Fallback to box geometry
-                    const geometry = new THREE.BoxGeometry(24, 0.1, 50);
-                    const material = new THREE.MeshStandardMaterial({ 
-                        color: 0x333333,
-                        roughness: 0.9,
-                        metalness: 0.1
-                    });
-                    roadMesh = new THREE.Mesh(geometry, material);
-                }
-                
-                roadMesh.position.copy(segment.position);
-                roadMesh.rotation.y = segment.rotation;
-                roadMesh.receiveShadow = true;
-                
-                // Add lane markings to fallback road
-                if (!this.roadModels[segment.type]) {
-                    this.addLaneMarkings(roadMesh);
-                }
-                
-                return roadMesh;
-            }
-            
-            addLaneMarkings(roadMesh) {
-                // Add simple lane markings
-                const lineGeometry = new THREE.PlaneGeometry(0.2, 50);
-                const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                
-                // Center line (dashed effect)
-                for (let z = -25; z < 25; z += 10) {
-                    const line = new THREE.Mesh(lineGeometry, lineMaterial);
-                    line.position.set(0, 0.02, z);
-                    line.rotation.x = -Math.PI / 2;
-                    roadMesh.add(line);
-                }
-                
-                // Lane dividers
-                const leftDivider = new THREE.Mesh(lineGeometry, lineMaterial);
-                leftDivider.position.set(-8, 0.02, 0);
-                leftDivider.rotation.x = -Math.PI / 2;
-                leftDivider.scale.set(1, 1, 20);
-                roadMesh.add(leftDivider);
-                
-                const rightDivider = new THREE.Mesh(lineGeometry, lineMaterial);
-                rightDivider.position.set(8, 0.02, 0);
-                rightDivider.rotation.x = -Math.PI / 2;
-                rightDivider.scale.set(1, 1, 20);
-                roadMesh.add(rightDivider);
+            getLanePosition(lane) {
+                return lane * this.laneWidth;
             }
         }
 
-        // ==================== SIMPLE BUILDING MANAGER ====================
-        class SimpleBuildingManager {
-            constructor(assetLoader) {
-                this.assetLoader = assetLoader;
+        // ==================== OPTIMIZED BUILDING MANAGER ====================
+        class OptimizedBuildingManager {
+            constructor(assetManager) {
+                this.assetManager = assetManager;
                 this.buildings = [];
-                this.buildingTypes = ['brick', 'concrete', 'glass', 'office', 'apartment', 'shop', 'factory'];
+                this.buildingPool = [];
+                this.maxBuildings = 300;
+                this.buildingSpacing = 8;
+                
+                // Create building variations
+                this.createBuildingVariations();
             }
             
-            async initialize() {
-                // Load house model
-                try {
-                    await this.assetLoader.loadModel('house', 'models/house.glb');
-                } catch (error) {
-                    console.warn('Could not load house model, using fallback');
-                }
-                
-                // Create building textures
-                this.assetLoader.createBuildingTextures();
+            createBuildingVariations() {
+                // Different building types
+                this.buildingTypes = [
+                    { type: 'house_1', width: 10, height: 8, depth: 12, colors: [0xb7410e, 0x8b4513] },
+                    { type: 'house_2', width: 12, height: 10, depth: 14, colors: [0x8b7355, 0xa0522d] },
+                    { type: 'apartment', width: 16, height: 20, depth: 12, colors: [0x708090, 0x778899] },
+                    { type: 'shop', width: 8, height: 6, depth: 10, colors: [0xff6b6b, 0xff4757] },
+                    { type: 'office', width: 14, height: 18, depth: 16, colors: [0x4682b4, 0x5f9ea0] }
+                ];
             }
             
-            createBuilding(x, z) {
-                let building;
+            createBuilding(type) {
+                const buildingType = this.buildingTypes.find(t => t.type === type) || this.buildingTypes[0];
                 
-                try {
-                    const houseModel = this.assetLoader.getModel('house');
-                    if (houseModel) {
-                        building = houseModel.clone();
-                    }
-                } catch (error) {
-                    building = this.assetLoader.createFallbackModel('house');
-                }
+                const group = new THREE.Group();
                 
-                if (!building) return null;
+                // Main building with texture
+                const geometry = new THREE.BoxGeometry(buildingType.width, buildingType.height, buildingType.depth);
                 
-                // Choose random building type for texture
-                const buildingType = this.buildingTypes[Math.floor(Math.random() * this.buildingTypes.length)];
-                const texture = this.assetLoader.getTexture(buildingType);
+                // Create texture for building
+                const canvas = this.createBuildingTexture(buildingType);
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.needsUpdate = true;
                 
-                // Apply texture/material
-                building.traverse((child) => {
-                    if (child.isMesh) {
-                        child.material = new THREE.MeshStandardMaterial({
-                            map: texture || null,
-                            color: this.getBuildingColor(buildingType),
-                            roughness: 0.8,
-                            metalness: 0.2
-                        });
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
+                const material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    roughness: 0.7,
+                    metalness: 0.1
                 });
                 
-                // Random variations
-                const scale = 0.8 + Math.random() * 0.4;
-                building.scale.set(scale, scale, scale);
+                const building = new THREE.Mesh(geometry, material);
+                building.position.y = buildingType.height / 2;
+                building.castShadow = true;
+                building.receiveShadow = true;
+                group.add(building);
                 
-                // Random rotation (0, 90, 180, or 270 degrees)
-                const rotation = Math.floor(Math.random() * 4) * Math.PI / 2;
-                building.rotation.y = rotation;
+                // Roof
+                const roofGeometry = new THREE.BoxGeometry(buildingType.width + 0.5, 0.5, buildingType.depth + 0.5);
+                const roofMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x333333,
+                    roughness: 0.9
+                });
+                const roof = new THREE.Mesh(roofGeometry, roofMaterial);
+                roof.position.y = buildingType.height + 0.25;
+                roof.castShadow = true;
+                group.add(roof);
                 
-                // Position with slight variations
-                building.position.set(x + (Math.random() - 0.5) * 2, 0, z + (Math.random() - 0.5) * 2);
+                // Add windows
+                this.addWindows(group, buildingType);
                 
-                return building;
-            }
-            
-            getBuildingColor(buildingType) {
-                const colors = {
-                    'brick': 0xb7410e,
-                    'concrete': 0x9e9e9e,
-                    'glass': 0x87ceeb,
-                    'office': 0xa9a9a9,
-                    'apartment': 0x8b7355,
-                    'shop': 0xff6b6b,
-                    'factory': 0x696969
+                group.userData = {
+                    type: 'building',
+                    width: buildingType.width,
+                    height: buildingType.height,
+                    depth: buildingType.depth
                 };
-                return colors[buildingType] || 0x808080;
+                
+                return group;
             }
             
-            generateInitialBuildings() {
-                const buildingSpacing = 12;
-                const rows = 50;
+            createBuildingTexture(buildingType) {
+                const canvas = document.createElement('canvas');
+                const size = 256;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
                 
-                for (let i = 0; i < rows; i++) {
-                    const z = -i * buildingSpacing;
-                    
-                    // Left side buildings
-                    for (let x = -42; x <= -18; x += buildingSpacing) {
-                        // Occasionally skip a building to create small gaps
-                        if (Math.random() > 0.9) continue;
-                        const building = this.createBuilding(x, z);
-                        if (building) {
-                            this.buildings.push(building);
-                        }
-                    }
-                    
-                    // Right side buildings
-                    for (let x = 18; x <= 42; x += buildingSpacing) {
-                        // Occasionally skip a building to create small gaps
-                        if (Math.random() > 0.9) continue;
-                        const building = this.createBuilding(x, z);
-                        if (building) {
-                            this.buildings.push(building);
+                // Base color
+                ctx.fillStyle = this.rgbToHex(buildingType.colors[0]);
+                ctx.fillRect(0, 0, size, size);
+                
+                // Add brick/panel pattern
+                ctx.fillStyle = this.rgbToHex(buildingType.colors[1]);
+                const brickWidth = size / 16;
+                const brickHeight = size / 8;
+                
+                for (let y = 0; y < size; y += brickHeight) {
+                    for (let x = 0; x < size; x += brickWidth) {
+                        if ((y / brickHeight) % 2 === 0) {
+                            ctx.fillRect(x, y, brickWidth - 1, brickHeight - 1);
+                        } else {
+                            ctx.fillRect(x + brickWidth/2, y, brickWidth - 1, brickHeight - 1);
                         }
                     }
                 }
+                
+                return canvas;
+            }
+            
+            rgbToHex(rgb) {
+                if (typeof rgb === 'number') {
+                    return '#' + rgb.toString(16).padStart(6, '0');
+                }
+                return rgb;
+            }
+            
+            addWindows(group, buildingType) {
+                const windowRows = Math.floor(buildingType.height / 3);
+                const windowCols = Math.floor(buildingType.width / 3);
+                
+                for (let row = 0; row < windowRows; row++) {
+                    for (let col = 0; col < windowCols; col++) {
+                        const windowGeometry = new THREE.PlaneGeometry(1, 1.5);
+                        const windowMaterial = new THREE.MeshBasicMaterial({
+                            color: 0x1e90ff,
+                            transparent: true,
+                            opacity: 0.8
+                        });
+                        
+                        const window = new THREE.Mesh(windowGeometry, windowMaterial);
+                        const xPos = (col - (windowCols - 1) / 2) * 3;
+                        const yPos = (row - (windowRows - 1) / 2) * 3 + buildingType.height * 0.3;
+                        
+                        // Front windows
+                        window.position.set(xPos, yPos, buildingType.depth / 2 + 0.05);
+                        group.add(window);
+                        
+                        // Back windows
+                        const backWindow = window.clone();
+                        backWindow.position.set(xPos, yPos, -buildingType.depth / 2 - 0.05);
+                        group.add(backWindow);
+                    }
+                }
+            }
+            
+            generateBuildings(startZ, endZ, side) {
+                const buildings = [];
+                const baseX = side === 'left' ? -30 : 30;
+                
+                let z = startZ;
+                while (z > endZ) {
+                    // Random spacing (mostly close, occasionally 1m gap)
+                    const spacing = Math.random() > 0.9 ? this.buildingSpacing + 1 : this.buildingSpacing;
+                    
+                    const buildingType = this.buildingTypes[Math.floor(Math.random() * this.buildingTypes.length)];
+                    const building = this.createBuilding(buildingType.type);
+                    
+                    // Position with slight variation
+                    const xOffset = (Math.random() - 0.5) * 2;
+                    const zOffset = (Math.random() - 0.5) * 2;
+                    
+                    building.position.set(
+                        baseX + xOffset,
+                        0,
+                        z + zOffset
+                    );
+                    
+                    // Random rotation for variety (0, 90, 180, or 270 degrees)
+                    const rotation = Math.floor(Math.random() * 4) * Math.PI / 2;
+                    building.rotation.y = rotation;
+                    
+                    // Slight scale variation
+                    const scale = 0.9 + Math.random() * 0.2;
+                    building.scale.setScalar(scale);
+                    
+                    buildings.push(building);
+                    z -= spacing;
+                }
+                
+                return buildings;
             }
             
             update(playerZ) {
-                // Remove buildings far behind
+                // Remove distant buildings
                 for (let i = this.buildings.length - 1; i >= 0; i--) {
-                    const building = this.buildings[i];
-                    if (building.position.z > playerZ + 100) {
+                    if (this.buildings[i].position.z > playerZ + 600) {
+                        this.buildingPool.push(this.buildings[i]);
                         this.buildings.splice(i, 1);
                     }
                 }
                 
                 // Add new buildings ahead
                 const farthestZ = this.buildings.length > 0 ? 
-                    Math.min(...this.buildings.map(b => b.position.z)) : playerZ - 500;
+                    Math.min(...this.buildings.map(b => b.position.z)) : playerZ - 100;
                 
-                if (farthestZ > playerZ - 600) {
-                    const newZ = farthestZ - 12;
+                if (farthestZ > playerZ - 500) {
+                    const newZ = farthestZ - 50;
                     
-                    // Left side
-                    for (let x = -42; x <= -18; x += 12) {
-                        if (Math.random() > 0.9) continue;
-                        const building = this.createBuilding(x, newZ);
-                        if (building) {
-                            this.buildings.push(building);
-                        }
-                    }
+                    // Generate dense buildings on both sides
+                    const leftBuildings = this.generateBuildings(newZ, newZ - 100, 'left');
+                    const rightBuildings = this.generateBuildings(newZ, newZ - 100, 'right');
                     
-                    // Right side
-                    for (let x = 18; x <= 42; x += 12) {
-                        if (Math.random() > 0.9) continue;
-                        const building = this.createBuilding(x, newZ);
-                        if (building) {
-                            this.buildings.push(building);
-                        }
-                    }
+                    this.buildings.push(...leftBuildings, ...rightBuildings);
                 }
-            }
-            
-            getBuildings() {
+                
                 return this.buildings;
             }
         }
 
-        // ==================== SIMPLE BOT SYSTEM ====================
-        class SimpleBotSystem {
-            constructor(maxBots = 4) {
-                this.maxBots = maxBots;
-                this.bots = [];
-                this.botMeshes = [];
-                this.spawnTimer = 0;
-                this.spawnDelay = 3000; // Start spawning after 3 seconds
-            }
-            
-            update(deltaTime, player, playerSpeed, playerDistance) {
-                // Only start spawning after initial delay
-                if (this.spawnTimer < this.spawnDelay) {
-                    this.spawnTimer += deltaTime * 1000;
-                    return this.bots.length;
-                }
-                
-                // Spawn bots based on player speed
-                if (this.bots.length < this.maxBots && 
-                    playerSpeed > 15 && // Minimum speed
-                    Math.random() < 0.001) {
-                    
-                    this.spawnBot(player);
-                }
-                
-                // Update existing bots
-                for (let i = this.bots.length - 1; i >= 0; i--) {
-                    const bot = this.bots[i];
-                    this.updateBot(bot, player, deltaTime);
-                    
-                    // Remove bots that are too far behind
-                    if (bot.position.z > player.cart.position.z + 200) {
-                        this.removeBot(i);
-                    }
-                }
-                
-                return this.bots.length;
-            }
-            
-            spawnBot(player) {
-                const bot = {
-                    id: this.bots.length,
-                    position: new THREE.Vector3(
-                        (Math.random() - 0.5) * 20,
-                        0.5,
-                        player.cart.position.z - 60 - Math.random() * 40
-                    ),
-                    speed: playerSpeed * (0.8 + Math.random() * 0.4),
-                    lane: Math.floor(Math.random() * 3) - 1,
-                    color: new THREE.Color().setHSL(Math.random(), 0.8, 0.5)
-                };
-                
-                this.bots.push(bot);
-                return bot;
-            }
-            
-            updateBot(bot, player, deltaTime) {
-                // Simple AI: move toward player's lane
-                const playerLane = Math.round(player.cart.position.x / 8);
-                const targetX = bot.lane * 8;
-                const currentX = bot.position.x;
-                
-                // Move toward target lane
-                const xDiff = targetX - currentX;
-                if (Math.abs(xDiff) > 0.1) {
-                    bot.position.x += Math.sign(xDiff) * 0.1 * deltaTime * 60;
-                }
-                
-                // Move forward
-                bot.position.z += bot.speed * deltaTime;
-                
-                // Occasionally change behavior
-                if (Math.random() < 0.01) {
-                    bot.lane = Math.floor(Math.random() * 3) - 1;
-                }
-            }
-            
-            removeBot(index) {
-                if (index >= 0 && index < this.bots.length) {
-                    this.bots.splice(index, 1);
-                }
-            }
-            
-            createBotMesh(bot) {
-                const geometry = new THREE.BoxGeometry(2.5, 1.5, 4);
-                const material = new THREE.MeshStandardMaterial({
-                    color: bot.color,
-                    metalness: 0.6,
-                    roughness: 0.4
-                });
-                
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.copy(bot.position);
-                mesh.position.y = 0.75;
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                
-                return mesh;
-            }
-            
-            getBotMeshes() {
-                this.botMeshes = [];
-                
-                for (const bot of this.bots) {
-                    const mesh = this.createBotMesh(bot);
-                    mesh.position.copy(bot.position);
-                    mesh.position.y = 0.75;
-                    this.botMeshes.push(mesh);
-                }
-                
-                return this.botMeshes;
-            }
-            
-            reset() {
-                this.bots = [];
-                this.botMeshes = [];
-                this.spawnTimer = 0;
-            }
-        }
-
-        // ==================== SIMPLE CAMERA (180 DEGREE TURNED) ====================
-        class SimpleCamera {
-            constructor(camera) {
-                this.camera = camera;
-                this.target = null;
-                // Camera is in front of player (positive Z) looking at player
-                this.offset = new THREE.Vector3(0, 4, 10);
-                this.currentPosition = new THREE.Vector3();
-                this.smoothness = 0.1;
-            }
-            
-            setTarget(target) {
-                this.target = target;
-                if (target) {
-                    // Set initial position in front of player
-                    this.currentPosition.copy(target.position).add(this.offset);
-                    this.camera.position.copy(this.currentPosition);
-                    this.camera.lookAt(target.position);
-                }
-            }
-            
-            update(deltaTime, playerSpeed) {
-                if (!this.target) return;
-                
-                // Calculate desired position (in front of player)
-                const desiredPosition = this.target.position.clone().add(this.offset);
-                
-                // Smooth interpolation
-                this.currentPosition.lerp(desiredPosition, this.smoothness);
-                
-                // Apply position
-                this.camera.position.copy(this.currentPosition);
-                
-                // Always look at player
-                this.camera.lookAt(this.target.position);
-                
-                // Add subtle camera movement based on speed
-                const bobAmount = Math.sin(Date.now() * 0.003) * 0.05 * (playerSpeed / 60);
-                this.camera.position.y += bobAmount;
-            }
-            
-            shake(intensity = 0.3) {
-                // Simple shake effect
-                this.camera.position.x += (Math.random() - 0.5) * intensity;
-                this.camera.position.y += (Math.random() - 0.5) * intensity;
-            }
-        }
-
-        // ==================== GAME ENGINE ====================
+        // ==================== OPTIMIZED GAME ENGINE ====================
         class CartRidersGame {
             constructor() {
                 // Core systems
-                this.assetLoader = new AssetLoader();
+                this.settings = new GameSettings();
+                this.assetManager = new AssetManager();
+                this.roadGenerator = new OptimizedRoadGenerator();
                 this.buildingManager = null;
-                this.roadGenerator = null;
                 this.cameraSystem = null;
-                this.botSystem = null;
                 
                 // Game state
                 this.gameState = 'LOADING';
@@ -909,7 +1237,9 @@
                 this.playerSpeed = 0;
                 this.playerProducts = 15;
                 this.maxProducts = 15;
-                this.highScore = localStorage.getItem('cartRidersHighScore') || 0;
+                this.highScore = parseInt(localStorage.getItem('cartRidersHighScore')) || 0;
+                
+                // Settings
                 this.numBots = 2;
                 
                 // Three.js
@@ -919,9 +1249,8 @@
                 
                 // Game objects
                 this.player = null;
-                this.roadMeshes = [];
+                this.roadMeshes = new Map();
                 this.buildings = [];
-                this.botMeshes = [];
                 
                 // Input
                 this.keys = {};
@@ -932,31 +1261,37 @@
                     boost: false
                 };
                 
-                // Character animation
-                this.characterLean = 0;
-                this.characterBob = 0;
-                
                 this.init();
             }
             
             async init() {
                 this.setupUI();
-                await this.initThreeJS();
-                await this.preloadAssets();
+                this.initThreeJS();
+                await this.loadAssets();
                 this.showScreen('startMenu');
                 this.gameLoop();
             }
             
             setupUI() {
-                // Get UI elements
                 this.uiElements = {};
                 const ids = [
-                    'loadingScreen', 'startMenu', 'hud', 'endScreen',
-                    'playSolo', 'playAgain', 'mainMenuBtn',
-                    'botCount', 'highScore', 'speedValue', 'productCount',
-                    'distanceValue', 'botCountValue', 'productsGrid',
-                    'finalDistance', 'deliveredCount', 'survivalTime', 'endTitle',
-                    'loadingProgress', 'loadingText'
+                    'loadingScreen', 'startMenu', 'settingsScreen', 'multiplayerMenu', 'lobbyScreen', 'hud', 'endScreen',
+                    'playSolo', 'playMultiplayer', 'openSettings', 'playAgain', 'mainMenu', 'createRoom', 'joinRoom',
+                    'roomCodeGroup', 'roomCode', 'connectRoom', 'backToMain', 'lobbyRoomCode',
+                    'readyButton', 'startGame', 'leaveLobby', 'lobbyStatus', 'playerList',
+                    'loadingProgress', 'loadingText',
+                    'speedValue', 'productCount', 'distanceValue', 'playerCount', 'botCount',
+                    'productsGrid', 'highScore',
+                    'finalDistance', 'deliveredCount', 'survivalTime',
+                    'endTitle',
+                    'saveSettings', 'resetSettings', 'backToMenuFromSettings',
+                    'settingsButton',
+                    // Settings inputs
+                    'cameraHeight', 'cameraDistance', 'cameraSmoothness', 'fov', 'shakeIntensity', 'bobIntensity', 'leanAmount',
+                    'mouseSensitivity', 'maxSpeed', 'vibration', 'shadows', 'weatherEffects',
+                    // Setting value displays
+                    'cameraHeightValue', 'cameraDistanceValue', 'cameraSmoothnessValue', 'fovValue', 
+                    'shakeValue', 'bobValue', 'leanValue', 'sensitivityValue', 'maxSpeedValue'
                 ];
                 
                 ids.forEach(id => {
@@ -965,108 +1300,195 @@
                 
                 // Event listeners
                 this.uiElements.playSolo?.addEventListener('click', () => this.startSoloGame());
+                this.uiElements.playMultiplayer?.addEventListener('click', () => this.showScreen('multiplayerMenu'));
+                this.uiElements.openSettings?.addEventListener('click', () => this.openSettings());
                 this.uiElements.playAgain?.addEventListener('click', () => this.restartGame());
-                this.uiElements.mainMenuBtn?.addEventListener('click', () => {
-                    this.resetGame();
-                    this.showScreen('startMenu');
-                });
+                this.uiElements.mainMenu?.addEventListener('click', () => this.showScreen('startMenu'));
                 
-                // Bot count selector
-                if (this.uiElements.botCount) {
-                    this.numBots = parseInt(this.uiElements.botCount.value);
-                    this.uiElements.botCount.addEventListener('change', (e) => {
-                        this.numBots = parseInt(e.target.value);
-                    });
-                }
+                this.uiElements.settingsButton?.addEventListener('click', () => this.openSettings());
                 
-                // Update high score display
+                // Settings events
+                this.uiElements.saveSettings?.addEventListener('click', () => this.saveSettings());
+                this.uiElements.resetSettings?.addEventListener('click', () => this.resetSettings());
+                this.uiElements.backToMenuFromSettings?.addEventListener('click', () => this.showScreen('startMenu'));
+                
+                // Settings slider events
+                this.setupSettingsSliders();
+                
+                // Update high score
                 if (this.uiElements.highScore) {
                     this.uiElements.highScore.textContent = `${this.highScore}m`;
                 }
                 
-                // Keyboard input
-                window.addEventListener('keydown', (e) => this.onKeyDown(e));
-                window.addEventListener('keyup', (e) => this.onKeyUp(e));
+                // Bot count selector
+                const botSelect = document.getElementById('botCount');
+                if (botSelect) {
+                    this.numBots = parseInt(botSelect.value);
+                    botSelect.addEventListener('change', (e) => {
+                        this.numBots = parseInt(e.target.value);
+                    });
+                }
+            }
+            
+            setupSettingsSliders() {
+                // Camera settings
+                this.setupSlider('cameraHeight', 'cameraHeightValue', 1);
+                this.setupSlider('cameraDistance', 'cameraDistanceValue', 1);
+                this.setupSlider('cameraSmoothness', 'cameraSmoothnessValue', 100);
+                this.setupSlider('fov', 'fovValue');
+                this.setupSlider('shakeIntensity', 'shakeValue', 10);
+                this.setupSlider('bobIntensity', 'bobValue', 1000);
+                this.setupSlider('leanAmount', 'leanValue', 100);
                 
-                // Prevent default for game keys
-                window.addEventListener('keydown', (e) => {
-                    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key)) {
-                        e.preventDefault();
+                // Game settings
+                this.setupSlider('mouseSensitivity', 'sensitivityValue', 10);
+                this.setupSlider('maxSpeed', 'maxSpeedValue');
+                
+                // Load current settings into UI
+                this.loadSettingsToUI();
+            }
+            
+            setupSlider(sliderId, valueId, multiplier = 1) {
+                const slider = this.uiElements[sliderId];
+                const valueDisplay = this.uiElements[valueId];
+                
+                if (slider && valueDisplay) {
+                    // Set initial value from settings
+                    const settingName = this.getSettingNameFromSliderId(sliderId);
+                    if (settingName && this.settings[settingName] !== undefined) {
+                        slider.value = this.settings[settingName] * multiplier;
+                        valueDisplay.textContent = this.settings[settingName].toFixed(2);
                     }
-                });
-                
-                // Window resize
-                window.addEventListener('resize', () => this.onResize());
+                    
+                    // Update display on input
+                    slider.addEventListener('input', () => {
+                        const value = parseFloat(slider.value) / multiplier;
+                        valueDisplay.textContent = value.toFixed(2);
+                    });
+                }
             }
             
-            async initThreeJS() {
-                const canvas = document.getElementById('gameCanvas');
-                
-                // Scene
-                this.scene = new THREE.Scene();
-                this.scene.fog = new THREE.Fog(0x87CEEB, 100, 500);
-                this.scene.background = new THREE.Color(0x87CEEB);
-                
-                // Camera
-                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-                this.cameraSystem = new SimpleCamera(this.camera);
-                
-                // Renderer
-                this.renderer = new THREE.WebGLRenderer({
-                    canvas: canvas,
-                    antialias: true,
-                    alpha: false,
-                    powerPreference: "high-performance"
-                });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                this.renderer.shadowMap.enabled = true;
-                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                
-                // Lighting
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                this.scene.add(ambientLight);
-                
-                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                directionalLight.position.set(100, 200, 100);
-                directionalLight.castShadow = true;
-                this.scene.add(directionalLight);
+            getSettingNameFromSliderId(id) {
+                const mapping = {
+                    'cameraHeight': 'cameraHeight',
+                    'cameraDistance': 'cameraDistance',
+                    'cameraSmoothness': 'cameraSmoothness',
+                    'fov': 'cameraFOV',
+                    'shakeIntensity': 'cameraShakeIntensity',
+                    'bobIntensity': 'cameraBobIntensity',
+                    'leanAmount': 'cameraLeanAmount',
+                    'mouseSensitivity': 'mouseSensitivity',
+                    'maxSpeed': 'maxSpeed'
+                };
+                return mapping[id];
             }
             
-            async preloadAssets() {
-                // Create building textures
-                this.assetLoader.createBuildingTextures();
+            loadSettingsToUI() {
+                // Update all UI elements from settings
+                this.updateSettingUI('cameraHeight', 'cameraHeightValue', 1);
+                this.updateSettingUI('cameraDistance', 'cameraDistanceValue', 1);
+                this.updateSettingUI('cameraSmoothness', 'cameraSmoothnessValue', 100);
+                this.updateSettingUI('fov', 'fovValue');
+                this.updateSettingUI('shakeIntensity', 'shakeValue', 10);
+                this.updateSettingUI('bobIntensity', 'bobValue', 1000);
+                this.updateSettingUI('leanAmount', 'leanValue', 100);
+                this.updateSettingUI('mouseSensitivity', 'sensitivityValue', 10);
+                this.updateSettingUI('maxSpeed', 'maxSpeedValue');
                 
-                // Load models
-                const models = [
-                    ['cart', 'models/cart.glb'],
-                    ['player', 'models/player.glb'],
-                    ['house', 'models/house.glb']
-                ];
+                // Update checkboxes
+                if (this.uiElements.vibration) {
+                    this.uiElements.vibration.checked = this.settings.enableVibration;
+                }
+                if (this.uiElements.shadows) {
+                    this.uiElements.shadows.checked = this.settings.enableShadows;
+                }
+                if (this.uiElements.weatherEffects) {
+                    this.uiElements.weatherEffects.checked = this.settings.enableWeather;
+                }
+            }
+            
+            updateSettingUI(sliderId, valueId, multiplier = 1) {
+                const slider = this.uiElements[sliderId];
+                const valueDisplay = this.uiElements[valueId];
                 
-                let loaded = 0;
-                const total = models.length;
-                
-                for (const [name, path] of models) {
-                    try {
-                        await this.assetLoader.loadModel(name, path);
-                        loaded++;
-                        this.updateLoadingProgress((loaded / total) * 100);
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                    } catch (error) {
-                        loaded++;
-                        console.warn(`Failed to load ${name}:`, error);
+                if (slider && valueDisplay) {
+                    const settingName = this.getSettingNameFromSliderId(sliderId);
+                    if (settingName && this.settings[settingName] !== undefined) {
+                        slider.value = this.settings[settingName] * multiplier;
+                        valueDisplay.textContent = this.settings[settingName].toFixed(2);
                     }
                 }
+            }
+            
+            saveSettings() {
+                // Save slider values
+                this.settings.cameraHeight = parseFloat(this.uiElements.cameraHeight.value);
+                this.settings.cameraDistance = parseFloat(this.uiElements.cameraDistance.value);
+                this.settings.cameraSmoothness = parseFloat(this.uiElements.cameraSmoothness.value) / 100;
+                this.settings.cameraFOV = parseFloat(this.uiElements.fov.value);
+                this.settings.cameraShakeIntensity = parseFloat(this.uiElements.shakeIntensity.value) / 10;
+                this.settings.cameraBobIntensity = parseFloat(this.uiElements.bobIntensity.value) / 1000;
+                this.settings.cameraLeanAmount = parseFloat(this.uiElements.leanAmount.value) / 100;
+                this.settings.mouseSensitivity = parseFloat(this.uiElements.mouseSensitivity.value) / 10;
+                this.settings.maxSpeed = parseFloat(this.uiElements.maxSpeed.value);
                 
-                // Initialize building manager
-                this.buildingManager = new SimpleBuildingManager(this.assetLoader);
-                await this.buildingManager.initialize();
+                // Save checkbox values
+                this.settings.enableVibration = this.uiElements.vibration.checked;
+                this.settings.enableShadows = this.uiElements.shadows.checked;
+                this.settings.enableWeather = this.uiElements.weatherEffects.checked;
                 
-                // Initialize road generator
-                this.roadGenerator = new SimpleRoadGenerator(this.assetLoader);
+                // Save to storage
+                this.settings.save();
                 
-                this.updateLoadingProgress(100);
+                // Update camera system
+                if (this.cameraSystem) {
+                    this.cameraSystem.updateSettings(this.settings);
+                }
+                
+                // Update renderer shadows
+                if (this.renderer) {
+                    this.renderer.shadowMap.enabled = this.settings.enableShadows;
+                }
+                
+                alert('Settings saved!');
+                this.showScreen('startMenu');
+            }
+            
+            resetSettings() {
+                if (confirm('Reset all settings to default?')) {
+                    this.settings.reset();
+                    this.loadSettingsToUI();
+                    alert('Settings reset to default!');
+                }
+            }
+            
+            openSettings() {
+                this.loadSettingsToUI();
+                this.showScreen('settingsScreen');
+            }
+            
+            async loadAssets() {
+                // Load external models
+                try {
+                    await this.assetManager.loadModel('cart', 'assets/models/cart.glb');
+                    await this.assetManager.loadModel('player', 'assets/models/player.glb');
+                    await this.assetManager.loadModel('house', 'assets/models/house.glb');
+                } catch (error) {
+                    console.warn('Could not load external models, using fallback:', error);
+                }
+                
+                // Update loading progress
+                const updateInterval = setInterval(() => {
+                    const progress = this.assetManager.getProgress();
+                    this.updateLoadingProgress(progress);
+                    
+                    if (progress >= 100) {
+                        clearInterval(updateInterval);
+                        setTimeout(() => {
+                            this.updateLoadingProgress(100);
+                        }, 500);
+                    }
+                }, 100);
             }
             
             updateLoadingProgress(percent) {
@@ -1078,19 +1500,167 @@
                 }
             }
             
-            startSoloGame() {
-                this.isPlaying = false;
-                this.botSystem = new SimpleBotSystem(this.numBots);
-                this.startGame();
+            initThreeJS() {
+                const canvas = document.getElementById('gameCanvas');
+                
+                // Scene
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.Fog(0x87ceeb, 100, 800);
+                
+                // Camera
+                this.camera = new THREE.PerspectiveCamera(this.settings.cameraFOV, window.innerWidth / window.innerHeight, 0.1, 2000);
+                this.cameraSystem = new SmoothCameraSystem(this.camera, this.settings);
+                
+                // Renderer with optimizations
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: true,
+                    alpha: false,
+                    powerPreference: "high-performance"
+                });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = this.settings.enableShadows;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.outputEncoding = THREE.sRGBEncoding;
+                
+                // Lighting
+                this.setupLighting();
+                
+                // Ground
+                this.createGround();
+                
+                // Event listeners
+                window.addEventListener('resize', () => this.onResize());
+                window.addEventListener('keydown', (e) => this.onKeyDown(e));
+                window.addEventListener('keyup', (e) => this.onKeyUp(e));
+                
+                window.addEventListener('keydown', (e) => {
+                    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key)) {
+                        e.preventDefault();
+                    }
+                });
             }
             
-            startGame() {
+            setupLighting() {
+                // Ambient light
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+                this.scene.add(ambientLight);
+                
+                // Sun light
+                const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+                sunLight.position.set(50, 100, 50);
+                sunLight.castShadow = this.settings.enableShadows;
+                if (this.settings.enableShadows) {
+                    sunLight.shadow.mapSize.width = 1024;
+                    sunLight.shadow.mapSize.height = 1024;
+                    sunLight.shadow.camera.left = -100;
+                    sunLight.shadow.camera.right = 100;
+                    sunLight.shadow.camera.top = 100;
+                    sunLight.shadow.camera.bottom = -100;
+                }
+                this.scene.add(sunLight);
+            }
+            
+            createGround() {
+                const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
+                const groundMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x2d5016,
+                    roughness: 0.8,
+                    metalness: 0.2
+                });
+                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+                ground.rotation.x = -Math.PI / 2;
+                ground.position.y = -0.5;
+                ground.receiveShadow = true;
+                this.scene.add(ground);
+            }
+            
+            createRoadMesh(segment) {
+                const geometry = new THREE.PlaneGeometry(segment.width, segment.length);
+                
+                // Create realistic road texture with 3 lanes
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                
+                // Base asphalt
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(0, 0, 512, 512);
+                
+                // Add texture variation
+                ctx.fillStyle = '#333333';
+                for (let i = 0; i < 200; i++) {
+                    const x = Math.random() * 512;
+                    const y = Math.random() * 512;
+                    const size = 2 + Math.random() * 4;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Lane markings
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                
+                // Left lane divider
+                ctx.beginPath();
+                ctx.moveTo(128, 0);
+                ctx.lineTo(128, 512);
+                ctx.stroke();
+                
+                // Right lane divider
+                ctx.beginPath();
+                ctx.moveTo(384, 0);
+                ctx.lineTo(384, 512);
+                ctx.stroke();
+                
+                // Center line (dashed)
+                ctx.setLineDash([20, 15]);
+                ctx.beginPath();
+                ctx.moveTo(256, 0);
+                ctx.lineTo(256, 512);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Edge lines
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(10, 0);
+                ctx.lineTo(10, 512);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(502, 0);
+                ctx.lineTo(502, 512);
+                ctx.stroke();
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(1, 8);
+                
+                const material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    roughness: 0.9,
+                    metalness: 0.05,
+                    side: THREE.DoubleSide
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.rotation.x = -Math.PI / 2;
+                mesh.receiveShadow = true;
+                mesh.userData = { type: 'road', segmentId: segment.id };
+                
+                return mesh;
+            }
+            
+            startSoloGame() {
                 this.resetGame();
                 this.createPlayer();
-                this.buildingManager.generateInitialBuildings();
-                this.buildings = this.buildingManager.getBuildings();
-                this.addBuildingsToScene();
-                
+                this.generateInitialWorld();
                 this.isPlaying = true;
                 this.gameState = 'PLAYING';
                 this.showScreen('playing');
@@ -1098,246 +1668,177 @@
             }
             
             resetGame() {
-                // Clear scene
-                while(this.scene.children.length > 0) { 
-                    this.scene.remove(this.scene.children[0]); 
-                }
-                
-                // Reinitialize
-                this.initThreeJS();
+                // Clear scene except lights and ground
+                const toRemove = [];
+                this.scene.children.forEach(child => {
+                    if (child.type !== 'AmbientLight' && child.type !== 'DirectionalLight' && 
+                        child.type !== 'Mesh' && child.type !== 'Group') {
+                        toRemove.push(child);
+                    } else if (child.type === 'Mesh' && child.position.y !== -0.5) {
+                        toRemove.push(child);
+                    }
+                });
+                toRemove.forEach(child => this.scene.remove(child));
                 
                 // Reset game state
                 this.gameTime = 0;
                 this.playerDistance = 0;
                 this.playerSpeed = 0;
                 this.playerProducts = 15;
-                this.characterLean = 0;
-                this.characterBob = 0;
                 
-                // Reset systems
-                if (this.botSystem) {
-                    this.botSystem.reset();
-                }
-                this.roadGenerator = new SimpleRoadGenerator(this.assetLoader);
-                this.roadMeshes = [];
+                // Clear collections
+                this.roadMeshes.clear();
                 this.buildings = [];
-                this.botMeshes = [];
+                
+                // Reset road generator
+                this.roadGenerator = new OptimizedRoadGenerator();
+                this.buildingManager = new OptimizedBuildingManager(this.assetManager);
                 
                 // Update UI
                 this.updateProductsDisplay();
-                if (this.uiElements.botCountValue) {
-                    this.uiElements.botCountValue.textContent = '0';
+                if (this.uiElements.botCount) {
+                    this.uiElements.botCount.textContent = '0';
                 }
             }
             
-            async createPlayer() {
-                try {
-                    // Load or create cart (make it bigger)
-                    let cart;
-                    try {
-                        const cartModel = this.assetLoader.getModel('cart');
-                        cart = cartModel.clone();
-                        // Scale up the cart
-                        cart.scale.set(1.5, 1.5, 1.5);
-                    } catch (error) {
-                        cart = this.assetLoader.createFallbackModel('cart');
-                        // Scale up fallback cart
-                        cart.scale.set(1.2, 1.2, 1.2);
-                    }
-                    
-                    // Load or create player
-                    let playerModel;
-                    try {
-                        playerModel = this.assetLoader.getModel('player');
-                    } catch (error) {
-                        playerModel = this.assetLoader.createFallbackModel('player');
-                    }
-                    
-                    const player = playerModel.clone();
-                    
-                    // Position player inside cart (lower position since cart is bigger)
-                    cart.position.set(0, 0.75, 0);
-                    player.position.set(0, 1.0, 0.3); // Inside the cart
-                    
-                    const playerGroup = new THREE.Group();
-                    playerGroup.add(cart);
-                    playerGroup.add(player);
-                    
-                    // Store references for animation
-                    playerGroup.userData.cart = cart;
-                    playerGroup.userData.player = player;
-                    playerGroup.userData.originalPlayerPos = player.position.clone();
-                    
-                    // Enable shadows
-                    cart.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
-                    player.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
-                    
-                    this.scene.add(playerGroup);
-                    
-                    this.player = {
-                        group: playerGroup,
-                        cart: cart,
-                        player: player,
-                        speed: 0,
-                        maxSpeed: 60,
-                        acceleration: 0.8,
-                        braking: 2.0,
-                        steering: 0.05,
-                        lane: 0,
-                        position: new THREE.Vector3(0, 0.75, 0),
-                        rotation: 0
-                    };
-                    
-                    this.cameraSystem.setTarget(playerGroup);
-                    
-                } catch (error) {
-                    console.error('Error creating player:', error);
-                    // Fallback to simple geometry
-                    this.createFallbackPlayer();
-                }
-            }
-            
-            createFallbackPlayer() {
-                // Bigger cart
-                const cartGeometry = new THREE.BoxGeometry(2.5, 1.5, 4);
-                const cartMaterial = new THREE.MeshStandardMaterial({
-                    color: 0xff4757,
-                    metalness: 0.6,
-                    roughness: 0.4
-                });
-                
-                const cart = new THREE.Mesh(cartGeometry, cartMaterial);
-                cart.position.set(0, 0.75, 0);
-                cart.castShadow = true;
-                cart.receiveShadow = true;
-                
-                // Player positioned inside cart
-                const playerGeometry = new THREE.BoxGeometry(0.6, 1.5, 0.4);
-                const playerMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x70a1ff,
-                    metalness: 0.2,
-                    roughness: 0.6
-                });
-                
-                const player = new THREE.Mesh(playerGeometry, playerMaterial);
-                player.position.set(0, 1.0, 0.3); // Inside cart
-                player.castShadow = true;
-                
+            createPlayer() {
                 const playerGroup = new THREE.Group();
-                playerGroup.add(cart);
-                playerGroup.add(player);
                 
-                // Store references for animation
-                playerGroup.userData.cart = cart;
-                playerGroup.userData.player = player;
-                playerGroup.userData.originalPlayerPos = player.position.clone();
+                // Try to load external cart model, fallback to basic geometry
+                let cartModel = this.assetManager.getModel('cart');
+                if (!cartModel) {
+                    const cartGeometry = new THREE.BoxGeometry(1.8, 0.8, 3);
+                    const cartMaterial = new THREE.MeshStandardMaterial({
+                        color: 0xff4757,
+                        metalness: 0.7,
+                        roughness: 0.3
+                    });
+                    cartModel = new THREE.Mesh(cartGeometry, cartMaterial);
+                }
+                
+                cartModel.position.set(0, 0.4, 0);
+                cartModel.castShadow = true;
+                cartModel.receiveShadow = true;
+                playerGroup.add(cartModel);
+                
+                // Try to load external player model
+                let playerModel = this.assetManager.getModel('player');
+                if (!playerModel) {
+                    const playerGeometry = new THREE.BoxGeometry(0.6, 1.4, 0.4);
+                    const playerMaterial = new THREE.MeshStandardMaterial({
+                        color: 0x70a1ff,
+                        metalness: 0.3,
+                        roughness: 0.6
+                    });
+                    playerModel = new THREE.Mesh(playerGeometry, playerMaterial);
+                }
+                
+                playerModel.position.set(0, 1.4, 0);
+                playerModel.castShadow = true;
+                playerGroup.add(playerModel);
                 
                 this.scene.add(playerGroup);
                 
                 this.player = {
                     group: playerGroup,
-                    cart: cart,
-                    player: player,
+                    cart: cartModel,
+                    player: playerModel,
                     speed: 0,
-                    maxSpeed: 60,
-                    acceleration: 0.8,
-                    braking: 2.0,
+                    maxSpeed: this.settings.maxSpeed,
+                    acceleration: 1.0,
+                    braking: 3.0,
                     steering: 0.05,
                     lane: 0,
-                    position: new THREE.Vector3(0, 0.75, 0),
+                    position: new THREE.Vector3(0, 0.5, 0),
                     rotation: 0
                 };
                 
                 this.cameraSystem.setTarget(playerGroup);
             }
             
-            updateCharacterAnimation(deltaTime, steering) {
-                if (!this.player || !this.player.group.userData.player) return;
-                
-                const player = this.player.group.userData.player;
-                const originalPos = this.player.group.userData.originalPlayerPos;
-                
-                // Smooth leaning based on steering
-                this.characterLean += (steering * 0.3 - this.characterLean) * 0.1;
-                
-                // Bobbing based on speed
-                this.characterBob += deltaTime * this.playerSpeed * 0.01;
-                
-                // Apply lean (tilting left/right)
-                player.rotation.z = this.characterLean * 0.5;
-                
-                // Apply bobbing (up/down movement)
-                const bobAmount = Math.sin(this.characterBob) * 0.05 * (this.playerSpeed / 60);
-                player.position.y = originalPos.y + bobAmount;
-                
-                // Slight forward/backward movement based on acceleration
-                const throttle = this.input.throttle;
-                const brake = this.input.brake;
-                if (throttle > 0) {
-                    player.position.z = originalPos.z - 0.1;
-                } else if (brake > 0) {
-                    player.position.z = originalPos.z + 0.1;
-                } else {
-                    player.position.z = originalPos.z;
+            generateInitialWorld() {
+                // Generate initial road segments
+                for (let i = 0; i < 20; i++) {
+                    this.createRoadSegment(this.roadGenerator.segments[i]);
                 }
                 
-                // Head turning animation
-                player.rotation.y = this.characterLean * 0.2;
-            }
-            
-            addBuildingsToScene() {
-                for (const building of this.buildings) {
+                // Generate initial buildings
+                this.buildings = this.buildingManager.update(0);
+                this.buildings.forEach(building => {
                     this.scene.add(building);
-                }
+                });
             }
             
-            updateRoads(playerZ) {
+            createRoadSegment(segment) {
+                if (!segment || this.roadMeshes.has(segment.id)) return;
+                
+                const mesh = this.createRoadMesh(segment);
+                mesh.position.copy(segment.position);
+                mesh.rotation.z = segment.bank;
+                mesh.rotation.y = segment.rotation;
+                
+                this.scene.add(mesh);
+                this.roadMeshes.set(segment.id, mesh);
+            }
+            
+            updateWorld(deltaTime) {
+                if (!this.player) return;
+                
+                const playerZ = this.player.group.position.z;
+                
                 // Update road generator
                 this.roadGenerator.update(playerZ);
-                const segments = this.roadGenerator.segments;
                 
-                // Create road meshes if needed
-                while (this.roadMeshes.length < segments.length) {
-                    const segment = segments[this.roadMeshes.length];
-                    const road = this.roadGenerator.createRoadMesh(segment);
-                    this.scene.add(road);
-                    this.roadMeshes.push(road);
-                }
+                // Create new road segments
+                this.roadGenerator.segments.forEach(segment => {
+                    if (!this.roadMeshes.has(segment.id)) {
+                        this.createRoadSegment(segment);
+                    }
+                });
                 
-                // Update road positions and rotations
-                for (let i = 0; i < segments.length && i < this.roadMeshes.length; i++) {
-                    const segment = segments[i];
-                    const roadMesh = this.roadMeshes[i];
-                    
-                    roadMesh.position.copy(segment.position);
-                    roadMesh.rotation.y = segment.rotation;
-                }
+                // Update existing road segments
+                this.roadMeshes.forEach((mesh, segmentId) => {
+                    const segment = this.roadGenerator.segments.find(s => s.id === segmentId);
+                    if (segment) {
+                        // Smooth interpolation
+                        mesh.position.x += (segment.position.x - mesh.position.x) * 0.1;
+                        mesh.position.y += (segment.position.y - mesh.position.y) * 0.1;
+                        mesh.position.z += (segment.position.z - mesh.position.z) * 0.1;
+                        mesh.rotation.z += (segment.bank - mesh.rotation.z) * 0.1;
+                        mesh.rotation.y += (segment.rotation - mesh.rotation.y) * 0.1;
+                    }
+                });
                 
-                // Remove old roads
-                while (this.roadMeshes.length > segments.length + 10) {
-                    const road = this.roadMeshes.shift();
-                    this.scene.remove(road);
-                }
-            }
-            
-            updateBuildings(playerZ) {
-                this.buildingManager.update(playerZ);
-                this.buildings = this.buildingManager.getBuildings();
+                // Remove distant road segments
+                const segmentsToRemove = [];
+                this.roadMeshes.forEach((mesh, segmentId) => {
+                    if (!this.roadGenerator.segments.find(s => s.id === segmentId)) {
+                        segmentsToRemove.push(segmentId);
+                    }
+                });
                 
-                // Ensure all buildings are in scene
-                for (const building of this.buildings) {
-                    if (!building.parent) {
+                segmentsToRemove.forEach(segmentId => {
+                    const mesh = this.roadMeshes.get(segmentId);
+                    if (mesh) {
+                        this.scene.remove(mesh);
+                    }
+                    this.roadMeshes.delete(segmentId);
+                });
+                
+                // Update buildings
+                const newBuildings = this.buildingManager.update(playerZ);
+                newBuildings.forEach(building => {
+                    if (!this.buildings.includes(building)) {
                         this.scene.add(building);
+                        this.buildings.push(building);
+                    }
+                });
+                
+                // Remove distant buildings
+                for (let i = this.buildings.length - 1; i >= 0; i--) {
+                    if (this.buildings[i].position.z > playerZ + 500) {
+                        this.scene.remove(this.buildings[i]);
+                        this.buildings.splice(i, 1);
                     }
                 }
             }
@@ -1345,15 +1846,12 @@
             updatePlayer(deltaTime) {
                 if (!this.player) return;
                 
-                // Get current road segment
-                const currentZ = this.player.group.position.z;
-                const segment = this.roadGenerator.getSegmentAtZ(currentZ);
+                const currentSegment = this.roadGenerator.getSegmentAtZ(this.player.group.position.z);
                 
                 // Apply input
                 const throttle = this.input.throttle;
                 const brake = this.input.brake;
                 const steering = this.input.steering;
-                const boost = this.input.boost;
                 
                 // Acceleration
                 if (throttle > 0 && this.player.speed < this.player.maxSpeed) {
@@ -1365,184 +1863,137 @@
                     this.player.speed -= this.player.acceleration * this.player.braking * brake * deltaTime * 60;
                 }
                 
-                // Friction
+                // Natural deceleration
                 if (throttle === 0 && brake === 0) {
-                    this.player.speed *= Math.pow(0.97, deltaTime * 60);
+                    this.player.speed *= Math.pow(0.98, deltaTime * 60);
                 }
                 
                 // Boost
-                if (boost) {
-                    this.player.speed = Math.min(this.player.speed * 1.5, this.player.maxSpeed * 1.2);
+                if (this.input.boost) {
+                    this.player.speed = Math.min(this.player.speed * 1.3, this.player.maxSpeed * 1.5);
                 }
                 
-                // Steering with road constraints
-                if (Math.abs(this.player.speed) > 1) {
+                // Apply road curvature
+                if (currentSegment) {
+                    this.player.rotation += currentSegment.curve * 0.5 * deltaTime * 60;
+                    
+                    // Apply road banking
+                    this.player.group.rotation.z = currentSegment.bank * 0.3;
+                    
+                    // Adjust speed for turns
+                    const curveFactor = Math.abs(currentSegment.curve);
+                    if (curveFactor > 0.03) {
+                        this.player.speed *= 0.97;
+                    }
+                    
+                    // Adjust for hills
+                    if (currentSegment.slope > 0.03) {
+                        this.player.speed *= 0.98;
+                    }
+                }
+                
+                // Steering
+                if (Math.abs(this.player.speed) > 5) {
                     const steeringEffect = Math.min(Math.abs(this.player.speed) / this.player.maxSpeed, 1);
                     this.player.rotation += steering * this.player.steering * steeringEffect * deltaTime * 60;
                 }
                 
-                // Apply road curve
-                if (segment) {
-                    this.player.rotation += segment.curve * 0.5;
-                }
-                
-                // Move player
+                // Movement
                 const moveDistance = this.player.speed * deltaTime;
-                this.player.group.position.z += moveDistance;
-                this.playerDistance -= moveDistance;
+                const forwardVector = new THREE.Vector3(0, 0, -1);
+                forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.player.rotation);
+                forwardVector.multiplyScalar(moveDistance);
+                
+                this.player.group.position.add(forwardVector);
+                this.playerDistance += moveDistance;
                 
                 // Lane management
-                const targetX = this.player.lane * 8;
+                const targetX = this.roadGenerator.getLanePosition(this.player.lane);
                 const currentX = this.player.group.position.x;
                 const xDiff = targetX - currentX;
                 
                 if (Math.abs(xDiff) > 0.1) {
-                    const laneChangeSpeed = Math.min(Math.abs(this.player.speed) * 0.01, 0.5);
-                    this.player.group.position.x += Math.sign(xDiff) * laneChangeSpeed;
+                    const laneChangeSpeed = Math.min(Math.abs(this.player.speed) * 0.015, 1.0);
+                    this.player.group.position.x += Math.sign(xDiff) * laneChangeSpeed * deltaTime * 60;
                 }
                 
-                // Apply player rotation
+                // Apply rotation
                 this.player.group.rotation.y = this.player.rotation;
                 
-                // Apply road banking (subtle)
-                if (segment && Math.abs(segment.curve) > 0.05) {
-                    this.player.group.rotation.z = segment.curve * 0.1;
-                } else {
-                    this.player.group.rotation.z *= 0.9; // Gradually reduce banking
+                // Height adjustment
+                if (currentSegment) {
+                    this.player.group.position.y = currentSegment.position.y + 0.5;
                 }
                 
-                // Update speed for display
+                // Update speed display
                 this.playerSpeed = Math.abs(this.player.speed * 3.6);
                 
-                // Update character animation
-                this.updateCharacterAnimation(deltaTime, steering);
-                
                 // Check collisions
-                this.checkBuildingCollisions();
-                this.checkBotCollisions();
-                this.checkRoadBoundaries();
+                this.checkCollisions();
+                
+                // Update camera
+                if (this.cameraSystem) {
+                    this.cameraSystem.update(deltaTime, this.playerSpeed, steering);
+                }
             }
             
-            checkBuildingCollisions() {
+            checkCollisions() {
                 if (!this.player) return;
                 
                 const playerPos = this.player.group.position;
-                const playerRadius = 2;
+                const playerRadius = 1.2;
                 
+                // Check building collisions
                 for (const building of this.buildings) {
-                    if (!building.position) continue;
+                    if (!building.userData) continue;
                     
-                    // Simple distance check
-                    const dx = Math.abs(playerPos.x - building.position.x);
-                    const dz = Math.abs(playerPos.z - building.position.z);
+                    const dx = Math.abs(playerPos.x - building.position.x) - (building.userData.width / 2);
+                    const dz = Math.abs(playerPos.z - building.position.z) - (building.userData.depth / 2);
                     
-                    // Building collision box (approx 5x5x15)
-                    if (dx < 5 + playerRadius && dz < 5 + playerRadius) {
-                        // Collision detected
-                        this.player.speed *= -0.3;
-                        this.playerProducts = Math.max(0, this.playerProducts - 1);
-                        this.cameraSystem.shake(0.5);
-                        this.updateProductsDisplay();
-                        
-                        // Push player away from building
-                        const pushDir = new THREE.Vector3()
-                            .subVectors(playerPos, building.position)
-                            .normalize();
-                        this.player.group.position.add(pushDir.multiplyScalar(3));
-                        
-                        if (this.playerProducts <= 0) {
-                            this.gameOver();
-                        }
-                        break;
+                    if (dx < playerRadius && dz < playerRadius) {
+                        this.handleCollision();
+                        return;
                     }
                 }
-            }
-            
-            checkBotCollisions() {
-                if (!this.player || !this.botSystem) return;
                 
-                const botMeshes = this.botSystem.getBotMeshes();
-                
-                for (const bot of botMeshes) {
-                    if (!bot) continue;
-                    
-                    const distance = this.player.group.position.distanceTo(bot.position);
-                    if (distance < 4) {
-                        // Collision with bot
-                        this.playerProducts = Math.max(0, this.playerProducts - 1);
-                        this.cameraSystem.shake(0.3);
-                        this.updateProductsDisplay();
-                        
-                        // Push player away from bot
-                        const pushDir = new THREE.Vector3()
-                            .subVectors(this.player.group.position, bot.position)
-                            .normalize();
-                        this.player.group.position.add(pushDir.multiplyScalar(2));
-                        this.player.speed *= 0.5;
-                        
-                        if (this.playerProducts <= 0) {
-                            this.gameOver();
-                        }
-                        break;
-                    }
-                }
-            }
-            
-            checkRoadBoundaries() {
-                if (!this.player) return;
-                
-                const roadHalfWidth = 12; // 24 width / 2
-                const playerX = this.player.group.position.x;
-                
-                if (Math.abs(playerX) > roadHalfWidth) {
-                    // Player is off road - slow down and damage
-                    this.player.speed *= 0.7;
+                // Check road boundaries
+                const roadHalfWidth = this.roadGenerator.roadWidth / 2;
+                if (Math.abs(playerPos.x) > roadHalfWidth - 1) {
+                    this.player.speed *= 0.95;
                     
                     // Push back to road
-                    const pushBack = -Math.sign(playerX) * 0.3;
+                    const pushBack = -Math.sign(playerPos.x) * 0.05;
                     this.player.group.position.x += pushBack;
                     
-                    // Damage products occasionally
-                    if (Math.random() > 0.95) {
-                        this.playerProducts = Math.max(0, this.playerProducts - 1);
-                        this.updateProductsDisplay();
-                        this.cameraSystem.shake(0.2);
-                        
-                        if (this.playerProducts <= 0) {
-                            this.gameOver();
+                    // Damage if completely off road
+                    if (Math.abs(playerPos.x) > roadHalfWidth) {
+                        if (Math.random() > 0.95) {
+                            this.playerProducts = Math.max(0, this.playerProducts - 1);
+                            this.updateProductsDisplay();
+                            this.cameraSystem.shake(0.1);
+                            
+                            if (this.playerProducts <= 0) {
+                                this.gameOver();
+                            }
                         }
                     }
                 }
             }
             
-            updateBots(deltaTime) {
-                if (!this.botSystem || !this.player) return;
+            handleCollision() {
+                this.player.speed *= -0.3;
+                this.playerProducts = Math.max(0, this.playerProducts - 1);
+                this.cameraSystem.shake(0.3);
+                this.updateProductsDisplay();
                 
-                const activeBots = this.botSystem.update(
-                    deltaTime,
-                    this.player,
-                    this.playerSpeed,
-                    this.playerDistance
-                );
-                
-                // Update bot count display
-                if (this.uiElements.botCountValue) {
-                    this.uiElements.botCountValue.textContent = activeBots;
-                }
-                
-                // Remove old bot meshes from scene
-                for (const botMesh of this.botMeshes) {
-                    this.scene.remove(botMesh);
-                }
-                
-                // Get new bot meshes and add to scene
-                this.botMeshes = this.botSystem.getBotMeshes();
-                for (const botMesh of this.botMeshes) {
-                    this.scene.add(botMesh);
+                if (this.playerProducts <= 0) {
+                    this.gameOver();
                 }
             }
             
             updateUI(deltaTime) {
+                if (!this.player) return;
+                
                 // Update HUD
                 if (this.uiElements.speedValue) {
                     this.uiElements.speedValue.textContent = `${this.playerSpeed.toFixed(0)} km/h`;
@@ -1576,7 +2027,7 @@
                 // Update high score
                 const distance = Math.abs(this.playerDistance);
                 if (distance > this.highScore) {
-                    this.highScore = distance;
+                    this.highScore = Math.floor(distance);
                     localStorage.setItem('cartRidersHighScore', this.highScore);
                 }
                 
@@ -1590,9 +2041,6 @@
                 if (this.uiElements.survivalTime) {
                     this.uiElements.survivalTime.textContent = `${this.gameTime.toFixed(1)}s`;
                 }
-                if (this.uiElements.endTitle) {
-                    this.uiElements.endTitle.textContent = 'Game Over';
-                }
                 
                 this.showScreen('endScreen');
             }
@@ -1604,7 +2052,7 @@
             
             showScreen(screenName) {
                 // Hide all screens
-                ['loadingScreen', 'startMenu', 'hud', 'endScreen'].forEach(screen => {
+                ['loadingScreen', 'startMenu', 'settingsScreen', 'multiplayerMenu', 'lobbyScreen', 'hud', 'endScreen'].forEach(screen => {
                     if (this.uiElements[screen]) {
                         this.uiElements[screen].classList.add('hidden');
                     }
@@ -1615,8 +2063,14 @@
                     if (this.uiElements.hud) {
                         this.uiElements.hud.classList.remove('hidden');
                     }
+                    if (this.uiElements.settingsButton) {
+                        this.uiElements.settingsButton.style.display = 'block';
+                    }
                 } else if (this.uiElements[screenName]) {
                     this.uiElements[screenName].classList.remove('hidden');
+                    if (this.uiElements.settingsButton && screenName !== 'playing') {
+                        this.uiElements.settingsButton.style.display = 'none';
+                    }
                 }
             }
             
@@ -1632,14 +2086,13 @@
                 const key = e.key.toLowerCase();
                 this.keys[key] = true;
                 
-                // Update input state
                 if (key === 'w' || key === 'arrowup') this.input.throttle = 1;
                 if (key === 's' || key === 'arrowdown') this.input.brake = 1;
-                if (key === 'a' || key === 'arrowleft') this.input.steering = -1;
-                if (key === 'd' || key === 'arrowright') this.input.steering = 1;
+                if (key === 'a' || key === 'arrowleft') this.input.steering = 1;
+                if (key === 'd' || key === 'arrowright') this.input.steering = -1;
                 if (key === ' ') this.input.boost = true;
                 
-                // Lane switching with Q/E
+                // Lane switching
                 if (key === 'q' && this.player) {
                     this.player.lane = Math.max(-1, this.player.lane - 1);
                 }
@@ -1659,7 +2112,6 @@
                 const key = e.key.toLowerCase();
                 this.keys[key] = false;
                 
-                // Update input state
                 if (key === 'w' || key === 'arrowup') this.input.throttle = 0;
                 if (key === 's' || key === 'arrowdown') this.input.brake = 0;
                 if (key === 'a' || key === 'arrowleft') this.input.steering = 0;
@@ -1668,49 +2120,28 @@
             }
             
             gameLoop(currentTime = 0) {
-                // Calculate delta time
                 const deltaTime = (currentTime - this.lastTime) / 1000;
                 this.lastTime = currentTime;
-                
-                // Cap delta time for stability
                 const fixedDelta = Math.min(deltaTime, 0.033);
                 
                 if (this.gameState === 'PLAYING' && this.isPlaying) {
-                    // Update game time
                     this.gameTime += fixedDelta;
                     
                     // Update player
                     this.updatePlayer(fixedDelta);
                     
-                    // Update road and buildings
-                    if (this.player) {
-                        this.updateRoads(this.player.group.position.z);
-                        this.updateBuildings(this.player.group.position.z);
-                    }
-                    
-                    // Update bots
-                    this.updateBots(fixedDelta);
-                    
-                    // Update camera
-                    if (this.player && this.cameraSystem) {
-                        this.cameraSystem.update(fixedDelta, this.playerSpeed);
-                    }
+                    // Update world
+                    this.updateWorld(fixedDelta);
                     
                     // Update UI
                     this.updateUI(fixedDelta);
-                    
-                    // Check game over condition
-                    if (this.playerProducts <= 0) {
-                        this.gameOver();
-                    }
                 }
                 
-                // Render
+                // Always render
                 if (this.renderer && this.scene && this.camera) {
                     this.renderer.render(this.scene, this.camera);
                 }
                 
-                // Continue loop
                 requestAnimationFrame((time) => this.gameLoop(time));
             }
         }
