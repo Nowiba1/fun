@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cart Riders: Delivery Chaos - NEXT LEVEL</title>
-    <!-- Babylon.js Core -->
+    <!-- Babylon.js Core - Load in correct order -->
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
-    <!-- Havok Physics -->
-    <script src="https://cdn.babylonjs.com/havok/HavokPhysics_es.js"></script>
-    <!-- Post-processing effects -->
-    <script src="https://cdn.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+    <!-- Remove Havok for now - use Cannon.js instead -->
+    <script src="https://cdn.babylonjs.com/cannon.js"></script>
     
     <style>
         * {
@@ -375,18 +373,6 @@
             letter-spacing: 2px;
         }
         
-        .road-line {
-            position: absolute;
-            height: 4px;
-            background: linear-gradient(90deg, transparent, #ffff00, transparent);
-            animation: roadFlow 1s linear infinite;
-        }
-        
-        @keyframes roadFlow {
-            0% { background-position: -200px 0; }
-            100% { background-position: 200px 0; }
-        }
-        
         #boostBar {
             position: absolute;
             top: 25px;
@@ -656,8 +642,7 @@
         
         // Babylon.js Variables
         let engine, scene, camera, canvas;
-        let player, roadManager, buildingManager, botManager, uiManager;
-        let havokInstance, physicsPlugin;
+        let player, roadManager, buildingManager, botManager;
         
         // Input State
         const input = {
@@ -700,7 +685,7 @@
         };
 
         // Initialize the Game
-        async function initGame() {
+        function initGame() {
             updateLoadingProgress(10, 'Initializing Babylon.js Engine...');
             
             // Get canvas and create engine
@@ -716,35 +701,31 @@
             scene = new BABYLON.Scene(engine);
             scene.clearColor = new BABYLON.Color4(0.05, 0.05, 0.1, 1.0);
             
-            // Enable physics
-            updateLoadingProgress(30, 'Initializing Physics Engine...');
-            await initPhysics();
-            
-            updateLoadingProgress(40, 'Setting Up Lighting...');
+            updateLoadingProgress(30, 'Setting Up Lighting...');
             setupLighting();
             
-            updateLoadingProgress(50, 'Creating Environment...');
+            updateLoadingProgress(40, 'Creating Environment...');
             setupEnvironment();
             
-            updateLoadingProgress(60, 'Creating Road System...');
+            updateLoadingProgress(50, 'Creating Road System...');
             roadManager = new RoadManager();
             
-            updateLoadingProgress(70, 'Creating Building System...');
+            updateLoadingProgress(60, 'Creating Building System...');
             buildingManager = new BuildingManager();
             
-            updateLoadingProgress(80, 'Creating Player...');
+            updateLoadingProgress(70, 'Creating Player...');
             player = new Player();
             
-            updateLoadingProgress(90, 'Initializing AI System...');
+            updateLoadingProgress(80, 'Initializing AI System...');
             botManager = new BotManager();
             
-            updateLoadingProgress(95, 'Setting Up Camera...');
+            updateLoadingProgress(90, 'Setting Up Camera...');
             setupCamera();
             
-            updateLoadingProgress(100, 'Finalizing Setup...');
+            updateLoadingProgress(95, 'Setting Up Physics...');
+            setupPhysics();
             
-            // Setup post-processing
-            setupPostProcessing();
+            updateLoadingProgress(100, 'Finalizing Setup...');
             
             // Setup event listeners
             setupEventListeners();
@@ -770,17 +751,13 @@
             }, 1000);
         }
 
-        // Initialize Physics
-        async function initPhysics() {
-            try {
-                // Initialize Havok physics
-                havokInstance = await HavokPhysics();
-                physicsPlugin = new BABYLON.HavokPlugin(true, havokInstance);
-                scene.enablePhysics(new BABYLON.Vector3(0, GAME_CONFIG.PHYSICS.GRAVITY, 0), physicsPlugin);
-            } catch (error) {
-                console.warn('Havok physics failed, falling back to default physics');
-                scene.enablePhysics(new BABYLON.Vector3(0, GAME_CONFIG.PHYSICS.GRAVITY, 0));
-            }
+        // Setup Physics - SIMPLIFIED VERSION
+        function setupPhysics() {
+            // Use Cannon.js physics (simpler and more reliable than Havok)
+            scene.enablePhysics(new BABYLON.Vector3(0, GAME_CONFIG.PHYSICS.GRAVITY, 0), new BABYLON.CannonJSPlugin());
+            
+            // Reduce physics accuracy for better performance
+            scene.getPhysicsEngine().setTimeStep(1/60);
         }
 
         // Setup Lighting
@@ -806,9 +783,9 @@
             dirLight.shadowEnabled = true;
             
             // Shadow generator
-            const shadowGenerator = new BABYLON.ShadowGenerator(2048, dirLight);
+            const shadowGenerator = new BABYLON.ShadowGenerator(1024, dirLight);
             shadowGenerator.useBlurExponentialShadowMap = true;
-            shadowGenerator.blurScale = 2;
+            shadowGenerator.blurScale = 1;
             shadowGenerator.setDarkness(0.4);
             
             // Fog
@@ -819,16 +796,11 @@
 
         // Setup Environment
         function setupEnvironment() {
-            // Skybox
+            // Skybox - using procedural sky instead of loading external texture
             const skybox = BABYLON.MeshBuilder.CreateBox('skybox', { size: 1000 }, scene);
             const skyboxMaterial = new BABYLON.StandardMaterial('skyboxMaterial', scene);
             skyboxMaterial.backFaceCulling = false;
-            skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
-                'https://assets.babylonjs.com/textures/skybox',
-                scene
-            );
-            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
-            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.3, 0.5);
             skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
             skybox.material = skyboxMaterial;
             
@@ -839,23 +811,20 @@
                 scene
             );
             const groundMaterial = new BABYLON.StandardMaterial('groundMaterial', scene);
-            groundMaterial.diffuseTexture = new BABYLON.Texture(
-                'https://assets.babylonjs.com/textures/grass.png',
-                scene
-            );
-            groundMaterial.diffuseTexture.uScale = 100;
-            groundMaterial.diffuseTexture.vScale = 100;
+            groundMaterial.diffuseColor = new BABYLON.Color3(0.1, 0.2, 0.1);
             groundMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
             ground.material = groundMaterial;
             ground.receiveShadows = true;
             
-            // Enable physics for ground
-            ground.physicsImpostor = new BABYLON.PhysicsImpostor(
-                ground,
-                BABYLON.PhysicsImpostor.BoxImpostor,
-                { mass: 0, restitution: 0.1 },
-                scene
-            );
+            // Simple physics for ground
+            if (scene.isPhysicsEnabled()) {
+                ground.physicsImpostor = new BABYLON.PhysicsImpostor(
+                    ground,
+                    BABYLON.PhysicsImpostor.BoxImpostor,
+                    { mass: 0, restitution: 0.1 },
+                    scene
+                );
+            }
         }
 
         // Road Manager Class
@@ -905,19 +874,11 @@
                 roadMaterial.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
                 roadMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
                 
-                // Add lane markings using decals
+                // Add lane markings
                 this.addLaneMarkings(segment, elevation);
                 
                 segment.material = roadMaterial;
                 segment.receiveShadows = true;
-                
-                // Add physics
-                segment.physicsImpostor = new BABYLON.PhysicsImpostor(
-                    segment,
-                    BABYLON.PhysicsImpostor.BoxImpostor,
-                    { mass: 0, restitution: 0.2 },
-                    scene
-                );
                 
                 // Store segment data
                 this.segments[index] = {
@@ -937,7 +898,6 @@
             
             addLaneMarkings(segment, elevation) {
                 const laneWidth = GAME_CONFIG.ROAD.LANE_WIDTH;
-                const roadWidth = GAME_CONFIG.ROAD.WIDTH;
                 
                 // Left lane marking
                 const leftMarking = BABYLON.MeshBuilder.CreateBox(
@@ -983,7 +943,7 @@
                     (color >> 16) & 0xFF,
                     (color >> 8) & 0xFF,
                     color & 0xFF
-                );
+                ).scale(0.8);
                 material.diffuseColor = material.emissiveColor;
                 material.specularColor = new BABYLON.Color3(0, 0, 0);
                 return material;
@@ -1027,14 +987,6 @@
                     obstacleMaterial.diffuseColor = new BABYLON.Color3(1, 0.5, 0);
                     obstacleMaterial.emissiveColor = new BABYLON.Color3(0.2, 0.1, 0);
                     obstacle.material = obstacleMaterial;
-                    
-                    // Add physics
-                    obstacle.physicsImpostor = new BABYLON.PhysicsImpostor(
-                        obstacle,
-                        BABYLON.PhysicsImpostor[type === 'bump' ? 'BoxImpostor' : 'CylinderImpostor'],
-                        { mass: type === 'bump' ? 0 : 10, restitution: 0.5 },
-                        scene
-                    );
                 }
             }
             
@@ -1075,11 +1027,6 @@
                 
                 return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
             }
-            
-            getCurrentRoadData(z) {
-                const index = Math.floor(z / GAME_CONFIG.ROAD.SEGMENT_LENGTH);
-                return this.segments[index] || { curve: 0, elevation: 0, bank: 0 };
-            }
         }
 
         // Building Manager Class
@@ -1093,10 +1040,10 @@
             
             generateBuildingTemplates() {
                 // Create different building types
-                for (let i = 0; i < 5; i++) {
+                for (let i = 0; i < 3; i++) { // Reduced to 3 for performance
                     const width = 8 + Math.random() * 12;
                     const depth = 8 + Math.random() * 12;
-                    const height = 15 + Math.random() * 30;
+                    const height = 15 + Math.random() * 25;
                     
                     const building = BABYLON.MeshBuilder.CreateBox(
                         `buildingTemplate_${i}`,
@@ -1105,7 +1052,7 @@
                     );
                     
                     // Apply procedural texture
-                    this.applyBuildingTexture(building);
+                    this.applyBuildingTexture(building, i);
                     
                     building.isVisible = false; // Hide templates
                     this.buildingTemplates.push({
@@ -1117,10 +1064,10 @@
                 }
             }
             
-            applyBuildingTexture(mesh) {
+            applyBuildingTexture(mesh, index) {
                 const canvas = document.createElement('canvas');
-                canvas.width = 512;
-                canvas.height = 512;
+                canvas.width = 256;
+                canvas.height = 256;
                 const ctx = canvas.getContext('2d');
                 
                 // Building color
@@ -1134,8 +1081,8 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
                 // Draw windows
-                const floorCount = 6 + Math.floor(Math.random() * 8);
-                const windowCols = 4 + Math.floor(Math.random() * 6);
+                const floorCount = 6 + Math.floor(Math.random() * 6);
+                const windowCols = 4 + Math.floor(Math.random() * 4;
                 const windowWidth = canvas.width / (windowCols * 2.5);
                 const windowHeight = canvas.height / (floorCount * 3);
                 const spacingX = canvas.width / windowCols;
@@ -1157,22 +1104,14 @@
                             
                             // Window frame
                             ctx.strokeStyle = '#333333';
-                            ctx.lineWidth = 2;
+                            ctx.lineWidth = 1;
                             ctx.strokeRect(x, y, windowWidth, windowHeight);
-                            
-                            // Window cross
-                            ctx.beginPath();
-                            ctx.moveTo(x + windowWidth/2, y);
-                            ctx.lineTo(x + windowWidth/2, y + windowHeight);
-                            ctx.moveTo(x, y + windowHeight/2);
-                            ctx.lineTo(x + windowWidth, y + windowHeight/2);
-                            ctx.stroke();
                         }
                     }
                 }
                 
                 // Draw doors
-                const doorCount = 1 + Math.floor(Math.random() * 3);
+                const doorCount = 1 + Math.floor(Math.random() * 2);
                 const doorWidth = canvas.width / (doorCount * 2.5);
                 const doorHeight = canvas.height / 4;
                 
@@ -1182,32 +1121,14 @@
                     const y = canvas.height - doorHeight;
                     
                     ctx.fillRect(x, y, doorWidth, doorHeight);
-                    
-                    // Door details
-                    ctx.strokeStyle = '#221100';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(x, y, doorWidth, doorHeight);
-                    
-                    // Door handle
-                    ctx.fillStyle = '#ffcc00';
-                    ctx.beginPath();
-                    ctx.arc(x + doorWidth * 0.8, y + doorHeight/2, doorWidth/8, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#553311';
                 }
                 
                 // Create texture
                 const texture = new BABYLON.Texture(null, scene);
-                texture.name = `buildingTexture_${Date.now()}`;
-                texture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
-                texture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE;
-                
-                // Convert canvas to texture
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 texture.updateURL(canvas.toDataURL());
                 
                 // Apply material
-                const material = new BABYLON.StandardMaterial(`buildingMat_${Date.now()}`, scene);
+                const material = new BABYLON.StandardMaterial(`buildingMat_${index}`, scene);
                 material.diffuseTexture = texture;
                 material.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
                 material.emissiveColor = new BABYLON.Color3(0.05, 0.05, 0.05);
@@ -1249,14 +1170,6 @@
                 const scale = 0.8 + Math.random() * 0.4;
                 building.scaling = new BABYLON.Vector3(scale, scale, scale);
                 
-                // Enable physics for collisions
-                building.physicsImpostor = new BABYLON.PhysicsImpostor(
-                    building,
-                    BABYLON.PhysicsImpostor.BoxImpostor,
-                    { mass: 0, restitution: 0.1 },
-                    scene
-                );
-                
                 // Store building
                 this.buildings[index] = {
                     mesh: building,
@@ -1265,11 +1178,12 @@
                     z
                 };
                 
-                // Create shadow catcher
+                // SIMPLE shadow catcher - no ShadowOnlyMaterial needed
                 this.createShadowCatcher(building, template);
             }
             
             createShadowCatcher(building, template) {
+                // Create a simple dark plane for shadows
                 const shadowCatcher = BABYLON.MeshBuilder.CreateGround(
                     `shadow_${building.name}`,
                     { width: template.width * 1.2, height: template.depth * 1.2 },
@@ -1282,9 +1196,11 @@
                     building.position.z
                 );
                 
-                const shadowMaterial = new BABYLON.ShadowOnlyMaterial('shadowMat', scene);
+                // Simple dark material
+                const shadowMaterial = new BABYLON.StandardMaterial('shadowMat', scene);
+                shadowMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+                shadowMaterial.alpha = 0.3;
                 shadowCatcher.material = shadowMaterial;
-                shadowCatcher.receiveShadows = true;
             }
             
             update(playerZ) {
@@ -1346,17 +1262,19 @@
                 // Add character
                 this.createCharacter();
                 
-                // Enable physics
-                this.cart.physicsImpostor = new BABYLON.PhysicsImpostor(
-                    this.cart,
-                    BABYLON.PhysicsImpostor.BoxImpostor,
-                    { mass: 100, restitution: 0.3 },
-                    scene
-                );
-                
                 // Set initial position
                 this.cart.position = this.position;
-                this.cart.rotation = this.rotation;
+                this.cart.rotation.y = Math.PI;
+                
+                // Enable physics if available
+                if (scene.isPhysicsEnabled()) {
+                    this.cart.physicsImpostor = new BABYLON.PhysicsImpostor(
+                        this.cart,
+                        BABYLON.PhysicsImpostor.BoxImpostor,
+                        { mass: 100, restitution: 0.3 },
+                        scene
+                    );
+                }
             }
             
             addWheels() {
@@ -1403,9 +1321,8 @@
                 // Apply input
                 this.processInput(deltaTime);
                 
-                // Update position based on speed
-                const forwardVector = this.cart.getDirection(BABYLON.Vector3.Forward());
-                this.cart.moveWithCollisions(forwardVector.scale(-this.speed * deltaTime));
+                // Update position based on speed (simplified movement)
+                this.cart.position.z += this.speed * deltaTime;
                 
                 // Update lane position
                 this.updateLanePosition(deltaTime);
@@ -1511,10 +1428,6 @@
             updateUI() {
                 dom.speedValue.textContent = Math.floor(this.speed);
                 dom.productsValue.textContent = this.products;
-                
-                // Update boost bar
-                const boostPercent = (this.boost / GAME_CONFIG.PLAYER.BOOST_CAPACITY) * 100;
-                dom.boostFill.style.width = `${boostPercent}%`;
             }
             
             handleCollision() {
@@ -1527,17 +1440,19 @@
                     // Visual feedback
                     this.showCollisionWarning();
                     
-                    // Apply physics impulse
-                    const impulse = new BABYLON.Vector3(
-                        (Math.random() - 0.5) * GAME_CONFIG.PHYSICS.COLLISION_FORCE,
-                        0.5,
-                        (Math.random() - 0.5) * GAME_CONFIG.PHYSICS.COLLISION_FORCE
-                    );
-                    
-                    this.cart.physicsImpostor.applyImpulse(
-                        impulse,
-                        this.cart.getAbsolutePosition()
-                    );
+                    // Apply physics if available
+                    if (scene.isPhysicsEnabled() && this.cart.physicsImpostor) {
+                        const impulse = new BABYLON.Vector3(
+                            (Math.random() - 0.5) * GAME_CONFIG.PHYSICS.COLLISION_FORCE,
+                            0.5,
+                            (Math.random() - 0.5) * GAME_CONFIG.PHYSICS.COLLISION_FORCE
+                        );
+                        
+                        this.cart.physicsImpostor.applyImpulse(
+                            impulse,
+                            this.cart.getAbsolutePosition()
+                        );
+                    }
                     
                     // Reduce speed
                     this.speed *= 0.7;
@@ -1605,14 +1520,6 @@
                 
                 // Hide template
                 this.botTemplate.isVisible = false;
-                
-                // Add physics
-                this.botTemplate.physicsImpostor = new BABYLON.PhysicsImpostor(
-                    this.botTemplate,
-                    BABYLON.PhysicsImpostor.BoxImpostor,
-                    { mass: 120, restitution: 0.4 },
-                    scene
-                );
             }
             
             addBotWheels() {
@@ -1668,7 +1575,7 @@
                 
                 // Set initial position
                 bot.position = botData.position;
-                bot.rotation = new BABYLON.Vector3(0, Math.PI, 0);
+                bot.rotation.y = Math.PI;
                 
                 // Add to scene
                 this.bots.push(botData);
@@ -1695,8 +1602,7 @@
                     this.updateBotAI(bot, deltaTime, playerPosition, playerLane, playerSpeed);
                     
                     // Move bot forward
-                    const forwardVector = bot.mesh.getDirection(BABYLON.Vector3.Forward());
-                    bot.mesh.moveWithCollisions(forwardVector.scale(-bot.speed * deltaTime));
+                    bot.mesh.position.z += bot.speed * deltaTime;
                     
                     // Update lane position
                     this.updateBotLane(bot, deltaTime);
@@ -1745,11 +1651,6 @@
                     } else if (distanceToPlayer < 15) {
                         bot.speed = Math.max(bot.speed - deltaTime * 15, GAME_CONFIG.AI.MIN_SPEED);
                     }
-                    
-                    // Try to match player speed when close
-                    if (distanceToPlayer < 25) {
-                        bot.speed += (playerSpeed - bot.speed) * deltaTime * 0.5;
-                    }
                 }
             }
             
@@ -1791,68 +1692,33 @@
 
         // Setup Camera
         function setupCamera() {
-            // Create third-person camera
-            camera = new BABYLON.FollowCamera(
-                'followCamera',
-                new BABYLON.Vector3(0, 5, -15),
+            // Create arc rotate camera for better control
+            camera = new BABYLON.ArcRotateCamera(
+                "Camera",
+                -Math.PI / 2, // Alpha
+                Math.PI / 4,  // Beta
+                20,           // Radius
+                new BABYLON.Vector3(0, 5, 0),
                 scene
             );
             
-            // Set camera target (player's cart)
-            camera.lockedTarget = player.cart;
-            
-            // Camera settings
-            camera.heightOffset = 3;
-            camera.radius = 12;
-            camera.rotationOffset = 0;
-            camera.cameraAcceleration = 0.05;
-            camera.maxCameraSpeed = 10;
+            // Set camera target to player
+            camera.setTarget(new BABYLON.Vector3(0, 2, 10));
             
             // Attach camera to canvas
             camera.attachControl(canvas, true);
             
-            // Enable camera collisions
-            camera.checkCollisions = true;
-            camera.collisionRadius = new BABYLON.Vector3(0.5, 0.5, 0.5);
-        }
-
-        // Setup Post-Processing
-        function setupPostProcessing() {
-            // Create post-processing pipeline
-            const pipeline = new BABYLON.PostProcessRenderPipeline(
-                engine,
-                'defaultPipeline'
-            );
+            // Lower rotation sensitivity
+            camera.angularSensibilityX = 2000;
+            camera.angularSensibilityY = 2000;
             
-            // Add bloom effect for glowing elements
-            const bloom = new BABYLON.BloomEffect(
-                'bloom',
-                scene,
-                1.0,  // Bloom scale
-                40,   // Bloom threshold
-                0.8   // Bloom weight
-            );
-            pipeline.addEffect(bloom);
+            // Set lower and upper beta limits
+            camera.lowerBetaLimit = 0.1;
+            camera.upperBetaLimit = Math.PI / 2.5;
             
-            // Add vignette effect
-            const vignette = new BABYLON.VignetteEffect(
-                'vignette',
-                scene,
-                0.5,  // Vignette weight
-                0.5   // Vignette blur
-            );
-            pipeline.addEffect(vignette);
-            
-            // Apply pipeline to scene
-            scene.postProcessRenderPipelineManager.attachCamerasToRenderPipeline(
-                'defaultPipeline',
-                camera
-            );
-            
-            // Enable image processing
-            scene.imageProcessingConfiguration.contrast = 1.2;
-            scene.imageProcessingConfiguration.exposure = 1.1;
-            scene.imageProcessingConfiguration.toneMappingEnabled = true;
+            // Set lower radius limit
+            camera.lowerRadiusLimit = 10;
+            camera.upperRadiusLimit = 50;
         }
 
         // Update Loading Progress
@@ -1918,56 +1784,6 @@
                 }
             });
             
-            // Gamepad support
-            let gamepad = null;
-            
-            function updateGamepad() {
-                if (!navigator.getGamepads) return;
-                
-                const gamepads = navigator.getGamepads();
-                if (gamepads[0]) {
-                    gamepad = gamepads[0];
-                    
-                    // Left stick for acceleration/braking
-                    if (Math.abs(gamepad.axes[1]) > 0.1) {
-                        if (gamepad.axes[1] < -0.5) {
-                            input.forward = true;
-                            input.backward = false;
-                        } else if (gamepad.axes[1] > 0.5) {
-                            input.backward = true;
-                            input.forward = false;
-                        }
-                    } else {
-                        input.forward = false;
-                        input.backward = false;
-                    }
-                    
-                    // Left stick for lane changes
-                    if (Math.abs(gamepad.axes[0]) > 0.5) {
-                        if (gamepad.axes[0] < -0.5 && !input.left) {
-                            input.left = true;
-                        } else if (gamepad.axes[0] > 0.5 && !input.right) {
-                            input.right = true;
-                        }
-                    }
-                    
-                    // Button A (0) for boost
-                    if (gamepad.buttons[0] && gamepad.buttons[0].pressed) {
-                        input.boost = true;
-                    } else {
-                        input.boost = false;
-                    }
-                    
-                    // Start button (9) for pause
-                    if (gamepad.buttons[9] && gamepad.buttons[9].pressed) {
-                        togglePause();
-                    }
-                }
-            }
-            
-            // Gamepad polling
-            setInterval(updateGamepad, 50);
-            
             // UI buttons
             dom.resumeButton.addEventListener('click', togglePause);
             dom.restartButton.addEventListener('click', restartGame);
@@ -2019,8 +1835,8 @@
             // Check collisions
             checkCollisions();
             
-            // Update camera with shake
-            updateCameraWithShake(deltaTime);
+            // Update camera
+            updateCameraPosition(deltaTime);
             
             // Spawn new bots based on score
             if (score >= nextBotScore) {
@@ -2062,20 +1878,19 @@
             if (collidingBot) {
                 player.handleCollision();
                 
-                // Apply physics to bot
-                const impulse = new BABYLON.Vector3(
-                    (Math.random() - 0.5) * GAME_CONFIG.PHYSICS.COLLISION_FORCE,
-                    0.3,
-                    (Math.random() - 0.5) * GAME_CONFIG.PHYSICS.COLLISION_FORCE
-                );
-                
-                collidingBot.mesh.physicsImpostor.applyImpulse(
-                    impulse,
-                    collidingBot.mesh.getAbsolutePosition()
-                );
-                
-                // Reduce bot speed
-                collidingBot.speed *= 0.8;
+                // Apply physics if available
+                if (scene.isPhysicsEnabled() && player.cart.physicsImpostor) {
+                    const impulse = new BABYLON.Vector3(
+                        (Math.random() - 0.5) * GAME_CONFIG.PHYSICS.COLLISION_FORCE,
+                        0.3,
+                        (Math.random() - 0.5) * GAME_CONFIG.PHYSICS.COLLISION_FORCE
+                    );
+                    
+                    player.cart.physicsImpostor.applyImpulse(
+                        impulse,
+                        player.cart.getAbsolutePosition()
+                    );
+                }
             }
             
             // Check road boundary collisions
@@ -2084,32 +1899,44 @@
                 player.handleCollision();
                 
                 // Push player back into road
-                const pushDirection = playerPos.x > 0 ? -1 : 1;
-                const impulse = new BABYLON.Vector3(
-                    pushDirection * GAME_CONFIG.PHYSICS.COLLISION_FORCE * 0.5,
-                    0.2,
-                    0
-                );
-                
-                player.cart.physicsImpostor.applyImpulse(
-                    impulse,
-                    player.cart.getAbsolutePosition()
-                );
+                if (scene.isPhysicsEnabled() && player.cart.physicsImpostor) {
+                    const pushDirection = playerPos.x > 0 ? -1 : 1;
+                    const impulse = new BABYLON.Vector3(
+                        pushDirection * GAME_CONFIG.PHYSICS.COLLISION_FORCE * 0.5,
+                        0.2,
+                        0
+                    );
+                    
+                    player.cart.physicsImpostor.applyImpulse(
+                        impulse,
+                        player.cart.getAbsolutePosition()
+                    );
+                }
             }
         }
 
-        // Update Camera with Shake
-        function updateCameraWithShake(deltaTime) {
+        // Update Camera Position
+        function updateCameraPosition(deltaTime) {
+            const playerPos = player.getPosition();
+            
+            // Update camera target to follow player
+            const targetPos = new BABYLON.Vector3(
+                playerPos.x * 0.3,
+                playerPos.y + 3,
+                playerPos.z + 15
+            );
+            
+            // Smooth camera movement
+            camera.target = BABYLON.Vector3.Lerp(
+                camera.target,
+                targetPos,
+                deltaTime * 5
+            );
+            
+            // Apply camera shake
             if (player.cameraShake > 0) {
-                const shakeX = (Math.random() - 0.5) * player.cameraShake * 0.1;
-                const shakeY = (Math.random() - 0.5) * player.cameraShake * 0.1;
-                
-                camera.position.x += shakeX;
-                camera.position.y += shakeY;
-                
-                // Smoothly return to normal
-                camera.position.x -= shakeX * deltaTime * 10;
-                camera.position.y -= shakeY * deltaTime * 10;
+                camera.position.x += (Math.random() - 0.5) * player.cameraShake * 0.1;
+                camera.position.y += (Math.random() - 0.5) * player.cameraShake * 0.1;
             }
         }
 
@@ -2189,9 +2016,11 @@
             
             // Reset player cart position
             player.cart.position = player.position;
-            player.cart.rotation = player.rotation;
-            player.cart.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0, 0, 0));
-            player.cart.physicsImpostor.setAngularVelocity(new BABYLON.Vector3(0, 0, 0));
+            player.cart.rotation.y = Math.PI;
+            if (player.cart.physicsImpostor) {
+                player.cart.physicsImpostor.setLinearVelocity(new BABYLON.Vector3(0, 0, 0));
+                player.cart.physicsImpostor.setAngularVelocity(new BABYLON.Vector3(0, 0, 0));
+            }
             
             // Clear bots
             for (const bot of botManager.bots) {
@@ -2206,6 +2035,18 @@
             botManager.spawnBot();
             
             // Reset road and buildings
+            // Note: We need to properly dispose old meshes first
+            for (const segment of roadManager.segments) {
+                if (segment && segment.mesh) {
+                    segment.mesh.dispose();
+                }
+            }
+            for (const building of buildingManager.buildings) {
+                if (building && building.mesh) {
+                    building.mesh.dispose();
+                }
+            }
+            
             roadManager = new RoadManager();
             buildingManager = new BuildingManager();
             
