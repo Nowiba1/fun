@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cart Riders: Delivery Chaos</title>
-    
-    <!-- Three.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- GLTFLoader CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.min.js"></script>
-    
     <style>
         * {
             margin: 0;
@@ -18,9 +12,10 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            background: #000;
+            background-color: #121212;
+            color: white;
         }
 
         #gameContainer {
@@ -29,324 +24,263 @@
             height: 100vh;
         }
 
-        canvas {
+        #gameCanvas {
             display: block;
+            width: 100%;
+            height: 100%;
         }
 
-        /* UI Screens */
-        .screen {
+        #uiOverlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(26, 26, 46, 0.95);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            z-index: 100;
-            padding: 20px;
+            pointer-events: none;
+            z-index: 10;
         }
 
-        .hidden {
-            display: none !important;
-        }
-
-        h1 {
-            font-size: 3.5em;
-            margin-bottom: 20px;
-            color: #ff6b6b;
-            text-shadow: 3px 3px 0 #ff4757;
-            text-align: center;
-        }
-
-        h2 {
-            font-size: 2em;
-            margin-bottom: 15px;
-            color: #70a1ff;
-        }
-
-        .menu-container {
-            max-width: 600px;
-            width: 90%;
-            background: rgba(30, 30, 60, 0.8);
-            padding: 40px;
-            border-radius: 20px;
-            border: 3px solid #ff6b6b;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin: 20px 0;
-            justify-content: center;
-        }
-
-        button {
-            padding: 15px 30px;
-            font-size: 1.2em;
-            background: linear-gradient(45deg, #ff6b6b, #ff4757);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            min-width: 180px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-            background: linear-gradient(45deg, #ff4757, #ff3838);
-        }
-
-        /* Settings Controls */
-        .settings-group {
-            margin: 20px 0;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-            border: 1px solid #70a1ff;
-        }
-
-        .setting-item {
-            margin: 15px 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .setting-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            color: #70a1ff;
-            font-weight: bold;
-        }
-
-        .setting-value {
-            color: #2ed573;
-            min-width: 40px;
-            text-align: right;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            height: 6px;
-            background: #333;
-            border-radius: 3px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #ff6b6b;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            margin: 10px 0;
-        }
-
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-            cursor: pointer;
-        }
-
-        /* Multiplayer Controls */
-        .multiplayer-controls {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 2px solid #70a1ff;
-        }
-
-        .input-group {
-            margin: 15px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        label {
-            margin-bottom: 8px;
-            color: #70a1ff;
-            font-weight: bold;
-        }
-
-        input, select {
-            padding: 10px 15px;
-            font-size: 1.1em;
-            border: 2px solid #ff6b6b;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            width: 100%;
-            max-width: 300px;
-            text-align: center;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #2ed573;
-        }
-
-        .room-code {
-            font-size: 2em;
-            letter-spacing: 5px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border: 2px solid #2ed573;
-            font-family: monospace;
-        }
-
-        .player-list {
-            width: 100%;
-            max-width: 400px;
-            margin: 20px auto;
-        }
-
-        .player-item {
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 5px 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .player-ready {
-            color: #2ed573;
-            font-weight: bold;
-        }
-
-        .player-not-ready {
-            color: #ff4757;
-        }
-
-        /* HUD */
-        #hud {
+        .hud {
             position: absolute;
             top: 20px;
             left: 20px;
-            color: white;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.7);
             border-radius: 10px;
-            border: 2px solid #ff6b6b;
-            min-width: 250px;
-            z-index: 10;
-            backdrop-filter: blur(5px);
+            padding: 15px;
+            min-width: 200px;
+            pointer-events: none;
+        }
+
+        .hud h2 {
+            color: #4CAF50;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 5px;
         }
 
         .hud-item {
-            margin: 10px 0;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
         }
 
         .hud-label {
-            color: #70a1ff;
-            font-weight: bold;
+            color: #aaa;
         }
 
         .hud-value {
-            color: #2ed573;
+            color: white;
             font-weight: bold;
-            font-size: 1.1em;
         }
 
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 30px);
-            gap: 5px;
-            margin-top: 10px;
+        #speedValue {
+            color: #FF9800;
         }
 
-        .product-item {
-            width: 30px;
-            height: 30px;
-            background: #2ed573;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
+        #scoreValue {
+            color: #4CAF50;
         }
 
-        .product-item.damaged {
-            background: #ff4757;
-            transform: scale(0.8);
+        #productsValue {
+            color: #2196F3;
         }
 
-        /* Loading Screen */
-        #loadingScreen {
-            background: #1a1a2e;
+        #botsValue {
+            color: #F44336;
         }
 
-        .loading-bar {
-            width: 300px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            margin: 30px 0;
-            overflow: hidden;
-        }
-
-        .loading-progress {
+        #pauseScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, #ff6b6b, #ff4757);
-            width: 0%;
-            transition: width 0.3s;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            pointer-events: all;
+        }
+
+        .screen-content {
+            text-align: center;
+            max-width: 600px;
+            padding: 40px;
+            background-color: rgba(30, 30, 40, 0.9);
+            border-radius: 15px;
+            border: 3px solid #4CAF50;
+            box-shadow: 0 0 30px rgba(76, 175, 80, 0.3);
+        }
+
+        .screen-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #4CAF50;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+        }
+
+        .screen-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: #FF9800;
+        }
+
+        .stats {
+            background-color: rgba(0, 0, 0, 0.5);
             border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
         }
 
-        .loading-text {
-            margin-top: 20px;
-            color: #70a1ff;
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
         }
 
-        /* Settings Button */
-        #settingsButton {
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+            pointer-events: all;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.7);
+        }
+
+        .controls-info {
+            margin-top: 30px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .controls-title {
+            color: #FF9800;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+
+        .control-item {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .key {
+            background-color: #333;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .action {
+            color: #aaa;
+        }
+
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #121212;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+        }
+
+        .loader {
+            border: 8px solid #333;
+            border-top: 8px solid #4CAF50;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #warningMessage {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(244, 67, 54, 0.9);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 15;
+            display: none;
+        }
+
+        .product-indicator {
             position: absolute;
             top: 20px;
             right: 20px;
-            width: 50px;
-            height: 50px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #ff6b6b;
-            border-radius: 50%;
-            color: white;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 20;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            padding: 15px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            transition: all 0.3s;
+            pointer-events: none;
         }
 
-        #settingsButton:hover {
-            background: rgba(255, 107, 107, 0.7);
-            transform: rotate(30deg);
+        .product-icon {
+            font-size: 2rem;
+            margin-right: 10px;
+            color: #2196F3;
+        }
+
+        .speedometer {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 150px;
+            height: 150px;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .hud {
+                padding: 10px;
+                min-width: 150px;
+            }
+            
+            .screen-content {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            .screen-title {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
@@ -354,1807 +288,1210 @@
     <div id="gameContainer">
         <canvas id="gameCanvas"></canvas>
         
-        <!-- Settings Button -->
-        <button id="settingsButton" title="Settings">⚙️</button>
-
-        <!-- Loading Screen -->
-        <div id="loadingScreen" class="screen">
-            <h1>Cart Riders</h1>
-            <div class="loading-bar">
-                <div class="loading-progress" id="loadingProgress"></div>
-            </div>
-            <div class="loading-text" id="loadingText">Loading...</div>
-        </div>
-
-        <!-- Start Menu -->
-        <div id="startMenu" class="screen hidden">
-            <div class="menu-container">
-                <h1>Delivery Chaos</h1>
-                <div class="button-group">
-                    <button id="playSolo">Play Solo</button>
-                    <button id="playMultiplayer">Multiplayer</button>
-                    <button id="openSettings">Settings</button>
-                </div>
-                <div class="input-group">
-                    <label for="botCount">Number of Bots (0-4):</label>
-                    <select id="botCount">
-                        <option value="0">0 Bots</option>
-                        <option value="1">1 Bot</option>
-                        <option value="2" selected>2 Bots</option>
-                        <option value="3">3 Bots</option>
-                        <option value="4">4 Bots</option>
-                    </select>
+        <div id="uiOverlay">
+            <div class="hud">
+                <h2>DELIVERY CHAOS</h2>
+                <div class="hud-item">
+                    <span class="hud-label">SPEED:</span>
+                    <span id="speedValue" class="hud-value">0 km/h</span>
                 </div>
                 <div class="hud-item">
-                    <span class="hud-label">High Score:</span>
-                    <span class="hud-value" id="highScore">0m</span>
+                    <span class="hud-label">PRODUCTS:</span>
+                    <span id="productsValue" class="hud-value">10</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">SCORE:</span>
+                    <span id="scoreValue" class="hud-value">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">ACTIVE BOTS:</span>
+                    <span id="botsValue" class="hud-value">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">HIGH SCORE:</span>
+                    <span id="highScoreValue" class="hud-value">0</span>
+                </div>
+            </div>
+            
+            <div class="product-indicator">
+                <div class="product-icon">📦</div>
+                <div>
+                    <div style="font-size: 0.9rem; color: #aaa;">DELIVERIES LEFT</div>
+                    <div id="productsIndicator" style="font-size: 1.5rem; font-weight: bold;">10</div>
+                </div>
+            </div>
+            
+            <div id="warningMessage">BOT ATTACK!</div>
+            
+            <div class="speedometer">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="#333" stroke-width="8"/>
+                    <circle id="speedArc" cx="50" cy="50" r="45" fill="none" stroke="#FF9800" stroke-width="8" 
+                            stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"/>
+                    <text id="speedText" x="50" y="50" text-anchor="middle" dy="0.3em" font-size="14" fill="white">0</text>
+                    <text x="50" y="65" text-anchor="middle" font-size="8" fill="#aaa">km/h</text>
+                </svg>
+            </div>
+        </div>
+        
+        <div id="loadingScreen">
+            <div class="loader"></div>
+            <h2 style="margin-bottom: 20px; color: #4CAF50;">Loading Cart Riders...</h2>
+            <p id="loadingText" style="color: #aaa;">Initializing game world</p>
+        </div>
+        
+        <div id="pauseScreen" style="display: none;">
+            <div class="screen-content">
+                <h1 class="screen-title">GAME PAUSED</h1>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Current Score:</span>
+                        <span id="pauseScore">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Products Remaining:</span>
+                        <span id="pauseProducts">10</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Active Bots:</span>
+                        <span id="pauseBots">0</span>
+                    </div>
+                </div>
+                <button id="resumeButton" class="button">RESUME GAME</button>
+                <button id="restartButton" class="button">RESTART GAME</button>
+                <div class="controls-info">
+                    <div class="controls-title">CONTROLS</div>
+                    <div class="control-item">
+                        <span class="key">W / ↑</span>
+                        <span class="action">Accelerate</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">S / ↓</span>
+                        <span class="action">Brake / Reverse</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">A / ←</span>
+                        <span class="action">Move Left Lane</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">D / →</span>
+                        <span class="action">Move Right Lane</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">SPACE</span>
+                        <span class="action">Boost / Ram</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">P / ESC</span>
+                        <span class="action">Pause Game</span>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Settings Screen -->
-        <div id="settingsScreen" class="screen hidden">
-            <div class="menu-container">
-                <h1>Settings</h1>
-                
-                <div class="settings-group">
-                    <h2>Camera Settings</h2>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Camera Height:</span>
-                            <span class="setting-value" id="cameraHeightValue">3.0</span>
-                        </div>
-                        <input type="range" id="cameraHeight" min="1" max="10" step="0.1" value="3.0">
+        
+        <div id="gameOverScreen" style="display: none;">
+            <div class="screen-content">
+                <h1 class="screen-title">DELIVERY FAILED</h1>
+                <p class="screen-subtitle">All products destroyed!</p>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>Final Score:</span>
+                        <span id="finalScore">0</span>
                     </div>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Camera Distance:</span>
-                            <span class="setting-value" id="cameraDistanceValue">8.0</span>
-                        </div>
-                        <input type="range" id="cameraDistance" min="3" max="15" step="0.1" value="8.0">
+                    <div class="stat-item">
+                        <span>Distance Traveled:</span>
+                        <span id="finalDistance">0 m</span>
                     </div>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Camera Smoothness:</span>
-                            <span class="setting-value" id="cameraSmoothnessValue">0.08</span>
-                        </div>
-                        <input type="range" id="cameraSmoothness" min="0.01" max="0.2" step="0.01" value="0.08">
+                    <div class="stat-item">
+                        <span>Bots Defeated:</span>
+                        <span id="finalBots">0</span>
                     </div>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Field of View:</span>
-                            <span class="setting-value" id="fovValue">60</span>
-                        </div>
-                        <input type="range" id="fov" min="30" max="90" step="1" value="60">
-                    </div>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Camera Shake Intensity:</span>
-                            <span class="setting-value" id="shakeValue">0.5</span>
-                        </div>
-                        <input type="range" id="shakeIntensity" min="0" max="1" step="0.1" value="0.5">
-                    </div>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Camera Bob Intensity:</span>
-                            <span class="setting-value" id="bobValue">0.02</span>
-                        </div>
-                        <input type="range" id="bobIntensity" min="0" max="0.1" step="0.001" value="0.02">
-                    </div>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Camera Lean Amount:</span>
-                            <span class="setting-value" id="leanValue">0.2</span>
-                        </div>
-                        <input type="range" id="leanAmount" min="0" max="0.5" step="0.01" value="0.2">
+                    <div class="stat-item">
+                        <span>High Score:</span>
+                        <span id="finalHighScore">0</span>
                     </div>
                 </div>
-                
-                <div class="settings-group">
-                    <h2>Game Settings</h2>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Mouse Sensitivity:</span>
-                            <span class="setting-value" id="sensitivityValue">1.0</span>
-                        </div>
-                        <input type="range" id="mouseSensitivity" min="0.1" max="3" step="0.1" value="1.0">
-                    </div>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Max Speed:</span>
-                            <span class="setting-value" id="maxSpeedValue">80</span>
-                        </div>
-                        <input type="range" id="maxSpeed" min="40" max="120" step="5" value="80">
-                    </div>
-                    
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="vibration" checked>
-                        <label for="vibration">Enable Vibration Effects</label>
-                    </div>
-                    
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="shadows" checked>
-                        <label for="shadows">Enable Shadows</label>
-                    </div>
-                    
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="weatherEffects" checked>
-                        <label for="weatherEffects">Enable Weather Effects</label>
-                    </div>
-                </div>
-                
-                <div class="button-group">
-                    <button id="saveSettings">Save Settings</button>
-                    <button id="resetSettings">Reset to Default</button>
-                    <button id="backToMenuFromSettings">Back to Menu</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Multiplayer Menu -->
-        <div id="multiplayerMenu" class="screen hidden">
-            <div class="menu-container">
-                <h1>Multiplayer</h1>
-                <div class="button-group">
-                    <button id="createRoom">Create Room</button>
-                    <button id="joinRoom">Join Available Room</button>
-                </div>
-                <div class="input-group" id="roomCodeGroup">
-                    <label for="roomCode">Room Code (Backup):</label>
-                    <input type="text" id="roomCode" maxlength="6" placeholder="Enter 6-digit code">
-                    <button id="connectRoom" style="margin-top: 15px;">Connect with Code</button>
-                </div>
-                <button id="backToMain" style="margin-top: 30px;">Back to Main</button>
-            </div>
-        </div>
-
-        <!-- Lobby Screen -->
-        <div id="lobbyScreen" class="screen hidden">
-            <div class="menu-container">
-                <h1>Lobby</h1>
-                <div class="room-code" id="lobbyRoomCode">XXXXXX</div>
-                <div class="player-list" id="playerList">
-                    <!-- Players will be added here -->
-                </div>
-                <div class="button-group">
-                    <button id="readyButton">Ready</button>
-                    <button id="startGame" class="hidden">Start Game</button>
-                    <button id="leaveLobby">Leave Lobby</button>
-                </div>
-                <div class="loading-text" id="lobbyStatus">Waiting for players...</div>
-            </div>
-        </div>
-
-        <!-- Game HUD -->
-        <div id="hud" class="hidden">
-            <div class="hud-item">
-                <span class="hud-label">Speed:</span>
-                <span class="hud-value" id="speedValue">0 km/h</span>
-            </div>
-            <div class="hud-item">
-                <span class="hud-label">Products:</span>
-                <span class="hud-value" id="productCount">15/15</span>
-            </div>
-            <div class="hud-item">
-                <span class="hud-label">Distance:</span>
-                <span class="hud-value" id="distanceValue">0m</span>
-            </div>
-            <div class="hud-item">
-                <span class="hud-label">Players:</span>
-                <span class="hud-value" id="playerCount">1/8</span>
-            </div>
-            <div class="hud-item">
-                <span class="hud-label">Bots:</span>
-                <span class="hud-value" id="botCount">0</span>
-            </div>
-            <div class="products-grid" id="productsGrid"></div>
-        </div>
-
-        <!-- End Screen -->
-        <div id="endScreen" class="screen hidden">
-            <div class="menu-container">
-                <h1 id="endTitle">Game Over</h1>
-                <div style="font-size: 1.5em; margin: 20px 0;">
-                    <div>Distance: <span id="finalDistance" style="color: #70a1ff;">0m</span></div>
-                    <div>Products Delivered: <span id="deliveredCount" style="color: #2ed573;">0/15</span></div>
-                    <div>Time Survived: <span id="survivalTime" style="color: #ffdd59;">0s</span></div>
-                </div>
-                <div class="button-group">
-                    <button id="playAgain">Play Again</button>
-                    <button id="mainMenu">Main Menu</button>
+                <button id="playAgainButton" class="button">PLAY AGAIN</button>
+                <div class="controls-info">
+                    <p style="text-align: center; color: #FF9800; margin-top: 10px;">Can you survive longer next time?</p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==================== GAME SETTINGS MANAGER ====================
-        class GameSettings {
-            constructor() {
-                // Default settings
-                this.cameraHeight = 3.0;
-                this.cameraDistance = 8.0;
-                this.cameraSmoothness = 0.08;
-                this.cameraFOV = 60;
-                this.cameraShakeIntensity = 0.5;
-                this.cameraBobIntensity = 0.02;
-                this.cameraLeanAmount = 0.2;
-                
-                this.mouseSensitivity = 1.0;
-                this.maxSpeed = 80;
-                this.enableVibration = true;
-                this.enableShadows = true;
-                this.enableWeather = true;
-                
-                this.load();
-            }
-            
-            load() {
-                const saved = localStorage.getItem('cartRidersSettings');
-                if (saved) {
-                    try {
-                        const settings = JSON.parse(saved);
-                        Object.assign(this, settings);
-                    } catch (e) {
-                        console.log('Failed to load settings:', e);
-                    }
-                }
-            }
-            
-            save() {
-                localStorage.setItem('cartRidersSettings', JSON.stringify(this));
-            }
-            
-            reset() {
-                // Reset to defaults
-                this.cameraHeight = 3.0;
-                this.cameraDistance = 8.0;
-                this.cameraSmoothness = 0.08;
-                this.cameraFOV = 60;
-                this.cameraShakeIntensity = 0.5;
-                this.cameraBobIntensity = 0.02;
-                this.cameraLeanAmount = 0.2;
-                
-                this.mouseSensitivity = 1.0;
-                this.maxSpeed = 80;
-                this.enableVibration = true;
-                this.enableShadows = true;
-                this.enableWeather = true;
-                
-                this.save();
-            }
-        }
+        // Main game script - all in one file as requested
+        // Three.js is loaded via CDN
+        // Game uses external .glb models from models/ folder
 
-        // ==================== OPTIMIZED ASSET MANAGER ====================
-        class AssetManager {
-            constructor() {
-                this.models = new Map();
-                this.textures = new Map();
-                this.loader = new THREE.GLTFLoader();
-                this.textureLoader = new THREE.TextureLoader();
-                this.loadedCount = 0;
-                this.totalAssets = 0;
-            }
-            
-            async loadModel(name, path) {
-                this.totalAssets++;
-                return new Promise((resolve, reject) => {
-                    this.loader.load(path, (gltf) => {
-                        // Optimize model
-                        gltf.scene.traverse((child) => {
-                            if (child.isMesh) {
-                                child.castShadow = true;
-                                child.receiveShadow = true;
-                                child.frustumCulled = true;
-                                
-                                // Optimize materials
-                                if (child.material) {
-                                    child.material = child.material.clone();
-                                }
-                            }
-                        });
-                        
-                        this.models.set(name, gltf.scene);
-                        this.loadedCount++;
-                        resolve(gltf.scene);
-                    }, 
-                    (xhr) => {
-                        // Progress callback
-                        console.log(`${name}: ${(xhr.loaded / xhr.total * 100)}% loaded`);
-                    },
-                    reject);
-                });
-            }
-            
-            async loadTexture(name, path) {
-                this.totalAssets++;
-                return new Promise((resolve, reject) => {
-                    this.textureLoader.load(path, (texture) => {
-                        texture.wrapS = THREE.RepeatWrapping;
-                        texture.wrapT = THREE.RepeatWrapping;
-                        texture.minFilter = THREE.LinearMipMapLinearFilter;
-                        texture.magFilter = THREE.LinearFilter;
-                        texture.anisotropy = 2;
-                        
-                        this.textures.set(name, texture);
-                        this.loadedCount++;
-                        resolve(texture);
-                    }, undefined, reject);
-                });
-            }
-            
-            getModel(name) {
-                const model = this.models.get(name);
-                return model ? model.clone() : null;
-            }
-            
-            getTexture(name) {
-                return this.textures.get(name);
-            }
-            
-            getProgress() {
-                return this.totalAssets > 0 ? (this.loadedCount / this.totalAssets) * 100 : 0;
-            }
-        }
+        // Game state
+        const GameState = {
+            LOADING: 0,
+            PLAYING: 1,
+            PAUSED: 2,
+            GAME_OVER: 3
+        };
 
-        // ==================== SMOOTH CAMERA SYSTEM ====================
-        class SmoothCameraSystem {
-            constructor(camera, settings) {
-                this.camera = camera;
-                this.settings = settings;
-                this.target = null;
-                
-                // Camera properties with smooth interpolation
-                this.currentPosition = new THREE.Vector3();
-                this.currentLookAt = new THREE.Vector3();
-                this.targetPosition = new THREE.Vector3();
-                this.targetLookAt = new THREE.Vector3();
-                
-                // Camera effects with minimal vibration
-                this.shakeIntensity = 0;
-                this.shakeDecay = 0.85;
-                this.leanAmount = 0;
-                this.zoomLevel = 1;
-                
-                // Smoothing velocity
-                this.positionVelocity = new THREE.Vector3();
-                this.lookAtVelocity = new THREE.Vector3();
-                
-                // No bob effect by default (causes vibration)
-                this.bobEnabled = false;
-                
-                // Last known values for smooth interpolation
-                this.lastPlayerSpeed = 0;
-                this.lastPlayerSteering = 0;
-                
-                this.updateCameraOffset();
-            }
+        // Constants
+        const ROAD_WIDTH = 12;
+        const LANE_WIDTH = ROAD_WIDTH / 3;
+        const ROAD_SEGMENT_LENGTH = 30;
+        const MAX_ROAD_SEGMENTS = 50;
+        const INITIAL_PRODUCTS = 10;
+        const BOT_SPAWN_SCORE_INTERVAL = 500;
+        const MAX_VISIBLE_BUILDINGS = 40;
+        const BUILDING_SPACING = 25;
+        const MAX_BOT_SPEED_VARIANCE = 3;
+        
+        // Game variables
+        let currentState = GameState.LOADING;
+        let score = 0;
+        let highScore = localStorage.getItem('cartRidersHighScore') || 0;
+        let products = INITIAL_PRODUCTS;
+        let distanceTraveled = 0;
+        let activeBots = 0;
+        let botsDefeated = 0;
+        let playerSpeed = 0;
+        let targetLane = 1; // 0 = left, 1 = middle, 2 = right
+        let currentLane = 1;
+        let laneChangeSpeed = 0.1;
+        let isBoosting = false;
+        let boostTime = 0;
+        let maxBoostTime = 2;
+        let cameraShake = 0;
+        let lastBotSpawnScore = 0;
+        
+        // Three.js objects
+        let scene, camera, renderer;
+        let roadSegments = [];
+        let buildings = [];
+        let bots = [];
+        let playerCart, playerCharacter;
+        let roadMaterial, buildingMaterials = [];
+        let directionalLight, ambientLight;
+        
+        // Gamepad support
+        let gamepad = null;
+        let gamepadIndex = null;
+        
+        // Input state
+        const keys = {
+            w: false, up: false,
+            s: false, down: false,
+            a: false, left: false,
+            d: false, right: false,
+            space: false
+        };
+        
+        // Initialize the game
+        function init() {
+            updateLoadingText("Setting up 3D scene...");
             
-            setTarget(target) {
-                this.target = target;
-                if (target) {
-                    this.updateCameraOffset();
-                    this.currentPosition.copy(target.position).add(this.offset);
-                    this.currentLookAt.copy(target.position).add(this.lookOffset);
-                    this.camera.position.copy(this.currentPosition);
-                    this.camera.lookAt(this.currentLookAt);
-                }
-            }
+            // Create Three.js scene
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x87CEEB, 100, 500);
             
-            updateCameraOffset() {
-                // Calculate offset based on settings
-                this.offset = new THREE.Vector3(0, this.settings.cameraHeight, this.settings.cameraDistance);
-                this.lookOffset = new THREE.Vector3(0, 0.5, -this.settings.cameraDistance * 0.6);
-                
-                // Update camera FOV
-                this.camera.fov = this.settings.cameraFOV;
-                this.camera.updateProjectionMatrix();
-            }
+            // Create camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.set(0, 10, -20);
             
-            update(deltaTime, playerSpeed, playerSteering) {
-                if (!this.target) return;
-                
-                // Smooth out input changes to reduce vibration
-                this.lastPlayerSpeed += (playerSpeed - this.lastPlayerSpeed) * 0.1;
-                this.lastPlayerSteering += (playerSteering - this.lastPlayerSteering) * 0.1;
-                
-                // Calculate desired position
-                const desiredOffset = this.offset.clone().multiplyScalar(this.zoomLevel);
-                this.targetPosition.copy(this.target.position).add(desiredOffset);
-                
-                // Calculate look-at point (slightly ahead for forward view)
-                this.targetLookAt.copy(this.target.position).add(this.lookOffset);
-                
-                // Smooth position interpolation with velocity damping
-                const smoothFactor = this.settings.cameraSmoothness;
-                
-                // Use spring physics for smoother movement
-                this.currentPosition.x = this.lerpWithDamping(
-                    this.currentPosition.x, 
-                    this.targetPosition.x, 
-                    smoothFactor, 
-                    deltaTime
-                );
-                this.currentPosition.y = this.lerpWithDamping(
-                    this.currentPosition.y, 
-                    this.targetPosition.y, 
-                    smoothFactor, 
-                    deltaTime
-                );
-                this.currentPosition.z = this.lerpWithDamping(
-                    this.currentPosition.z, 
-                    this.targetPosition.z, 
-                    smoothFactor * 0.8, // Slower Z movement
-                    deltaTime
-                );
-                
-                this.currentLookAt.x = this.lerpWithDamping(
-                    this.currentLookAt.x, 
-                    this.targetLookAt.x, 
-                    smoothFactor * 1.2, // Faster look-at movement
-                    deltaTime
-                );
-                this.currentLookAt.y = this.lerpWithDamping(
-                    this.currentLookAt.y, 
-                    this.targetLookAt.y, 
-                    smoothFactor * 1.2,
-                    deltaTime
-                );
-                this.currentLookAt.z = this.lerpWithDamping(
-                    this.currentLookAt.z, 
-                    this.targetLookAt.z, 
-                    smoothFactor * 1.2,
-                    deltaTime
-                );
-                
-                // Apply camera shake (if enabled and minimal)
-                if (this.shakeIntensity > 0 && this.settings.enableVibration) {
-                    const shakeX = (Math.random() - 0.5) * this.shakeIntensity * 0.1;
-                    const shakeY = (Math.random() - 0.5) * this.shakeIntensity * 0.1;
-                    this.currentPosition.x += shakeX;
-                    this.currentPosition.y += shakeY;
-                    this.shakeIntensity *= this.shakeDecay;
-                }
-                
-                // Apply very subtle lean based on steering (reduced intensity)
-                this.leanAmount = this.lastPlayerSteering * this.settings.cameraLeanAmount * 0.1;
-                
-                // Set camera position and rotation
-                this.camera.position.copy(this.currentPosition);
-                this.camera.lookAt(this.currentLookAt);
-                
-                // Apply minimal lean (roll)
-                this.camera.rotation.z = this.leanAmount;
-                
-                // Apply speed-based zoom (very subtle)
-                const speedFactor = Math.min(this.lastPlayerSpeed / 80, 1);
-                this.zoomLevel = 1 - speedFactor * 0.1; // Very subtle zoom
-                
-                // Apply minimal, smooth bob effect only if enabled
-                if (this.bobEnabled && this.settings.cameraBobIntensity > 0) {
-                    const bobFrequency = 0.003; // Very slow frequency
-                    const bobAmount = Math.sin(Date.now() * bobFrequency) * 
-                                    this.settings.cameraBobIntensity * 
-                                    speedFactor * 0.1; // Very reduced
-                    this.camera.position.y += bobAmount;
-                }
-            }
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('gameCanvas'),
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             
-            lerpWithDamping(current, target, factor, deltaTime) {
-                // Damped interpolation for smooth movement
-                const dt = Math.min(deltaTime * 60, 1);
-                return current + (target - current) * factor * dt;
-            }
+            // Lighting
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
             
-            shake(intensity = 0.3) {
-                if (this.settings.enableVibration) {
-                    this.shakeIntensity = Math.max(this.shakeIntensity, intensity * this.settings.cameraShakeIntensity);
-                }
-            }
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.left = -100;
+            directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100;
+            directionalLight.shadow.camera.bottom = -100;
+            scene.add(directionalLight);
             
-            enableBob(enable) {
-                this.bobEnabled = enable;
-            }
+            // Create road material
+            createRoadMaterial();
             
-            updateSettings(settings) {
-                this.settings = settings;
-                this.updateCameraOffset();
-            }
+            // Create building materials (procedural textures)
+            createBuildingMaterials();
+            
+            // Initialize road
+            generateInitialRoad();
+            
+            // Load player and bot models
+            loadPlayerModel();
+            
+            // Initialize UI
+            updateUI();
+            document.getElementById('highScoreValue').textContent = highScore;
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Start game loop
+            updateLoadingText("Starting game...");
+            setTimeout(() => {
+                document.getElementById('loadingScreen').style.display = 'none';
+                currentState = GameState.PLAYING;
+                animate();
+            }, 500);
         }
-
-        // ==================== OPTIMIZED ROAD GENERATOR ====================
-        class OptimizedRoadGenerator {
-            constructor() {
-                this.segments = [];
-                this.segmentLength = 100;
-                this.roadWidth = 21;
-                this.laneWidth = 7;
-                this.currentZ = 0;
-                this.totalGenerated = 0;
-                
-                // Road types with smooth transitions
-                this.roadTypes = [
-                    { type: 'straight', length: 200, weight: 40 },
-                    { type: 'gentle_left', length: 150, weight: 15, curve: -0.015 },
-                    { type: 'gentle_right', length: 150, weight: 15, curve: 0.015 },
-                    { type: 'sharp_left', length: 120, weight: 8, curve: -0.035, bank: -0.08 },
-                    { type: 'sharp_right', length: 120, weight: 8, curve: 0.035, bank: 0.08 },
-                    { type: 'uphill', length: 180, weight: 10, slope: 0.04 },
-                    { type: 'downhill', length: 180, weight: 10, slope: -0.04 },
-                    { type: 's_curve', length: 200, weight: 6, curve: 0.02, curveChange: 0.04 }
-                ];
-                
-                this.currentType = 'straight';
-                this.typeProgress = 0;
-                this.typeDuration = 200;
-                this.currentSlope = 0;
-                this.currentCurve = 0;
-                this.currentBank = 0;
-                this.currentHeight = 0;
-                
-                this.generateInitialSegments(30);
-            }
-            
-            generateInitialSegments(count) {
-                for (let i = 0; i < count; i++) {
-                    this.generateSegment();
-                }
-            }
-            
-            generateSegment() {
-                this.typeProgress++;
-                
-                // Smoothly transition between road types
-                if (this.typeProgress >= this.typeDuration) {
-                    this.selectNextRoadType();
-                    this.typeProgress = 0;
-                }
-                
-                // Apply smooth parameter changes
-                this.applyRoadType();
-                
-                const segment = {
-                    id: this.totalGenerated++,
-                    position: new THREE.Vector3(
-                        Math.sin(this.currentCurve) * 50,
-                        this.currentHeight,
-                        this.currentZ
-                    ),
-                    rotation: this.currentCurve,
-                    bank: this.currentBank,
-                    curve: this.currentCurve,
-                    slope: this.currentSlope,
-                    type: this.currentType,
-                    width: this.roadWidth,
-                    laneWidth: this.laneWidth,
-                    lanes: 3,
-                    length: this.segmentLength
-                };
-                
-                // Update for next segment
-                this.currentZ -= this.segmentLength;
-                this.currentHeight += this.currentSlope * this.segmentLength;
-                
-                // Smooth out extreme values
-                this.currentCurve *= 0.98;
-                this.currentBank *= 0.95;
-                this.currentSlope *= 0.96;
-                
-                this.segments.push(segment);
-                return segment;
-            }
-            
-            selectNextRoadType() {
-                const totalWeight = this.roadTypes.reduce((sum, type) => sum + type.weight, 0);
-                let random = Math.random() * totalWeight;
-                
-                for (const type of this.roadTypes) {
-                    random -= type.weight;
-                    if (random <= 0) {
-                        this.currentType = type.type;
-                        this.typeDuration = type.length || 200;
-                        
-                        // Apply type parameters gradually
-                        this.currentCurve = type.curve || 0;
-                        this.currentSlope = type.slope || 0;
-                        this.currentBank = type.bank || 0;
-                        break;
-                    }
-                }
-            }
-            
-            applyRoadType() {
-                // Smooth parameter application
-                switch(this.currentType) {
-                    case 's_curve':
-                        if (this.typeProgress < this.typeDuration / 2) {
-                            this.currentCurve += 0.0002;
-                        } else {
-                            this.currentCurve -= 0.0002;
-                        }
-                        break;
-                }
-                
-                // Clamp values
-                this.currentCurve = Math.max(-Math.PI/8, Math.min(Math.PI/8, this.currentCurve));
-                this.currentBank = Math.max(-0.15, Math.min(0.15, this.currentBank));
-                this.currentHeight = Math.max(-8, Math.min(8, this.currentHeight));
-            }
-            
-            update(playerZ) {
-                // Generate ahead
-                const segmentsNeeded = Math.floor(-playerZ / this.segmentLength) + 25 - this.segments.length;
-                for (let i = 0; i < segmentsNeeded; i++) {
-                    this.generateSegment();
-                }
-                
-                // Remove behind
-                while (this.segments.length > 0 && this.segments[0].position.z > playerZ + 800) {
-                    this.segments.shift();
-                }
-            }
-            
-            getSegmentAtZ(z) {
-                const segmentIndex = Math.floor(-z / this.segmentLength);
-                if (segmentIndex >= 0 && segmentIndex < this.segments.length) {
-                    return this.segments[segmentIndex];
-                }
-                return null;
-            }
-            
-            getLanePosition(lane) {
-                return lane * this.laneWidth;
-            }
+        
+        function updateLoadingText(text) {
+            document.getElementById('loadingText').textContent = text;
         }
-
-        // ==================== OPTIMIZED BUILDING MANAGER ====================
-        class OptimizedBuildingManager {
-            constructor(assetManager) {
-                this.assetManager = assetManager;
-                this.buildings = [];
-                this.buildingPool = [];
-                this.maxBuildings = 300;
-                this.buildingSpacing = 8;
-                
-                // Create building variations
-                this.createBuildingVariations();
-            }
+        
+        function createRoadMaterial() {
+            // Create a dynamic road material with lane markings
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
             
-            createBuildingVariations() {
-                // Different building types
-                this.buildingTypes = [
-                    { type: 'house_1', width: 10, height: 8, depth: 12, colors: [0xb7410e, 0x8b4513] },
-                    { type: 'house_2', width: 12, height: 10, depth: 14, colors: [0x8b7355, 0xa0522d] },
-                    { type: 'apartment', width: 16, height: 20, depth: 12, colors: [0x708090, 0x778899] },
-                    { type: 'shop', width: 8, height: 6, depth: 10, colors: [0xff6b6b, 0xff4757] },
-                    { type: 'office', width: 14, height: 18, depth: 16, colors: [0x4682b4, 0x5f9ea0] }
-                ];
-            }
+            // Road base
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            createBuilding(type) {
-                const buildingType = this.buildingTypes.find(t => t.type === type) || this.buildingTypes[0];
-                
-                const group = new THREE.Group();
-                
-                // Main building with texture
-                const geometry = new THREE.BoxGeometry(buildingType.width, buildingType.height, buildingType.depth);
-                
-                // Create texture for building
-                const canvas = this.createBuildingTexture(buildingType);
-                const texture = new THREE.CanvasTexture(canvas);
-                texture.needsUpdate = true;
-                
-                const material = new THREE.MeshStandardMaterial({
-                    map: texture,
-                    roughness: 0.7,
-                    metalness: 0.1
-                });
-                
-                const building = new THREE.Mesh(geometry, material);
-                building.position.y = buildingType.height / 2;
-                building.castShadow = true;
-                building.receiveShadow = true;
-                group.add(building);
-                
-                // Roof
-                const roofGeometry = new THREE.BoxGeometry(buildingType.width + 0.5, 0.5, buildingType.depth + 0.5);
-                const roofMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0x333333,
-                    roughness: 0.9
-                });
-                const roof = new THREE.Mesh(roofGeometry, roofMaterial);
-                roof.position.y = buildingType.height + 0.25;
-                roof.castShadow = true;
-                group.add(roof);
-                
-                // Add windows
-                this.addWindows(group, buildingType);
-                
-                group.userData = {
-                    type: 'building',
-                    width: buildingType.width,
-                    height: buildingType.height,
-                    depth: buildingType.depth
-                };
-                
-                return group;
-            }
+            // Lane markings
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([20, 20]);
             
-            createBuildingTexture(buildingType) {
+            // Center line
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            
+            // Lane dividers
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 3, 0);
+            ctx.lineTo(canvas.width / 3, canvas.height);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(2 * canvas.width / 3, 0);
+            ctx.lineTo(2 * canvas.width / 3, canvas.height);
+            ctx.stroke();
+            
+            // Road edges
+            ctx.setLineDash([]);
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#FFFFFF';
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, canvas.height);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(canvas.width, 0);
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.stroke();
+            
+            // Create texture from canvas
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(1, 50);
+            
+            // Road material
+            roadMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                side: THREE.DoubleSide
+            });
+        }
+        
+        function createBuildingMaterials() {
+            // Create 3 different building materials with procedural textures
+            for (let i = 0; i < 3; i++) {
                 const canvas = document.createElement('canvas');
-                const size = 256;
-                canvas.width = size;
-                canvas.height = size;
-                const ctx = canvas.getContext('2d');
-                
-                // Base color
-                ctx.fillStyle = this.rgbToHex(buildingType.colors[0]);
-                ctx.fillRect(0, 0, size, size);
-                
-                // Add brick/panel pattern
-                ctx.fillStyle = this.rgbToHex(buildingType.colors[1]);
-                const brickWidth = size / 16;
-                const brickHeight = size / 8;
-                
-                for (let y = 0; y < size; y += brickHeight) {
-                    for (let x = 0; x < size; x += brickWidth) {
-                        if ((y / brickHeight) % 2 === 0) {
-                            ctx.fillRect(x, y, brickWidth - 1, brickHeight - 1);
-                        } else {
-                            ctx.fillRect(x + brickWidth/2, y, brickWidth - 1, brickHeight - 1);
-                        }
-                    }
-                }
-                
-                return canvas;
-            }
-            
-            rgbToHex(rgb) {
-                if (typeof rgb === 'number') {
-                    return '#' + rgb.toString(16).padStart(6, '0');
-                }
-                return rgb;
-            }
-            
-            addWindows(group, buildingType) {
-                const windowRows = Math.floor(buildingType.height / 3);
-                const windowCols = Math.floor(buildingType.width / 3);
-                
-                for (let row = 0; row < windowRows; row++) {
-                    for (let col = 0; col < windowCols; col++) {
-                        const windowGeometry = new THREE.PlaneGeometry(1, 1.5);
-                        const windowMaterial = new THREE.MeshBasicMaterial({
-                            color: 0x1e90ff,
-                            transparent: true,
-                            opacity: 0.8
-                        });
-                        
-                        const window = new THREE.Mesh(windowGeometry, windowMaterial);
-                        const xPos = (col - (windowCols - 1) / 2) * 3;
-                        const yPos = (row - (windowRows - 1) / 2) * 3 + buildingType.height * 0.3;
-                        
-                        // Front windows
-                        window.position.set(xPos, yPos, buildingType.depth / 2 + 0.05);
-                        group.add(window);
-                        
-                        // Back windows
-                        const backWindow = window.clone();
-                        backWindow.position.set(xPos, yPos, -buildingType.depth / 2 - 0.05);
-                        group.add(backWindow);
-                    }
-                }
-            }
-            
-            generateBuildings(startZ, endZ, side) {
-                const buildings = [];
-                const baseX = side === 'left' ? -30 : 30;
-                
-                let z = startZ;
-                while (z > endZ) {
-                    // Random spacing (mostly close, occasionally 1m gap)
-                    const spacing = Math.random() > 0.9 ? this.buildingSpacing + 1 : this.buildingSpacing;
-                    
-                    const buildingType = this.buildingTypes[Math.floor(Math.random() * this.buildingTypes.length)];
-                    const building = this.createBuilding(buildingType.type);
-                    
-                    // Position with slight variation
-                    const xOffset = (Math.random() - 0.5) * 2;
-                    const zOffset = (Math.random() - 0.5) * 2;
-                    
-                    building.position.set(
-                        baseX + xOffset,
-                        0,
-                        z + zOffset
-                    );
-                    
-                    // Random rotation for variety (0, 90, 180, or 270 degrees)
-                    const rotation = Math.floor(Math.random() * 4) * Math.PI / 2;
-                    building.rotation.y = rotation;
-                    
-                    // Slight scale variation
-                    const scale = 0.9 + Math.random() * 0.2;
-                    building.scale.setScalar(scale);
-                    
-                    buildings.push(building);
-                    z -= spacing;
-                }
-                
-                return buildings;
-            }
-            
-            update(playerZ) {
-                // Remove distant buildings
-                for (let i = this.buildings.length - 1; i >= 0; i--) {
-                    if (this.buildings[i].position.z > playerZ + 600) {
-                        this.buildingPool.push(this.buildings[i]);
-                        this.buildings.splice(i, 1);
-                    }
-                }
-                
-                // Add new buildings ahead
-                const farthestZ = this.buildings.length > 0 ? 
-                    Math.min(...this.buildings.map(b => b.position.z)) : playerZ - 100;
-                
-                if (farthestZ > playerZ - 500) {
-                    const newZ = farthestZ - 50;
-                    
-                    // Generate dense buildings on both sides
-                    const leftBuildings = this.generateBuildings(newZ, newZ - 100, 'left');
-                    const rightBuildings = this.generateBuildings(newZ, newZ - 100, 'right');
-                    
-                    this.buildings.push(...leftBuildings, ...rightBuildings);
-                }
-                
-                return this.buildings;
-            }
-        }
-
-        // ==================== OPTIMIZED GAME ENGINE ====================
-        class CartRidersGame {
-            constructor() {
-                // Core systems
-                this.settings = new GameSettings();
-                this.assetManager = new AssetManager();
-                this.roadGenerator = new OptimizedRoadGenerator();
-                this.buildingManager = null;
-                this.cameraSystem = null;
-                
-                // Game state
-                this.gameState = 'LOADING';
-                this.isPlaying = false;
-                this.gameTime = 0;
-                this.lastTime = 0;
-                this.playerDistance = 0;
-                this.playerSpeed = 0;
-                this.playerProducts = 15;
-                this.maxProducts = 15;
-                this.highScore = parseInt(localStorage.getItem('cartRidersHighScore')) || 0;
-                
-                // Settings
-                this.numBots = 2;
-                
-                // Three.js
-                this.scene = null;
-                this.camera = null;
-                this.renderer = null;
-                
-                // Game objects
-                this.player = null;
-                this.roadMeshes = new Map();
-                this.buildings = [];
-                
-                // Input
-                this.keys = {};
-                this.input = {
-                    steering: 0,
-                    throttle: 0,
-                    brake: 0,
-                    boost: false
-                };
-                
-                this.init();
-            }
-            
-            async init() {
-                this.setupUI();
-                this.initThreeJS();
-                await this.loadAssets();
-                this.showScreen('startMenu');
-                this.gameLoop();
-            }
-            
-            setupUI() {
-                this.uiElements = {};
-                const ids = [
-                    'loadingScreen', 'startMenu', 'settingsScreen', 'multiplayerMenu', 'lobbyScreen', 'hud', 'endScreen',
-                    'playSolo', 'playMultiplayer', 'openSettings', 'playAgain', 'mainMenu', 'createRoom', 'joinRoom',
-                    'roomCodeGroup', 'roomCode', 'connectRoom', 'backToMain', 'lobbyRoomCode',
-                    'readyButton', 'startGame', 'leaveLobby', 'lobbyStatus', 'playerList',
-                    'loadingProgress', 'loadingText',
-                    'speedValue', 'productCount', 'distanceValue', 'playerCount', 'botCount',
-                    'productsGrid', 'highScore',
-                    'finalDistance', 'deliveredCount', 'survivalTime',
-                    'endTitle',
-                    'saveSettings', 'resetSettings', 'backToMenuFromSettings',
-                    'settingsButton',
-                    // Settings inputs
-                    'cameraHeight', 'cameraDistance', 'cameraSmoothness', 'fov', 'shakeIntensity', 'bobIntensity', 'leanAmount',
-                    'mouseSensitivity', 'maxSpeed', 'vibration', 'shadows', 'weatherEffects',
-                    // Setting value displays
-                    'cameraHeightValue', 'cameraDistanceValue', 'cameraSmoothnessValue', 'fovValue', 
-                    'shakeValue', 'bobValue', 'leanValue', 'sensitivityValue', 'maxSpeedValue'
-                ];
-                
-                ids.forEach(id => {
-                    this.uiElements[id] = document.getElementById(id);
-                });
-                
-                // Event listeners
-                this.uiElements.playSolo?.addEventListener('click', () => this.startSoloGame());
-                this.uiElements.playMultiplayer?.addEventListener('click', () => this.showScreen('multiplayerMenu'));
-                this.uiElements.openSettings?.addEventListener('click', () => this.openSettings());
-                this.uiElements.playAgain?.addEventListener('click', () => this.restartGame());
-                this.uiElements.mainMenu?.addEventListener('click', () => this.showScreen('startMenu'));
-                
-                this.uiElements.settingsButton?.addEventListener('click', () => this.openSettings());
-                
-                // Settings events
-                this.uiElements.saveSettings?.addEventListener('click', () => this.saveSettings());
-                this.uiElements.resetSettings?.addEventListener('click', () => this.resetSettings());
-                this.uiElements.backToMenuFromSettings?.addEventListener('click', () => this.showScreen('startMenu'));
-                
-                // Settings slider events
-                this.setupSettingsSliders();
-                
-                // Update high score
-                if (this.uiElements.highScore) {
-                    this.uiElements.highScore.textContent = `${this.highScore}m`;
-                }
-                
-                // Bot count selector
-                const botSelect = document.getElementById('botCount');
-                if (botSelect) {
-                    this.numBots = parseInt(botSelect.value);
-                    botSelect.addEventListener('change', (e) => {
-                        this.numBots = parseInt(e.target.value);
-                    });
-                }
-            }
-            
-            setupSettingsSliders() {
-                // Camera settings
-                this.setupSlider('cameraHeight', 'cameraHeightValue', 1);
-                this.setupSlider('cameraDistance', 'cameraDistanceValue', 1);
-                this.setupSlider('cameraSmoothness', 'cameraSmoothnessValue', 100);
-                this.setupSlider('fov', 'fovValue');
-                this.setupSlider('shakeIntensity', 'shakeValue', 10);
-                this.setupSlider('bobIntensity', 'bobValue', 1000);
-                this.setupSlider('leanAmount', 'leanValue', 100);
-                
-                // Game settings
-                this.setupSlider('mouseSensitivity', 'sensitivityValue', 10);
-                this.setupSlider('maxSpeed', 'maxSpeedValue');
-                
-                // Load current settings into UI
-                this.loadSettingsToUI();
-            }
-            
-            setupSlider(sliderId, valueId, multiplier = 1) {
-                const slider = this.uiElements[sliderId];
-                const valueDisplay = this.uiElements[valueId];
-                
-                if (slider && valueDisplay) {
-                    // Set initial value from settings
-                    const settingName = this.getSettingNameFromSliderId(sliderId);
-                    if (settingName && this.settings[settingName] !== undefined) {
-                        slider.value = this.settings[settingName] * multiplier;
-                        valueDisplay.textContent = this.settings[settingName].toFixed(2);
-                    }
-                    
-                    // Update display on input
-                    slider.addEventListener('input', () => {
-                        const value = parseFloat(slider.value) / multiplier;
-                        valueDisplay.textContent = value.toFixed(2);
-                    });
-                }
-            }
-            
-            getSettingNameFromSliderId(id) {
-                const mapping = {
-                    'cameraHeight': 'cameraHeight',
-                    'cameraDistance': 'cameraDistance',
-                    'cameraSmoothness': 'cameraSmoothness',
-                    'fov': 'cameraFOV',
-                    'shakeIntensity': 'cameraShakeIntensity',
-                    'bobIntensity': 'cameraBobIntensity',
-                    'leanAmount': 'cameraLeanAmount',
-                    'mouseSensitivity': 'mouseSensitivity',
-                    'maxSpeed': 'maxSpeed'
-                };
-                return mapping[id];
-            }
-            
-            loadSettingsToUI() {
-                // Update all UI elements from settings
-                this.updateSettingUI('cameraHeight', 'cameraHeightValue', 1);
-                this.updateSettingUI('cameraDistance', 'cameraDistanceValue', 1);
-                this.updateSettingUI('cameraSmoothness', 'cameraSmoothnessValue', 100);
-                this.updateSettingUI('fov', 'fovValue');
-                this.updateSettingUI('shakeIntensity', 'shakeValue', 10);
-                this.updateSettingUI('bobIntensity', 'bobValue', 1000);
-                this.updateSettingUI('leanAmount', 'leanValue', 100);
-                this.updateSettingUI('mouseSensitivity', 'sensitivityValue', 10);
-                this.updateSettingUI('maxSpeed', 'maxSpeedValue');
-                
-                // Update checkboxes
-                if (this.uiElements.vibration) {
-                    this.uiElements.vibration.checked = this.settings.enableVibration;
-                }
-                if (this.uiElements.shadows) {
-                    this.uiElements.shadows.checked = this.settings.enableShadows;
-                }
-                if (this.uiElements.weatherEffects) {
-                    this.uiElements.weatherEffects.checked = this.settings.enableWeather;
-                }
-            }
-            
-            updateSettingUI(sliderId, valueId, multiplier = 1) {
-                const slider = this.uiElements[sliderId];
-                const valueDisplay = this.uiElements[valueId];
-                
-                if (slider && valueDisplay) {
-                    const settingName = this.getSettingNameFromSliderId(sliderId);
-                    if (settingName && this.settings[settingName] !== undefined) {
-                        slider.value = this.settings[settingName] * multiplier;
-                        valueDisplay.textContent = this.settings[settingName].toFixed(2);
-                    }
-                }
-            }
-            
-            saveSettings() {
-                // Save slider values
-                this.settings.cameraHeight = parseFloat(this.uiElements.cameraHeight.value);
-                this.settings.cameraDistance = parseFloat(this.uiElements.cameraDistance.value);
-                this.settings.cameraSmoothness = parseFloat(this.uiElements.cameraSmoothness.value) / 100;
-                this.settings.cameraFOV = parseFloat(this.uiElements.fov.value);
-                this.settings.cameraShakeIntensity = parseFloat(this.uiElements.shakeIntensity.value) / 10;
-                this.settings.cameraBobIntensity = parseFloat(this.uiElements.bobIntensity.value) / 1000;
-                this.settings.cameraLeanAmount = parseFloat(this.uiElements.leanAmount.value) / 100;
-                this.settings.mouseSensitivity = parseFloat(this.uiElements.mouseSensitivity.value) / 10;
-                this.settings.maxSpeed = parseFloat(this.uiElements.maxSpeed.value);
-                
-                // Save checkbox values
-                this.settings.enableVibration = this.uiElements.vibration.checked;
-                this.settings.enableShadows = this.uiElements.shadows.checked;
-                this.settings.enableWeather = this.uiElements.weatherEffects.checked;
-                
-                // Save to storage
-                this.settings.save();
-                
-                // Update camera system
-                if (this.cameraSystem) {
-                    this.cameraSystem.updateSettings(this.settings);
-                }
-                
-                // Update renderer shadows
-                if (this.renderer) {
-                    this.renderer.shadowMap.enabled = this.settings.enableShadows;
-                }
-                
-                alert('Settings saved!');
-                this.showScreen('startMenu');
-            }
-            
-            resetSettings() {
-                if (confirm('Reset all settings to default?')) {
-                    this.settings.reset();
-                    this.loadSettingsToUI();
-                    alert('Settings reset to default!');
-                }
-            }
-            
-            openSettings() {
-                this.loadSettingsToUI();
-                this.showScreen('settingsScreen');
-            }
-            
-            async loadAssets() {
-                // Load external models
-                try {
-                    await this.assetManager.loadModel('cart', 'assets/models/cart.glb');
-                    await this.assetManager.loadModel('player', 'assets/models/player.glb');
-                    await this.assetManager.loadModel('house', 'assets/models/house.glb');
-                } catch (error) {
-                    console.warn('Could not load external models, using fallback:', error);
-                }
-                
-                // Update loading progress
-                const updateInterval = setInterval(() => {
-                    const progress = this.assetManager.getProgress();
-                    this.updateLoadingProgress(progress);
-                    
-                    if (progress >= 100) {
-                        clearInterval(updateInterval);
-                        setTimeout(() => {
-                            this.updateLoadingProgress(100);
-                        }, 500);
-                    }
-                }, 100);
-            }
-            
-            updateLoadingProgress(percent) {
-                if (this.uiElements.loadingProgress) {
-                    this.uiElements.loadingProgress.style.width = percent + '%';
-                }
-                if (this.uiElements.loadingText) {
-                    this.uiElements.loadingText.textContent = `Loading... ${Math.floor(percent)}%`;
-                }
-            }
-            
-            initThreeJS() {
-                const canvas = document.getElementById('gameCanvas');
-                
-                // Scene
-                this.scene = new THREE.Scene();
-                this.scene.fog = new THREE.Fog(0x87ceeb, 100, 800);
-                
-                // Camera
-                this.camera = new THREE.PerspectiveCamera(this.settings.cameraFOV, window.innerWidth / window.innerHeight, 0.1, 2000);
-                this.cameraSystem = new SmoothCameraSystem(this.camera, this.settings);
-                
-                // Renderer with optimizations
-                this.renderer = new THREE.WebGLRenderer({
-                    canvas: canvas,
-                    antialias: true,
-                    alpha: false,
-                    powerPreference: "high-performance"
-                });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                this.renderer.shadowMap.enabled = this.settings.enableShadows;
-                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                this.renderer.outputEncoding = THREE.sRGBEncoding;
-                
-                // Lighting
-                this.setupLighting();
-                
-                // Ground
-                this.createGround();
-                
-                // Event listeners
-                window.addEventListener('resize', () => this.onResize());
-                window.addEventListener('keydown', (e) => this.onKeyDown(e));
-                window.addEventListener('keyup', (e) => this.onKeyUp(e));
-                
-                window.addEventListener('keydown', (e) => {
-                    if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'].includes(e.key)) {
-                        e.preventDefault();
-                    }
-                });
-            }
-            
-            setupLighting() {
-                // Ambient light
-                const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-                this.scene.add(ambientLight);
-                
-                // Sun light
-                const sunLight = new THREE.DirectionalLight(0xffffff, 1);
-                sunLight.position.set(50, 100, 50);
-                sunLight.castShadow = this.settings.enableShadows;
-                if (this.settings.enableShadows) {
-                    sunLight.shadow.mapSize.width = 1024;
-                    sunLight.shadow.mapSize.height = 1024;
-                    sunLight.shadow.camera.left = -100;
-                    sunLight.shadow.camera.right = 100;
-                    sunLight.shadow.camera.top = 100;
-                    sunLight.shadow.camera.bottom = -100;
-                }
-                this.scene.add(sunLight);
-            }
-            
-            createGround() {
-                const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
-                const groundMaterial = new THREE.MeshStandardMaterial({ 
-                    color: 0x2d5016,
-                    roughness: 0.8,
-                    metalness: 0.2
-                });
-                const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-                ground.rotation.x = -Math.PI / 2;
-                ground.position.y = -0.5;
-                ground.receiveShadow = true;
-                this.scene.add(ground);
-            }
-            
-            createRoadMesh(segment) {
-                const geometry = new THREE.PlaneGeometry(segment.width, segment.length);
-                
-                // Create realistic road texture with 3 lanes
-                const canvas = document.createElement('canvas');
-                canvas.width = 512;
+                canvas.width = 256;
                 canvas.height = 512;
                 const ctx = canvas.getContext('2d');
                 
-                // Base asphalt
-                ctx.fillStyle = '#2a2a2a';
-                ctx.fillRect(0, 0, 512, 512);
+                // Building base color
+                const hue = 30 + Math.random() * 40;
+                const saturation = 30 + Math.random() * 40;
+                const lightness = 40 + Math.random() * 20;
+                ctx.fillStyle = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
-                // Add texture variation
-                ctx.fillStyle = '#333333';
-                for (let i = 0; i < 200; i++) {
-                    const x = Math.random() * 512;
-                    const y = Math.random() * 512;
-                    const size = 2 + Math.random() * 4;
-                    ctx.beginPath();
-                    ctx.arc(x, y, size, 0, Math.PI * 2);
-                    ctx.fill();
+                // Window grid
+                const windowRows = 8 + Math.floor(Math.random() * 4);
+                const windowCols = 4 + Math.floor(Math.random() * 3);
+                const windowWidth = canvas.width / (windowCols + 1);
+                const windowHeight = canvas.height / (windowRows + 2);
+                
+                ctx.fillStyle = '#1a1a2e';
+                
+                for (let row = 0; row < windowRows; row++) {
+                    for (let col = 0; col < windowCols; col++) {
+                        // Randomly turn some windows on (light)
+                        const isLightOn = Math.random() > 0.7;
+                        
+                        if (isLightOn) {
+                            ctx.fillStyle = '#FFE082';
+                        } else {
+                            ctx.fillStyle = '#1a1a2e';
+                        }
+                        
+                        const x = (col + 1) * windowWidth - windowWidth / 2;
+                        const y = (row + 1) * windowHeight;
+                        
+                        ctx.fillRect(x, y, windowWidth * 0.8, windowHeight * 0.8);
+                        
+                        // Window frame
+                        ctx.strokeStyle = '#333';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(x, y, windowWidth * 0.8, windowHeight * 0.8);
+                    }
                 }
                 
-                // Lane markings
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 3;
-                ctx.lineCap = 'round';
+                // Doors at the bottom
+                ctx.fillStyle = '#2c3e50';
+                const doorWidth = windowWidth * 1.5;
+                const doorHeight = windowHeight * 1.8;
+                const doorX = canvas.width / 2 - doorWidth / 2;
+                const doorY = canvas.height - doorHeight - 10;
+                ctx.fillRect(doorX, doorY, doorWidth, doorHeight);
                 
-                // Left lane divider
-                ctx.beginPath();
-                ctx.moveTo(128, 0);
-                ctx.lineTo(128, 512);
-                ctx.stroke();
-                
-                // Right lane divider
-                ctx.beginPath();
-                ctx.moveTo(384, 0);
-                ctx.lineTo(384, 512);
-                ctx.stroke();
-                
-                // Center line (dashed)
-                ctx.setLineDash([20, 15]);
-                ctx.beginPath();
-                ctx.moveTo(256, 0);
-                ctx.lineTo(256, 512);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                
-                // Edge lines
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(10, 0);
-                ctx.lineTo(10, 512);
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.moveTo(502, 0);
-                ctx.lineTo(502, 512);
-                ctx.stroke();
+                // Door details
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(doorX + doorWidth/2 - 5, doorY + doorHeight/2, 10, doorHeight/3);
                 
                 const texture = new THREE.CanvasTexture(canvas);
-                texture.wrapS = THREE.RepeatWrapping;
-                texture.wrapT = THREE.RepeatWrapping;
-                texture.repeat.set(1, 8);
-                
                 const material = new THREE.MeshStandardMaterial({
                     map: texture,
-                    roughness: 0.9,
-                    metalness: 0.05,
                     side: THREE.DoubleSide
                 });
                 
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.rotation.x = -Math.PI / 2;
-                mesh.receiveShadow = true;
-                mesh.userData = { type: 'road', segmentId: segment.id };
-                
-                return mesh;
+                buildingMaterials.push(material);
+            }
+        }
+        
+        function generateInitialRoad() {
+            // Create initial road segments
+            for (let i = 0; i < MAX_ROAD_SEGMENTS; i++) {
+                createRoadSegment(i);
             }
             
-            startSoloGame() {
-                this.resetGame();
-                this.createPlayer();
-                this.generateInitialWorld();
-                this.isPlaying = true;
-                this.gameState = 'PLAYING';
-                this.showScreen('playing');
-                this.lastTime = performance.now();
-            }
+            // Generate initial buildings
+            generateBuildings();
+        }
+        
+        function createRoadSegment(index) {
+            const segment = {
+                index: index,
+                curve: 0,
+                elevation: 0,
+                hasSpeedBump: Math.random() < 0.1,
+                mesh: null
+            };
             
-            resetGame() {
-                // Clear scene except lights and ground
-                const toRemove = [];
-                this.scene.children.forEach(child => {
-                    if (child.type !== 'AmbientLight' && child.type !== 'DirectionalLight' && 
-                        child.type !== 'Mesh' && child.type !== 'Group') {
-                        toRemove.push(child);
-                    } else if (child.type === 'Mesh' && child.position.y !== -0.5) {
-                        toRemove.push(child);
-                    }
-                });
-                toRemove.forEach(child => this.scene.remove(child));
+            // Generate curve and elevation
+            if (index > 0) {
+                const prevSegment = roadSegments[index - 1];
                 
-                // Reset game state
-                this.gameTime = 0;
-                this.playerDistance = 0;
-                this.playerSpeed = 0;
-                this.playerProducts = 15;
+                // Smooth curve transitions
+                segment.curve = prevSegment.curve * 0.7 + (Math.random() - 0.5) * 0.2;
+                segment.curve = Math.max(-0.3, Math.min(0.3, segment.curve));
                 
-                // Clear collections
-                this.roadMeshes.clear();
-                this.buildings = [];
+                // Smooth elevation transitions
+                segment.elevation = prevSegment.elevation * 0.8 + (Math.random() - 0.5) * 3;
                 
-                // Reset road generator
-                this.roadGenerator = new OptimizedRoadGenerator();
-                this.buildingManager = new OptimizedBuildingManager(this.assetManager);
-                
-                // Update UI
-                this.updateProductsDisplay();
-                if (this.uiElements.botCount) {
-                    this.uiElements.botCount.textContent = '0';
+                // Add some road features
+                if (index % 15 === 0) {
+                    // Uphill section
+                    segment.elevation = prevSegment.elevation + 5;
+                } else if (index % 17 === 0) {
+                    // Downhill section
+                    segment.elevation = prevSegment.elevation - 5;
+                } else if (index % 20 === 0) {
+                    // Dip in the road
+                    segment.elevation = prevSegment.elevation - 3;
                 }
+            } else {
+                // First segment
+                segment.curve = 0;
+                segment.elevation = 0;
             }
             
-            createPlayer() {
-                const playerGroup = new THREE.Group();
+            // Create road geometry
+            const geometry = new THREE.PlaneGeometry(ROAD_WIDTH, ROAD_SEGMENT_LENGTH);
+            
+            // Position the road segment
+            let x = 0, y = 0, z = 0, rotation = 0;
+            
+            if (index > 0) {
+                const prevSegment = roadSegments[index - 1];
+                x = prevSegment.mesh.position.x + Math.sin(prevSegment.rotation) * ROAD_SEGMENT_LENGTH;
+                z = prevSegment.mesh.position.z + Math.cos(prevSegment.rotation) * ROAD_SEGMENT_LENGTH;
+                y = prevSegment.mesh.position.y + prevSegment.elevation;
+                rotation = prevSegment.rotation + prevSegment.curve;
+            }
+            
+            const mesh = new THREE.Mesh(geometry, roadMaterial);
+            mesh.position.set(x, y, z);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.rotation.y = rotation;
+            mesh.receiveShadow = true;
+            
+            segment.mesh = mesh;
+            segment.position = mesh.position;
+            segment.rotation = rotation;
+            
+            scene.add(mesh);
+            roadSegments.push(segment);
+            
+            // Add speed bump if needed
+            if (segment.hasSpeedBump) {
+                addSpeedBump(segment);
+            }
+            
+            return segment;
+        }
+        
+        function addSpeedBump(segment) {
+            const geometry = new THREE.BoxGeometry(ROAD_WIDTH * 0.8, 0.3, 1);
+            const material = new THREE.MeshStandardMaterial({ color: 0xFF9800 });
+            const bump = new THREE.Mesh(geometry, material);
+            
+            bump.position.copy(segment.position);
+            bump.position.y += 0.2;
+            bump.rotation.x = -Math.PI / 2;
+            bump.rotation.y = segment.rotation;
+            
+            bump.castShadow = true;
+            bump.receiveShadow = true;
+            
+            scene.add(bump);
+            segment.speedBump = bump;
+        }
+        
+        function generateBuildings() {
+            // Clear existing buildings
+            buildings.forEach(building => {
+                scene.remove(building.mesh);
+            });
+            buildings = [];
+            
+            // Generate buildings along the road
+            for (let i = 0; i < MAX_VISIBLE_BUILDINGS; i++) {
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const distanceFromRoad = 15 + Math.random() * 20;
+                const segmentIndex = Math.floor(Math.random() * roadSegments.length);
+                const segment = roadSegments[segmentIndex];
                 
-                // Try to load external cart model, fallback to basic geometry
-                let cartModel = this.assetManager.getModel('cart');
-                if (!cartModel) {
-                    const cartGeometry = new THREE.BoxGeometry(1.8, 0.8, 3);
-                    const cartMaterial = new THREE.MeshStandardMaterial({
-                        color: 0xff4757,
-                        metalness: 0.7,
-                        roughness: 0.3
-                    });
-                    cartModel = new THREE.Mesh(cartGeometry, cartMaterial);
+                if (!segment) continue;
+                
+                // Calculate position relative to road
+                const roadRotation = segment.rotation;
+                const perpendicular = roadRotation + Math.PI / 2;
+                
+                const x = segment.position.x + 
+                         Math.sin(perpendicular) * distanceFromRoad * side +
+                         Math.sin(roadRotation) * BUILDING_SPACING * i * 0.5;
+                
+                const z = segment.position.z + 
+                         Math.cos(perpendicular) * distanceFromRoad * side +
+                         Math.cos(roadRotation) * BUILDING_SPACING * i * 0.5;
+                
+                // Random building height
+                const height = 10 + Math.random() * 30;
+                const width = 8 + Math.random() * 6;
+                const depth = 8 + Math.random() * 6;
+                
+                const geometry = new THREE.BoxGeometry(width, height, depth);
+                const materialIndex = Math.floor(Math.random() * buildingMaterials.length);
+                const building = new THREE.Mesh(geometry, buildingMaterials[materialIndex]);
+                
+                building.position.set(x, height / 2, z);
+                building.rotation.y = Math.random() * Math.PI;
+                building.castShadow = true;
+                building.receiveShadow = true;
+                
+                scene.add(building);
+                
+                buildings.push({
+                    mesh: building,
+                    segmentIndex: segmentIndex,
+                    side: side
+                });
+            }
+        }
+        
+        function loadPlayerModel() {
+            // Create a simple player cart and character since we can't load external models in this example
+            // In a real implementation, you would load the .glb files here
+            
+            // Shopping cart
+            const cartGroup = new THREE.Group();
+            
+            // Cart base
+            const cartGeometry = new THREE.BoxGeometry(2, 1, 3);
+            const cartMaterial = new THREE.MeshStandardMaterial({ color: 0xC0C0C0, metalness: 0.8, roughness: 0.2 });
+            const cartBase = new THREE.Mesh(cartGeometry, cartMaterial);
+            cartBase.castShadow = true;
+            cartGroup.add(cartBase);
+            
+            // Cart handles
+            const handleGeometry = new THREE.CylinderGeometry(0.1, 0.1, 2);
+            const handleMaterial = new THREE.MeshStandardMaterial({ color: 0x808080 });
+            const leftHandle = new THREE.Mesh(handleGeometry, handleMaterial);
+            leftHandle.position.set(-1, 0.8, 0);
+            leftHandle.rotation.z = Math.PI / 2;
+            leftHandle.castShadow = true;
+            cartGroup.add(leftHandle);
+            
+            const rightHandle = leftHandle.clone();
+            rightHandle.position.set(1, 0.8, 0);
+            cartGroup.add(rightHandle);
+            
+            // Cart wheels
+            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.2);
+            const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            
+            for (let i = 0; i < 4; i++) {
+                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
+                const x = i % 2 === 0 ? -0.8 : 0.8;
+                const z = i < 2 ? -1 : 1;
+                wheel.position.set(x, -0.5, z);
+                wheel.rotation.z = Math.PI / 2;
+                wheel.castShadow = true;
+                cartGroup.add(wheel);
+            }
+            
+            // Player character
+            const characterGroup = new THREE.Group();
+            
+            // Body
+            const bodyGeometry = new THREE.BoxGeometry(0.8, 1.2, 0.5);
+            const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x4CAF50 });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 1;
+            body.castShadow = true;
+            characterGroup.add(body);
+            
+            // Head
+            const headGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const headMaterial = new THREE.MeshStandardMaterial({ color: 0xFFCC99 });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = 1.8;
+            head.castShadow = true;
+            characterGroup.add(head);
+            
+            // Position character in cart at 45-degree angle
+            characterGroup.position.set(0, 0.5, 0);
+            characterGroup.rotation.y = Math.PI / 4; // 45 degrees
+            
+            // Combine cart and character
+            cartGroup.add(characterGroup);
+            cartGroup.position.y = 1;
+            
+            // Add to scene
+            scene.add(cartGroup);
+            playerCart = cartGroup;
+            playerCharacter = characterGroup;
+        }
+        
+        function createBot() {
+            // Create a simple bot model
+            const botGroup = new THREE.Group();
+            
+            // Bot cart (different color from player)
+            const botCartGeometry = new THREE.BoxGeometry(2, 1, 3);
+            const botCartMaterial = new THREE.MeshStandardMaterial({ color: 0xF44336, metalness: 0.8, roughness: 0.2 });
+            const botCart = new THREE.Mesh(botCartGeometry, botCartMaterial);
+            botCart.castShadow = true;
+            botGroup.add(botCart);
+            
+            // Bot character
+            const botCharGeometry = new THREE.BoxGeometry(0.8, 1.2, 0.5);
+            const botCharMaterial = new THREE.MeshStandardMaterial({ color: 0x9C27B0 });
+            const botChar = new THREE.Mesh(botCharGeometry, botCharMaterial);
+            botChar.position.y = 1;
+            botChar.castShadow = true;
+            botGroup.add(botChar);
+            
+            // Bot head
+            const botHeadGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const botHeadMaterial = new THREE.MeshStandardMaterial({ color: 0xFFCC99 });
+            const botHead = new THREE.Mesh(botHeadGeometry, botHeadMaterial);
+            botHead.position.y = 1.8;
+            botHead.castShadow = true;
+            botGroup.add(botHead);
+            
+            // Position bot
+            const lane = Math.floor(Math.random() * 3);
+            const laneX = (lane - 1) * LANE_WIDTH;
+            
+            // Place bot behind the player initially
+            const segmentIndex = Math.max(0, roadSegments.length - 10);
+            const segment = roadSegments[segmentIndex];
+            
+            const offsetX = Math.sin(segment.rotation) * ROAD_SEGMENT_LENGTH * 5;
+            const offsetZ = Math.cos(segment.rotation) * ROAD_SEGMENT_LENGTH * 5;
+            
+            botGroup.position.set(
+                segment.position.x + laneX - offsetX,
+                segment.position.y + 1,
+                segment.position.z - offsetZ
+            );
+            
+            botGroup.rotation.y = segment.rotation;
+            botGroup.userData = {
+                type: 'bot',
+                lane: lane,
+                targetLane: lane,
+                speed: 15 + Math.random() * MAX_BOT_SPEED_VARIANCE,
+                aggression: 0.5 + Math.random() * 0.5,
+                mistakeTimer: 0,
+                lastLaneChange: 0
+            };
+            
+            scene.add(botGroup);
+            bots.push(botGroup);
+            activeBots++;
+            
+            return botGroup;
+        }
+        
+        function updateRoad() {
+            // Check if we need to generate new road segments
+            const playerSegmentIndex = Math.floor(playerCart.position.z / ROAD_SEGMENT_LENGTH);
+            
+            if (playerSegmentIndex > roadSegments[0].index + 10) {
+                // Remove old segment
+                const oldSegment = roadSegments.shift();
+                scene.remove(oldSegment.mesh);
+                if (oldSegment.speedBump) {
+                    scene.remove(oldSegment.speedBump);
                 }
                 
-                cartModel.position.set(0, 0.4, 0);
-                cartModel.castShadow = true;
-                cartModel.receiveShadow = true;
-                playerGroup.add(cartModel);
-                
-                // Try to load external player model
-                let playerModel = this.assetManager.getModel('player');
-                if (!playerModel) {
-                    const playerGeometry = new THREE.BoxGeometry(0.6, 1.4, 0.4);
-                    const playerMaterial = new THREE.MeshStandardMaterial({
-                        color: 0x70a1ff,
-                        metalness: 0.3,
-                        roughness: 0.6
-                    });
-                    playerModel = new THREE.Mesh(playerGeometry, playerMaterial);
-                }
-                
-                playerModel.position.set(0, 1.4, 0);
-                playerModel.castShadow = true;
-                playerGroup.add(playerModel);
-                
-                this.scene.add(playerGroup);
-                
-                this.player = {
-                    group: playerGroup,
-                    cart: cartModel,
-                    player: playerModel,
-                    speed: 0,
-                    maxSpeed: this.settings.maxSpeed,
-                    acceleration: 1.0,
-                    braking: 3.0,
-                    steering: 0.05,
-                    lane: 0,
-                    position: new THREE.Vector3(0, 0.5, 0),
-                    rotation: 0
-                };
-                
-                this.cameraSystem.setTarget(playerGroup);
-            }
-            
-            generateInitialWorld() {
-                // Generate initial road segments
-                for (let i = 0; i < 20; i++) {
-                    this.createRoadSegment(this.roadGenerator.segments[i]);
-                }
-                
-                // Generate initial buildings
-                this.buildings = this.buildingManager.update(0);
-                this.buildings.forEach(building => {
-                    this.scene.add(building);
-                });
-            }
-            
-            createRoadSegment(segment) {
-                if (!segment || this.roadMeshes.has(segment.id)) return;
-                
-                const mesh = this.createRoadMesh(segment);
-                mesh.position.copy(segment.position);
-                mesh.rotation.z = segment.bank;
-                mesh.rotation.y = segment.rotation;
-                
-                this.scene.add(mesh);
-                this.roadMeshes.set(segment.id, mesh);
-            }
-            
-            updateWorld(deltaTime) {
-                if (!this.player) return;
-                
-                const playerZ = this.player.group.position.z;
-                
-                // Update road generator
-                this.roadGenerator.update(playerZ);
-                
-                // Create new road segments
-                this.roadGenerator.segments.forEach(segment => {
-                    if (!this.roadMeshes.has(segment.id)) {
-                        this.createRoadSegment(segment);
-                    }
-                });
-                
-                // Update existing road segments
-                this.roadMeshes.forEach((mesh, segmentId) => {
-                    const segment = this.roadGenerator.segments.find(s => s.id === segmentId);
-                    if (segment) {
-                        // Smooth interpolation
-                        mesh.position.x += (segment.position.x - mesh.position.x) * 0.1;
-                        mesh.position.y += (segment.position.y - mesh.position.y) * 0.1;
-                        mesh.position.z += (segment.position.z - mesh.position.z) * 0.1;
-                        mesh.rotation.z += (segment.bank - mesh.rotation.z) * 0.1;
-                        mesh.rotation.y += (segment.rotation - mesh.rotation.y) * 0.1;
-                    }
-                });
-                
-                // Remove distant road segments
-                const segmentsToRemove = [];
-                this.roadMeshes.forEach((mesh, segmentId) => {
-                    if (!this.roadGenerator.segments.find(s => s.id === segmentId)) {
-                        segmentsToRemove.push(segmentId);
-                    }
-                });
-                
-                segmentsToRemove.forEach(segmentId => {
-                    const mesh = this.roadMeshes.get(segmentId);
-                    if (mesh) {
-                        this.scene.remove(mesh);
-                    }
-                    this.roadMeshes.delete(segmentId);
-                });
+                // Create new segment at the end
+                createRoadSegment(roadSegments[roadSegments.length - 1].index + 1);
                 
                 // Update buildings
-                const newBuildings = this.buildingManager.update(playerZ);
-                newBuildings.forEach(building => {
-                    if (!this.buildings.includes(building)) {
-                        this.scene.add(building);
-                        this.buildings.push(building);
-                    }
-                });
+                updateBuildings();
+            }
+        }
+        
+        function updateBuildings() {
+            // Remove buildings that are too far behind
+            const playerZ = playerCart.position.z;
+            for (let i = buildings.length - 1; i >= 0; i--) {
+                const building = buildings[i];
+                if (building.mesh.position.z < playerZ - 100) {
+                    scene.remove(building.mesh);
+                    buildings.splice(i, 1);
+                }
+            }
+            
+            // Add new buildings if needed
+            if (buildings.length < MAX_VISIBLE_BUILDINGS) {
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const distanceFromRoad = 15 + Math.random() * 20;
+                const segmentIndex = roadSegments.length - 5;
+                const segment = roadSegments[segmentIndex];
                 
-                // Remove distant buildings
-                for (let i = this.buildings.length - 1; i >= 0; i--) {
-                    if (this.buildings[i].position.z > playerZ + 500) {
-                        this.scene.remove(this.buildings[i]);
-                        this.buildings.splice(i, 1);
+                if (segment) {
+                    const roadRotation = segment.rotation;
+                    const perpendicular = roadRotation + Math.PI / 2;
+                    
+                    const x = segment.position.x + 
+                             Math.sin(perpendicular) * distanceFromRoad * side +
+                             Math.sin(roadRotation) * BUILDING_SPACING;
+                    
+                    const z = segment.position.z + 
+                             Math.cos(perpendicular) * distanceFromRoad * side +
+                             Math.cos(roadRotation) * BUILDING_SPACING;
+                    
+                    const height = 10 + Math.random() * 30;
+                    const width = 8 + Math.random() * 6;
+                    const depth = 8 + Math.random() * 6;
+                    
+                    const geometry = new THREE.BoxGeometry(width, height, depth);
+                    const materialIndex = Math.floor(Math.random() * buildingMaterials.length);
+                    const building = new THREE.Mesh(geometry, buildingMaterials[materialIndex]);
+                    
+                    building.position.set(x, height / 2, z);
+                    building.rotation.y = Math.random() * Math.PI;
+                    building.castShadow = true;
+                    building.receiveShadow = true;
+                    
+                    scene.add(building);
+                    
+                    buildings.push({
+                        mesh: building,
+                        segmentIndex: segmentIndex,
+                        side: side
+                    });
+                }
+            }
+        }
+        
+        function updatePlayer(deltaTime) {
+            // Handle input for lane changes
+            if (keys.left || keys.a) {
+                targetLane = Math.max(0, targetLane - 1);
+            }
+            
+            if (keys.right || keys.d) {
+                targetLane = Math.min(2, targetLane + 1);
+            }
+            
+            // Gamepad lane changes
+            if (gamepad) {
+                const axisX = gamepad.axes[0];
+                if (Math.abs(axisX) > 0.5) {
+                    if (axisX < -0.5) {
+                        targetLane = Math.max(0, targetLane - 1);
+                    } else if (axisX > 0.5) {
+                        targetLane = Math.min(2, targetLane + 1);
                     }
                 }
             }
             
-            updatePlayer(deltaTime) {
-                if (!this.player) return;
-                
-                const currentSegment = this.roadGenerator.getSegmentAtZ(this.player.group.position.z);
-                
-                // Apply input
-                const throttle = this.input.throttle;
-                const brake = this.input.brake;
-                const steering = this.input.steering;
-                
-                // Acceleration
-                if (throttle > 0 && this.player.speed < this.player.maxSpeed) {
-                    this.player.speed += this.player.acceleration * throttle * deltaTime * 60;
-                }
-                
-                // Braking
-                if (brake > 0 && this.player.speed > -this.player.maxSpeed * 0.3) {
-                    this.player.speed -= this.player.acceleration * this.player.braking * brake * deltaTime * 60;
-                }
-                
-                // Natural deceleration
-                if (throttle === 0 && brake === 0) {
-                    this.player.speed *= Math.pow(0.98, deltaTime * 60);
-                }
-                
-                // Boost
-                if (this.input.boost) {
-                    this.player.speed = Math.min(this.player.speed * 1.3, this.player.maxSpeed * 1.5);
-                }
-                
-                // Apply road curvature
-                if (currentSegment) {
-                    this.player.rotation += currentSegment.curve * 0.5 * deltaTime * 60;
-                    
-                    // Apply road banking
-                    this.player.group.rotation.z = currentSegment.bank * 0.3;
-                    
-                    // Adjust speed for turns
-                    const curveFactor = Math.abs(currentSegment.curve);
-                    if (curveFactor > 0.03) {
-                        this.player.speed *= 0.97;
-                    }
-                    
-                    // Adjust for hills
-                    if (currentSegment.slope > 0.03) {
-                        this.player.speed *= 0.98;
-                    }
-                }
-                
-                // Steering
-                if (Math.abs(this.player.speed) > 5) {
-                    const steeringEffect = Math.min(Math.abs(this.player.speed) / this.player.maxSpeed, 1);
-                    this.player.rotation += steering * this.player.steering * steeringEffect * deltaTime * 60;
-                }
-                
-                // Movement
-                const moveDistance = this.player.speed * deltaTime;
-                const forwardVector = new THREE.Vector3(0, 0, -1);
-                forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.player.rotation);
-                forwardVector.multiplyScalar(moveDistance);
-                
-                this.player.group.position.add(forwardVector);
-                this.playerDistance += moveDistance;
-                
-                // Lane management
-                const targetX = this.roadGenerator.getLanePosition(this.player.lane);
-                const currentX = this.player.group.position.x;
-                const xDiff = targetX - currentX;
-                
-                if (Math.abs(xDiff) > 0.1) {
-                    const laneChangeSpeed = Math.min(Math.abs(this.player.speed) * 0.015, 1.0);
-                    this.player.group.position.x += Math.sign(xDiff) * laneChangeSpeed * deltaTime * 60;
-                }
-                
-                // Apply rotation
-                this.player.group.rotation.y = this.player.rotation;
-                
-                // Height adjustment
-                if (currentSegment) {
-                    this.player.group.position.y = currentSegment.position.y + 0.5;
-                }
-                
-                // Update speed display
-                this.playerSpeed = Math.abs(this.player.speed * 3.6);
-                
-                // Check collisions
-                this.checkCollisions();
-                
-                // Update camera
-                if (this.cameraSystem) {
-                    this.cameraSystem.update(deltaTime, this.playerSpeed, steering);
+            // Smooth lane transition
+            const targetX = (targetLane - 1) * LANE_WIDTH;
+            const currentX = playerCart.position.x;
+            const newX = currentX + (targetX - currentX) * laneChangeSpeed;
+            
+            // Clamp to road boundaries
+            const minX = -ROAD_WIDTH / 2 + 1;
+            const maxX = ROAD_WIDTH / 2 - 1;
+            playerCart.position.x = Math.max(minX, Math.min(maxX, newX));
+            
+            // Update current lane based on position
+            currentLane = Math.round((playerCart.position.x + LANE_WIDTH) / LANE_WIDTH);
+            currentLane = Math.max(0, Math.min(2, currentLane));
+            
+            // Handle acceleration and braking
+            let acceleration = 0;
+            const maxSpeed = isBoosting ? 40 : 30;
+            const accelerationRate = 0.2;
+            const brakingRate = 0.3;
+            
+            if (keys.up || keys.w) {
+                acceleration = accelerationRate;
+            } else if (keys.down || keys.s) {
+                acceleration = -brakingRate;
+            }
+            
+            // Gamepad acceleration
+            if (gamepad) {
+                const axisY = gamepad.axes[1] || 0;
+                if (axisY < -0.1) {
+                    acceleration = accelerationRate * Math.abs(axisY);
+                } else if (axisY > 0.1) {
+                    acceleration = -brakingRate * axisY;
                 }
             }
             
-            checkCollisions() {
-                if (!this.player) return;
+            // Boost with space or gamepad button
+            if ((keys.space || (gamepad && gamepad.buttons[0] && gamepad.buttons[0].pressed)) && boostTime < maxBoostTime) {
+                isBoosting = true;
+                boostTime += deltaTime;
+                acceleration *= 1.5;
+            } else {
+                isBoosting = false;
+                if (boostTime > 0) {
+                    boostTime = Math.max(0, boostTime - deltaTime * 0.5);
+                }
+            }
+            
+            // Update speed
+            playerSpeed += acceleration;
+            playerSpeed = Math.max(-5, Math.min(maxSpeed, playerSpeed));
+            
+            // Apply friction
+            if (Math.abs(acceleration) < 0.01) {
+                playerSpeed *= 0.98;
+            }
+            
+            // Move player forward
+            if (playerSpeed > 0.1) {
+                // Find current road segment
+                const playerZ = playerCart.position.z;
+                let currentSegment = roadSegments[0];
                 
-                const playerPos = this.player.group.position;
-                const playerRadius = 1.2;
-                
-                // Check building collisions
-                for (const building of this.buildings) {
-                    if (!building.userData) continue;
-                    
-                    const dx = Math.abs(playerPos.x - building.position.x) - (building.userData.width / 2);
-                    const dz = Math.abs(playerPos.z - building.position.z) - (building.userData.depth / 2);
-                    
-                    if (dx < playerRadius && dz < playerRadius) {
-                        this.handleCollision();
-                        return;
+                for (const segment of roadSegments) {
+                    if (segment.position.z <= playerZ) {
+                        currentSegment = segment;
+                    } else {
+                        break;
                     }
                 }
                 
-                // Check road boundaries
-                const roadHalfWidth = this.roadGenerator.roadWidth / 2;
-                if (Math.abs(playerPos.x) > roadHalfWidth - 1) {
-                    this.player.speed *= 0.95;
+                // Apply road curve
+                const curveInfluence = currentSegment.curve * 0.1;
+                playerCart.rotation.y += curveInfluence * playerSpeed * deltaTime;
+                
+                // Apply road elevation
+                const elevationInfluence = (currentSegment.elevation - playerCart.position.y) * 0.05;
+                playerCart.position.y += elevationInfluence;
+                
+                // Move along road direction
+                const moveDistance = playerSpeed * deltaTime;
+                playerCart.position.x += Math.sin(playerCart.rotation.y) * moveDistance;
+                playerCart.position.z += Math.cos(playerCart.rotation.y) * moveDistance;
+                
+                // Update distance traveled
+                distanceTraveled += moveDistance;
+                
+                // Update score based on distance
+                score += Math.floor(moveDistance * 10);
+                
+                // Check for speed bump collisions
+                if (currentSegment.hasSpeedBump && currentSegment.speedBump) {
+                    const bumpPos = currentSegment.speedBump.position;
+                    const distToBump = Math.sqrt(
+                        Math.pow(playerCart.position.x - bumpPos.x, 2) +
+                        Math.pow(playerCart.position.z - bumpPos.z, 2)
+                    );
                     
-                    // Push back to road
-                    const pushBack = -Math.sign(playerPos.x) * 0.05;
-                    this.player.group.position.x += pushBack;
-                    
-                    // Damage if completely off road
-                    if (Math.abs(playerPos.x) > roadHalfWidth) {
-                        if (Math.random() > 0.95) {
-                            this.playerProducts = Math.max(0, this.playerProducts - 1);
-                            this.updateProductsDisplay();
-                            this.cameraSystem.shake(0.1);
-                            
-                            if (this.playerProducts <= 0) {
-                                this.gameOver();
-                            }
+                    if (distToBump < 3) {
+                        // Hit a speed bump
+                        playerCart.position.y += 0.5;
+                        playerSpeed *= 0.8;
+                        cameraShake = 0.3;
+                        
+                        // Random chance to lose a product
+                        if (Math.random() < 0.3 && products > 0) {
+                            products--;
+                            showWarning("Product damaged on speed bump!");
                         }
                     }
                 }
             }
             
-            handleCollision() {
-                this.player.speed *= -0.3;
-                this.playerProducts = Math.max(0, this.playerProducts - 1);
-                this.cameraSystem.shake(0.3);
-                this.updateProductsDisplay();
-                
-                if (this.playerProducts <= 0) {
-                    this.gameOver();
-                }
-            }
+            // Update camera
+            updateCamera(deltaTime);
             
-            updateUI(deltaTime) {
-                if (!this.player) return;
-                
-                // Update HUD
-                if (this.uiElements.speedValue) {
-                    this.uiElements.speedValue.textContent = `${this.playerSpeed.toFixed(0)} km/h`;
-                }
-                if (this.uiElements.productCount) {
-                    this.uiElements.productCount.textContent = `${this.playerProducts}/${this.maxProducts}`;
-                }
-                if (this.uiElements.distanceValue) {
-                    this.uiElements.distanceValue.textContent = `${Math.abs(this.playerDistance).toFixed(0)}m`;
-                }
-            }
-            
-            updateProductsDisplay() {
-                if (!this.uiElements.productsGrid) return;
-                
-                this.uiElements.productsGrid.innerHTML = '';
-                for (let i = 0; i < this.maxProducts; i++) {
-                    const product = document.createElement('div');
-                    product.className = 'product-item';
-                    if (i >= this.playerProducts) {
-                        product.classList.add('damaged');
-                    }
-                    this.uiElements.productsGrid.appendChild(product);
-                }
-            }
-            
-            gameOver() {
-                this.isPlaying = false;
-                this.gameState = 'ENDED';
-                
-                // Update high score
-                const distance = Math.abs(this.playerDistance);
-                if (distance > this.highScore) {
-                    this.highScore = Math.floor(distance);
-                    localStorage.setItem('cartRidersHighScore', this.highScore);
-                }
-                
-                // Update end screen
-                if (this.uiElements.finalDistance) {
-                    this.uiElements.finalDistance.textContent = `${distance.toFixed(0)}m`;
-                }
-                if (this.uiElements.deliveredCount) {
-                    this.uiElements.deliveredCount.textContent = `${this.playerProducts}/${this.maxProducts}`;
-                }
-                if (this.uiElements.survivalTime) {
-                    this.uiElements.survivalTime.textContent = `${this.gameTime.toFixed(1)}s`;
-                }
-                
-                this.showScreen('endScreen');
-            }
-            
-            restartGame() {
-                this.resetGame();
-                this.startSoloGame();
-            }
-            
-            showScreen(screenName) {
-                // Hide all screens
-                ['loadingScreen', 'startMenu', 'settingsScreen', 'multiplayerMenu', 'lobbyScreen', 'hud', 'endScreen'].forEach(screen => {
-                    if (this.uiElements[screen]) {
-                        this.uiElements[screen].classList.add('hidden');
-                    }
-                });
-                
-                // Show requested screen
-                if (screenName === 'playing') {
-                    if (this.uiElements.hud) {
-                        this.uiElements.hud.classList.remove('hidden');
-                    }
-                    if (this.uiElements.settingsButton) {
-                        this.uiElements.settingsButton.style.display = 'block';
-                    }
-                } else if (this.uiElements[screenName]) {
-                    this.uiElements[screenName].classList.remove('hidden');
-                    if (this.uiElements.settingsButton && screenName !== 'playing') {
-                        this.uiElements.settingsButton.style.display = 'none';
-                    }
-                }
-            }
-            
-            onResize() {
-                if (this.camera && this.renderer) {
-                    this.camera.aspect = window.innerWidth / window.innerHeight;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
-                }
-            }
-            
-            onKeyDown(e) {
-                const key = e.key.toLowerCase();
-                this.keys[key] = true;
-                
-                if (key === 'w' || key === 'arrowup') this.input.throttle = 1;
-                if (key === 's' || key === 'arrowdown') this.input.brake = 1;
-                if (key === 'a' || key === 'arrowleft') this.input.steering = 1;
-                if (key === 'd' || key === 'arrowright') this.input.steering = -1;
-                if (key === ' ') this.input.boost = true;
-                
-                // Lane switching
-                if (key === 'q' && this.player) {
-                    this.player.lane = Math.max(-1, this.player.lane - 1);
-                }
-                if (key === 'e' && this.player) {
-                    this.player.lane = Math.min(1, this.player.lane + 1);
-                }
-                
-                // Escape to pause
-                if (key === 'escape') {
-                    if (this.gameState === 'PLAYING') {
-                        this.isPlaying = !this.isPlaying;
-                    }
-                }
-            }
-            
-            onKeyUp(e) {
-                const key = e.key.toLowerCase();
-                this.keys[key] = false;
-                
-                if (key === 'w' || key === 'arrowup') this.input.throttle = 0;
-                if (key === 's' || key === 'arrowdown') this.input.brake = 0;
-                if (key === 'a' || key === 'arrowleft') this.input.steering = 0;
-                if (key === 'd' || key === 'arrowright') this.input.steering = 0;
-                if (key === ' ') this.input.boost = false;
-            }
-            
-            gameLoop(currentTime = 0) {
-                const deltaTime = (currentTime - this.lastTime) / 1000;
-                this.lastTime = currentTime;
-                const fixedDelta = Math.min(deltaTime, 0.033);
-                
-                if (this.gameState === 'PLAYING' && this.isPlaying) {
-                    this.gameTime += fixedDelta;
-                    
-                    // Update player
-                    this.updatePlayer(fixedDelta);
-                    
-                    // Update world
-                    this.updateWorld(fixedDelta);
-                    
-                    // Update UI
-                    this.updateUI(fixedDelta);
-                }
-                
-                // Always render
-                if (this.renderer && this.scene && this.camera) {
-                    this.renderer.render(this.scene, this.camera);
-                }
-                
-                requestAnimationFrame((time) => this.gameLoop(time));
+            // Check for bot spawn based on score
+            if (score - lastBotSpawnScore >= BOT_SPAWN_SCORE_INTERVAL) {
+                createBot();
+                lastBotSpawnScore = score;
+                showWarning("New bot spawned!");
             }
         }
-
-        // Start the game
-        document.addEventListener('DOMContentLoaded', () => {
-            if (typeof THREE === 'undefined') {
-                alert('Error: THREE.js failed to load. Please check your internet connection.');
-                return;
+        
+        function updateCamera(deltaTime) {
+            // Camera follows player from behind and above
+            const cameraDistance = 20;
+            const cameraHeight = 8;
+            
+            // Calculate camera position behind player
+            const targetCameraPosition = new THREE.Vector3();
+            targetCameraPosition.x = playerCart.position.x - Math.sin(playerCart.rotation.y) * cameraDistance;
+            targetCameraPosition.y = playerCart.position.y + cameraHeight;
+            targetCameraPosition.z = playerCart.position.z - Math.cos(playerCart.rotation.y) * cameraDistance;
+            
+            // Smooth camera movement
+            camera.position.x += (targetCameraPosition.x - camera.position.x) * 0.05;
+            camera.position.y += (targetCameraPosition.y - camera.position.y) * 0.05;
+            camera.position.z += (targetCameraPosition.z - camera.position.z) * 0.05;
+            
+            // Camera looks at player
+            camera.lookAt(
+                playerCart.position.x,
+                playerCart.position.y + 2,
+                playerCart.position.z
+            );
+            
+            // Apply camera shake
+            if (cameraShake > 0) {
+                camera.position.x += (Math.random() - 0.5) * cameraShake;
+                camera.position.y += (Math.random() - 0.5) * cameraShake;
+                camera.position.z += (Math.random() - 0.5) * cameraShake;
+                cameraShake = Math.max(0, cameraShake - deltaTime * 2);
+            }
+        }
+        
+        function updateBots(deltaTime) {
+            for (let i = bots.length - 1; i >= 0; i--) {
+                const bot = bots[i];
+                const botData = bot.userData;
+                
+                // Bot AI: Chase player
+                const distToPlayer = Math.sqrt(
+                    Math.pow(playerCart.position.x - bot.position.x, 2) +
+                    Math.pow(playerCart.position.z - bot.position.z, 2)
+                );
+                
+                // Aggressive bots try to match player's lane
+                if (distToPlayer < 50) {
+                    if (Math.random() < botData.aggression * deltaTime) {
+                        botData.targetLane = currentLane;
+                    }
+                }
+                
+                // Bot makes occasional mistakes
+                botData.mistakeTimer += deltaTime;
+                if (botData.mistakeTimer > 2 + Math.random() * 5) {
+                    botData.targetLane = Math.floor(Math.random() * 3);
+                    botData.mistakeTimer = 0;
+                }
+                
+                // Smooth lane transition for bot
+                const targetX = (botData.targetLane - 1) * LANE_WIDTH;
+                const currentX = bot.position.x;
+                bot.position.x = currentX + (targetX - currentX) * 0.05;
+                
+                // Move bot forward
+                const moveDistance = botData.speed * deltaTime;
+                bot.position.x += Math.sin(bot.rotation.y) * moveDistance;
+                bot.position.z += Math.cos(bot.rotation.y) * moveDistance;
+                
+                // Update bot rotation based on road curve
+                const playerZ = bot.position.z;
+                let currentSegment = roadSegments[0];
+                
+                for (const segment of roadSegments) {
+                    if (segment.position.z <= playerZ) {
+                        currentSegment = segment;
+                    } else {
+                        break;
+                    }
+                }
+                
+                const curveInfluence = currentSegment.curve * 0.1;
+                bot.rotation.y += curveInfluence * botData.speed * deltaTime;
+                
+                // Check for collisions with player
+                if (distToPlayer < 3) {
+                    // Collision with bot
+                    playerSpeed *= 0.7;
+                    cameraShake = 0.5;
+                    
+                    // Lose a product
+                    if (products > 0) {
+                        products--;
+                        showWarning("Bot rammed you! Product lost!");
+                    }
+                    
+                    // Bot gets pushed back
+                    botData.speed *= 0.5;
+                    
+                    // Random chance bot crashes
+                    if (Math.random() < 0.3) {
+                        // Bot crashes
+                        scene.remove(bot);
+                        bots.splice(i, 1);
+                        activeBots--;
+                        botsDefeated++;
+                        showWarning("Bot crashed!");
+                    }
+                }
+                
+                // Remove bots that are too far behind
+                if (bot.position.z < playerCart.position.z - 100) {
+                    scene.remove(bot);
+                    bots.splice(i, 1);
+                    activeBots--;
+                }
+            }
+        }
+        
+        function updateUI() {
+            // Update HUD values
+            document.getElementById('speedValue').textContent = Math.round(Math.abs(playerSpeed) * 10) + ' km/h';
+            document.getElementById('productsValue').textContent = products;
+            document.getElementById('scoreValue').textContent = score;
+            document.getElementById('botsValue').textContent = activeBots;
+            document.getElementById('productsIndicator').textContent = products;
+            
+            // Update speedometer
+            const speedArc = document.getElementById('speedArc');
+            const speedText = document.getElementById('speedText');
+            const speedPercent = Math.min(100, Math.abs(playerSpeed) / 30 * 100);
+            const dashOffset = 283 - (283 * speedPercent / 100);
+            speedArc.style.strokeDashoffset = dashOffset;
+            speedText.textContent = Math.round(Math.abs(playerSpeed) * 10);
+            
+            // Update high score if needed
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('cartRidersHighScore', highScore);
+                document.getElementById('highScoreValue').textContent = highScore;
             }
             
-            window.game = new CartRidersGame();
-        });
+            // Check for game over
+            if (products <= 0 && currentState === GameState.PLAYING) {
+                gameOver();
+            }
+        }
+        
+        function showWarning(message) {
+            const warning = document.getElementById('warningMessage');
+            warning.textContent = message;
+            warning.style.display = 'block';
+            
+            setTimeout(() => {
+                warning.style.display = 'none';
+            }, 2000);
+        }
+        
+        function pauseGame() {
+            if (currentState === GameState.PLAYING) {
+                currentState = GameState.PAUSED;
+                document.getElementById('pauseScreen').style.display = 'flex';
+                document.getElementById('pauseScore').textContent = score;
+                document.getElementById('pauseProducts').textContent = products;
+                document.getElementById('pauseBots').textContent = activeBots;
+            }
+        }
+        
+        function resumeGame() {
+            if (currentState === GameState.PAUSED) {
+                currentState = GameState.PLAYING;
+                document.getElementById('pauseScreen').style.display = 'none';
+            }
+        }
+        
+        function gameOver() {
+            currentState = GameState.GAME_OVER;
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalDistance').textContent = Math.round(distanceTraveled) + ' m';
+            document.getElementById('finalBots').textContent = botsDefeated;
+            document.getElementById('finalHighScore').textContent = highScore;
+            
+            document.getElementById('gameOverScreen').style.display = 'flex';
+        }
+        
+        function restartGame() {
+            // Reset game state
+            score = 0;
+            products = INITIAL_PRODUCTS;
+            distanceTraveled = 0;
+            activeBots = 0;
+            botsDefeated = 0;
+            playerSpeed = 0;
+            targetLane = 1;
+            currentLane = 1;
+            boostTime = 0;
+            lastBotSpawnScore = 0;
+            
+            // Remove all bots
+            bots.forEach(bot => scene.remove(bot));
+            bots = [];
+            
+            // Reset player position
+            playerCart.position.set(0, 1, 0);
+            playerCart.rotation.y = 0;
+            
+            // Reset camera
+            camera.position.set(0, 10, -20);
+            
+            // Hide screens
+            document.getElementById('pauseScreen').style.display = 'none';
+            document.getElementById('gameOverScreen').style.display = 'none';
+            
+            // Update UI
+            updateUI();
+            
+            // Start playing
+            currentState = GameState.PLAYING;
+        }
+        
+        function setupEventListeners() {
+            // Keyboard events
+            document.addEventListener('keydown', (e) => {
+                switch(e.key.toLowerCase()) {
+                    case 'w': case 'arrowup': keys.up = true; break;
+                    case 's': case 'arrowdown': keys.down = true; break;
+                    case 'a': case 'arrowleft': keys.left = true; break;
+                    case 'd': case 'arrowright': keys.right = true; break;
+                    case ' ': keys.space = true; break;
+                    case 'p': case 'escape': 
+                        if (currentState === GameState.PLAYING) {
+                            pauseGame();
+                        } else if (currentState === GameState.PAUSED) {
+                            resumeGame();
+                        }
+                        break;
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                switch(e.key.toLowerCase()) {
+                    case 'w': case 'arrowup': keys.up = false; break;
+                    case 's': case 'arrowdown': keys.down = false; break;
+                    case 'a': case 'arrowleft': keys.left = false; break;
+                    case 'd': case 'arrowright': keys.right = false; break;
+                    case ' ': keys.space = false; break;
+                }
+            });
+            
+            // Gamepad events
+            window.addEventListener('gamepadconnected', (e) => {
+                gamepadIndex = e.gamepad.index;
+                gamepad = navigator.getGamepads()[gamepadIndex];
+                console.log('Gamepad connected');
+            });
+            
+            window.addEventListener('gamepaddisconnected', (e) => {
+                if (e.gamepad.index === gamepadIndex) {
+                    gamepadIndex = null;
+                    gamepad = null;
+                    console.log('Gamepad disconnected');
+                }
+            });
+            
+            // Button events
+            document.getElementById('resumeButton').addEventListener('click', resumeGame);
+            document.getElementById('restartButton').addEventListener('click', restartGame);
+            document.getElementById('playAgainButton').addEventListener('click', restartGame);
+            
+            // Window resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        // Game loop
+        let lastTime = 0;
+        function animate(currentTime = 0) {
+            requestAnimationFrame(animate);
+            
+            const deltaTime = Math.min(0.1, (currentTime - lastTime) / 1000);
+            lastTime = currentTime;
+            
+            // Update gamepad state
+            if (gamepadIndex !== null) {
+                gamepad = navigator.getGamepads()[gamepadIndex];
+            }
+            
+            // Update game based on state
+            if (currentState === GameState.PLAYING) {
+                updateRoad();
+                updatePlayer(deltaTime);
+                updateBots(deltaTime);
+                updateUI();
+            }
+            
+            // Render scene
+            renderer.render(scene, camera);
+        }
+        
+        // Start the game when the page loads
+        window.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
