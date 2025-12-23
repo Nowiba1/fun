@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Endless 4-Lane 3D Drive</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         * {
             margin: 0;
@@ -139,6 +140,42 @@
             font-size: 24px;
             z-index: 300;
         }
+        
+        #import-controls {
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            max-width: 300px;
+            z-index: 100;
+        }
+        
+        #import-controls h3 {
+            margin-bottom: 10px;
+            color: #4af;
+        }
+        
+        .file-input {
+            margin: 10px 0;
+            color: white;
+        }
+        
+        #import-btn {
+            background: #4af;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        
+        #import-btn:hover {
+            background: #5bf;
+        }
     </style>
 </head>
 <body>
@@ -151,6 +188,19 @@
     </div>
     
     <div id="lane-display">LANE: 2</div>
+    
+    <div id="import-controls">
+        <h3>Import GLTF Models</h3>
+        <div class="control-row">
+            <label for="player-car-file">Player Car (.gltf/.glb):</label>
+            <input type="file" id="player-car-file" accept=".gltf,.glb" class="file-input">
+        </div>
+        <div class="control-row">
+            <label for="bot-car-file">Enemy Car (.gltf/.glb):</label>
+            <input type="file" id="bot-car-file" accept=".gltf,.glb" class="file-input">
+        </div>
+        <button id="import-btn">Import Selected Models</button>
+    </div>
     
     <div id="controls">
         <div class="control-row"><span class="key">W</span> / <span class="key">↑</span> : Accelerate</div>
@@ -195,6 +245,10 @@
         let curvePoints = [];
         let lastPointIndex = 0;
         let cameraShake = 0;
+        
+        // Custom models
+        let customPlayerModel = null;
+        let customBotModel = null;
         
         // Game constants
         const ROAD_LENGTH = 2000; // Length of the road segment we keep in memory
@@ -251,16 +305,19 @@
             // Create the road mesh
             createRoad();
             
-            // Create player car
-            createPlayerCar();
+            // Create player car (default)
+            createDefaultPlayerCar();
             
             // Create initial buildings
             createBuildings();
             
             // Create initial bots
             for (let i = 0; i < 3; i++) {
-                createBot(i * 50 + 100);
+                createDefaultBot(i * 50 + 100);
             }
+            
+            // Setup GLTF import
+            setupGLTFImport();
             
             // Start game loop
             animate();
@@ -280,6 +337,9 @@
             }
             
             lastPointIndex = NUM_SEGMENTS - 1;
+            
+            // Create the initial curve
+            updateRoadCurveGeometry();
         }
         
         function updateRoadCurve() {
@@ -376,17 +436,29 @@
                 lastPointIndex -= removeCount;
             }
             
+            // Update the road curve geometry
+            updateRoadCurveGeometry();
+        }
+        
+        function updateRoadCurveGeometry() {
             // Create the CatmullRom curve from the points
-            roadCurve = new THREE.CatmullRomCurve3(curvePoints);
-            roadCurve.curveType = 'centripetal';
-            roadCurve.tension = 0.3; // Lower tension for smoother curves
+            if (curvePoints.length >= 4) { // CatmullRom needs at least 4 points
+                roadCurve = new THREE.CatmullRomCurve3(curvePoints);
+                roadCurve.curveType = 'centripetal';
+                roadCurve.tension = 0.3; // Lower tension for smoother curves
+            }
         }
         
         function createRoad() {
+            if (!roadCurve || curvePoints.length < 4) {
+                console.log("Road curve not ready yet, waiting...");
+                return;
+            }
+            
             if (roadMesh) {
                 scene.remove(roadMesh);
-                roadMesh.geometry.dispose();
-                roadMesh.material.dispose();
+                if (roadMesh.geometry) roadMesh.geometry.dispose();
+                if (roadMesh.material) roadMesh.material.dispose();
             }
             
             // Create road geometry by extruding along the curve
@@ -406,33 +478,41 @@
                 extrudePath: roadCurve
             };
             
-            const geometry = new THREE.ExtrudeGeometry(roadShape, extrudeSettings);
-            
-            // Center the geometry
-            geometry.center();
-            
-            // Create road material
-            const material = new THREE.MeshLambertMaterial({ 
-                color: 0x333333,
-                side: THREE.DoubleSide
-            });
-            
-            // Create the road mesh
-            roadMesh = new THREE.Mesh(geometry, material);
-            roadMesh.receiveShadow = true;
-            roadMesh.castShadow = false;
-            scene.add(roadMesh);
-            
-            // Add lane markings for 4 lanes
-            addLaneMarkings();
+            try {
+                const geometry = new THREE.ExtrudeGeometry(roadShape, extrudeSettings);
+                
+                // Center the geometry
+                geometry.center();
+                
+                // Create road material
+                const material = new THREE.MeshLambertMaterial({ 
+                    color: 0x333333,
+                    side: THREE.DoubleSide
+                });
+                
+                // Create the road mesh
+                roadMesh = new THREE.Mesh(geometry, material);
+                roadMesh.receiveShadow = true;
+                roadMesh.castShadow = false;
+                scene.add(roadMesh);
+                
+                // Add lane markings for 4 lanes
+                addLaneMarkings();
+            } catch (e) {
+                console.error("Error creating road:", e);
+                // Retry on next frame
+                setTimeout(createRoad, 100);
+            }
         }
         
         function addLaneMarkings() {
+            if (!roadCurve) return;
+            
             // Remove old lane markings
-            scene.children.filter(child => child.userData.isLaneMarking).forEach(marking => {
+            scene.children.filter(child => child.userData && child.userData.isLaneMarking).forEach(marking => {
                 scene.remove(marking);
-                marking.geometry.dispose();
-                marking.material.dispose();
+                if (marking.geometry) marking.geometry.dispose();
+                if (marking.material) marking.material.dispose();
             });
             
             // Create dashed lane markings for 4 lanes (3 dividers)
@@ -452,32 +532,38 @@
                 // Generate points along the curve
                 for (let i = 0; i <= 100; i++) {
                     const t = i / 100;
-                    const curvePoint = roadCurve.getPoint(t);
-                    const tangent = roadCurve.getTangent(t).normalize();
-                    
-                    // Calculate perpendicular vector
-                    const perpendicular = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-                    
-                    // Calculate marking position
-                    const markingPos = curvePoint.clone().add(perpendicular.multiplyScalar(offset));
-                    
-                    // Adjust height slightly above road
-                    markingPos.y += 0.1;
-                    
-                    points.push(markingPos);
+                    try {
+                        const curvePoint = roadCurve.getPoint(t);
+                        const tangent = roadCurve.getTangent(t).normalize();
+                        
+                        // Calculate perpendicular vector
+                        const perpendicular = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+                        
+                        // Calculate marking position
+                        const markingPos = curvePoint.clone().add(perpendicular.multiplyScalar(offset));
+                        
+                        // Adjust height slightly above road
+                        markingPos.y += 0.1;
+                        
+                        points.push(markingPos);
+                    } catch (e) {
+                        console.warn("Error getting curve point at t=" + t, e);
+                    }
                 }
                 
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                const line = new THREE.Line(geometry, laneMarkingMaterial);
-                line.computeLineDistances();
-                line.userData.isLaneMarking = true;
-                scene.add(line);
+                if (points.length > 0) {
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const line = new THREE.Line(geometry, laneMarkingMaterial);
+                    line.computeLineDistances();
+                    line.userData = { isLaneMarking: true };
+                    scene.add(line);
+                }
             });
         }
         
-        // ==================== FIXED PLAYER CAR WITH LANE SNAPPING ====================
-        function createPlayerCar() {
-            // Car body
+        // ==================== CAR CREATION (DEFAULT AND GLTF) ====================
+        function createDefaultPlayerCar() {
+            // Create a simple default car if no custom model is loaded
             const carBody = new THREE.BoxGeometry(2.8, 1.2, 5);
             const carMaterial = new THREE.MeshLambertMaterial({ color: 0x2266ff });
             const car = new THREE.Mesh(carBody, carMaterial);
@@ -491,25 +577,6 @@
             carTopMesh.castShadow = true;
             car.add(carTopMesh);
             
-            // Wheels
-            const wheelGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.8, 8);
-            const wheelMaterial = new THREE.MeshLambertMaterial({ color: 0x222222 });
-            
-            const wheelPositions = [
-                { x: 1.5, y: -0.6, z: 1.8 },
-                { x: -1.5, y: -0.6, z: 1.8 },
-                { x: 1.5, y: -0.6, z: -1.8 },
-                { x: -1.5, y: -0.6, z: -1.8 }
-            ];
-            
-            wheelPositions.forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeometry, wheelMaterial);
-                wheel.rotation.z = Math.PI / 2;
-                wheel.position.set(pos.x, pos.y, pos.z);
-                wheel.castShadow = true;
-                car.add(wheel);
-            });
-            
             playerCar = new THREE.Group();
             playerCar.add(car);
             playerCar.userData.speed = INITIAL_PLAYER_SPEED;
@@ -518,8 +585,179 @@
             scene.add(playerCar);
         }
         
+        function createDefaultBot(offsetZ) {
+            const botBody = new THREE.BoxGeometry(2.8, 1.2, 5);
+            const botMaterial = new THREE.MeshLambertMaterial({ color: 0xff3333 });
+            const bot = new THREE.Mesh(botBody, botMaterial);
+            bot.castShadow = true;
+            
+            // Bot top
+            const botTop = new THREE.BoxGeometry(2.4, 1, 3);
+            const botTopMesh = new THREE.Mesh(botTop, botMaterial);
+            botTopMesh.position.y = 0.9;
+            botTopMesh.position.z = -0.5;
+            botTopMesh.castShadow = true;
+            bot.add(botTopMesh);
+            
+            const botGroup = new THREE.Group();
+            botGroup.add(bot);
+            
+            // Bot properties - now with lane system
+            const laneCenters = [-4.5, -1.5, 1.5, 4.5];
+            const randomLane = Math.floor(Math.random() * LANE_COUNT);
+            
+            botGroup.userData = {
+                speed: BOT_SPEED + Math.random() * 5,
+                offset: offsetZ,
+                lane: randomLane, // 0-3 for 4 lanes
+                targetLane: randomLane,
+                laneChangeProgress: 0,
+                lastLaneChange: 0,
+                aggro: Math.random() * 0.5 + 0.5,
+                isDefault: true
+            };
+            
+            scene.add(botGroup);
+            bots.push(botGroup);
+        }
+        
+        // ==================== GLTF IMPORT SYSTEM ====================
+        function setupGLTFImport() {
+            const importBtn = document.getElementById('import-btn');
+            const playerFileInput = document.getElementById('player-car-file');
+            const botFileInput = document.getElementById('bot-car-file');
+            const loader = new THREE.GLTFLoader();
+            
+            importBtn.addEventListener('click', () => {
+                // Load player car if file selected
+                if (playerFileInput.files.length > 0) {
+                    const file = playerFileInput.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const arrayBuffer = e.target.result;
+                        
+                        loader.parse(
+                            arrayBuffer,
+                            '',
+                            function(gltf) {
+                                // Remove existing player car
+                                if (playerCar) {
+                                    scene.remove(playerCar);
+                                    // Clean up old geometry
+                                    playerCar.traverse(child => {
+                                        if (child.geometry) child.geometry.dispose();
+                                        if (child.material) child.material.dispose();
+                                    });
+                                }
+                                
+                                // Scale and position the imported model
+                                gltf.scene.scale.set(0.5, 0.5, 0.5);
+                                gltf.scene.traverse(child => {
+                                    if (child.isMesh) {
+                                        child.castShadow = true;
+                                        child.receiveShadow = true;
+                                    }
+                                });
+                                
+                                customPlayerModel = gltf.scene;
+                                playerCar = new THREE.Group();
+                                playerCar.add(gltf.scene);
+                                playerCar.userData = {
+                                    speed: INITIAL_PLAYER_SPEED,
+                                    lane: currentLane,
+                                    isCustomModel: true
+                                };
+                                
+                                scene.add(playerCar);
+                                console.log("Player car GLTF model loaded successfully");
+                            },
+                            function(error) {
+                                console.error("Error loading player car GLTF:", error);
+                                alert("Failed to load player car model. Please check the file format.");
+                            }
+                        );
+                    };
+                    
+                    reader.readAsArrayBuffer(file);
+                }
+                
+                // Load bot car if file selected
+                if (botFileInput.files.length > 0) {
+                    const file = botFileInput.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        const arrayBuffer = e.target.result;
+                        
+                        loader.parse(
+                            arrayBuffer,
+                            '',
+                            function(gltf) {
+                                customBotModel = gltf.scene;
+                                console.log("Bot car GLTF model loaded successfully");
+                                
+                                // Replace existing bots with new model on next spawn
+                                bots.forEach(bot => {
+                                    bot.userData.useCustomModel = true;
+                                });
+                            },
+                            function(error) {
+                                console.error("Error loading bot car GLTF:", error);
+                                alert("Failed to load bot car model. Please check the file format.");
+                            }
+                        );
+                    };
+                    
+                    reader.readAsArrayBuffer(file);
+                }
+                
+                if (playerFileInput.files.length === 0 && botFileInput.files.length === 0) {
+                    alert("Please select at least one GLTF/GLB file to import.");
+                }
+            });
+        }
+        
+        function createBotWithModel(offsetZ, lane) {
+            if (customBotModel) {
+                // Clone the custom bot model
+                const botModel = customBotModel.clone();
+                botModel.scale.set(0.5, 0.5, 0.5);
+                botModel.traverse(child => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                    }
+                });
+                
+                const botGroup = new THREE.Group();
+                botGroup.add(botModel);
+                
+                // Bot properties
+                const laneCenters = [-4.5, -1.5, 1.5, 4.5];
+                
+                botGroup.userData = {
+                    speed: BOT_SPEED + Math.random() * 5,
+                    offset: offsetZ,
+                    lane: lane,
+                    targetLane: lane,
+                    laneChangeProgress: 0,
+                    lastLaneChange: 0,
+                    aggro: Math.random() * 0.5 + 0.5,
+                    isCustomModel: true
+                };
+                
+                scene.add(botGroup);
+                bots.push(botGroup);
+            } else {
+                // Use default bot
+                createDefaultBot(offsetZ);
+            }
+        }
+        
+        // ==================== FIXED PLAYER CAR WITH LANE SNAPPING ====================
         function updatePlayerCar(deltaTime) {
-            if (!gameRunning) return;
+            if (!gameRunning || !playerCar) return;
             
             // Update player position along the curve
             playerPosition += playerSpeed * deltaTime;
@@ -535,8 +773,20 @@
             
             // Get player position on curve
             const curveT = (playerPosition % ROAD_LENGTH) / ROAD_LENGTH;
-            const curvePoint = roadCurve.getPoint(curveT);
-            const tangent = roadCurve.getTangent(curveT).normalize();
+            
+            if (!roadCurve) {
+                console.warn("Road curve not ready");
+                return;
+            }
+            
+            let curvePoint, tangent;
+            try {
+                curvePoint = roadCurve.getPoint(curveT);
+                tangent = roadCurve.getTangent(curveT).normalize();
+            } catch (e) {
+                console.warn("Error getting road curve point:", e);
+                return;
+            }
             
             // Calculate perpendicular vector for lane positioning
             const perpendicular = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
@@ -594,9 +844,14 @@
             playerCar.rotation.z = -turnIntensity * 0.08;
             
             // Apply slight tilt on hills
-            const roadAhead = roadCurve.getPoint((curveT + 0.02) % 1);
-            const verticalChange = roadAhead.y - curvePoint.y;
-            playerCar.rotation.x = -verticalChange * 0.05;
+            let roadAhead;
+            try {
+                roadAhead = roadCurve.getPoint((curveT + 0.02) % 1);
+                const verticalChange = roadAhead.y - curvePoint.y;
+                playerCar.rotation.x = -verticalChange * 0.05;
+            } catch (e) {
+                // Silently handle curve point errors
+            }
             
             // Update player speed
             if (keys['ArrowUp'] || keys['w'] || keys['W']) {
@@ -622,41 +877,6 @@
         }
         
         // ==================== FIXED AI BOTS WITH LANE SYSTEM ====================
-        function createBot(offsetZ) {
-            const botBody = new THREE.BoxGeometry(2.8, 1.2, 5);
-            const botMaterial = new THREE.MeshLambertMaterial({ color: 0xff3333 });
-            const bot = new THREE.Mesh(botBody, botMaterial);
-            bot.castShadow = true;
-            
-            // Bot top
-            const botTop = new THREE.BoxGeometry(2.4, 1, 3);
-            const botTopMesh = new THREE.Mesh(botTop, botMaterial);
-            botTopMesh.position.y = 0.9;
-            botTopMesh.position.z = -0.5;
-            botTopMesh.castShadow = true;
-            bot.add(botTopMesh);
-            
-            const botGroup = new THREE.Group();
-            botGroup.add(bot);
-            
-            // Bot properties - now with lane system
-            const laneCenters = [-4.5, -1.5, 1.5, 4.5];
-            const randomLane = Math.floor(Math.random() * LANE_COUNT);
-            
-            botGroup.userData = {
-                speed: BOT_SPEED + Math.random() * 5,
-                offset: offsetZ,
-                lane: randomLane, // 0-3 for 4 lanes
-                targetLane: randomLane,
-                laneChangeProgress: 0,
-                lastLaneChange: 0,
-                aggro: Math.random() * 0.5 + 0.5
-            };
-            
-            scene.add(botGroup);
-            bots.push(botGroup);
-        }
-        
         function updateBots(deltaTime) {
             const laneCenters = [-4.5, -1.5, 1.5, 4.5];
             
@@ -675,8 +895,16 @@
                 
                 // Get bot position on curve
                 const curveT = (bot.userData.offset % ROAD_LENGTH) / ROAD_LENGTH;
-                const curvePoint = roadCurve.getPoint(curveT);
-                const tangent = roadCurve.getTangent(curveT).normalize();
+                
+                if (!roadCurve) continue;
+                
+                let curvePoint, tangent;
+                try {
+                    curvePoint = roadCurve.getPoint(curveT);
+                    tangent = roadCurve.getTangent(curveT).normalize();
+                } catch (e) {
+                    continue;
+                }
                 
                 // Calculate perpendicular vector for lane positioning
                 const perpendicular = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
@@ -746,8 +974,9 @@
                     scene.remove(bot);
                     bots.splice(i, 1);
                     
-                    // Create a new bot ahead
-                    createBot(playerPosition + 100 + Math.random() * 100);
+                    // Create a new bot ahead with appropriate model
+                    const lane = Math.floor(Math.random() * LANE_COUNT);
+                    createBotWithModel(playerPosition + 100 + Math.random() * 100, lane);
                 }
                 
                 // Remove bots that are too far behind
@@ -760,18 +989,25 @@
             // Add new bots as score increases
             const targetBotCount = 3 + Math.floor(score / 1000);
             if (bots.length < targetBotCount) {
-                createBot(playerPosition + 100 + Math.random() * 200);
+                const lane = Math.floor(Math.random() * LANE_COUNT);
+                createBotWithModel(playerPosition + 100 + Math.random() * 200, lane);
             }
         }
         
         // ==================== FIXED CAMERA SYSTEM ====================
         function updateCamera(deltaTime) {
-            if (!playerCar) return;
+            if (!playerCar || !roadCurve) return;
             
             // Get player position on curve
             const curveT = (playerPosition % ROAD_LENGTH) / ROAD_LENGTH;
-            const curvePoint = roadCurve.getPoint(curveT);
-            const tangent = roadCurve.getTangent(curveT).normalize();
+            
+            let curvePoint, tangent;
+            try {
+                curvePoint = roadCurve.getPoint(curveT);
+                tangent = roadCurve.getTangent(curveT).normalize();
+            } catch (e) {
+                return;
+            }
             
             // Calculate perpendicular vector
             const perpendicular = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
@@ -816,11 +1052,16 @@
             camera.lookAt(lookAtPosition);
             
             // Detect road features for camera shake
-            const roadAhead = roadCurve.getPoint((curveT + 0.01) % 1);
-            const verticalChange = Math.abs(roadAhead.y - curvePoint.y);
-            
-            if (verticalChange > 0.8) {
-                cameraShake = verticalChange * 0.3;
+            let roadAhead;
+            try {
+                roadAhead = roadCurve.getPoint((curveT + 0.01) % 1);
+                const verticalChange = Math.abs(roadAhead.y - curvePoint.y);
+                
+                if (verticalChange > 0.8) {
+                    cameraShake = verticalChange * 0.3;
+                }
+            } catch (e) {
+                // Silently handle
             }
         }
         
@@ -829,17 +1070,24 @@
             // Remove old buildings
             buildings.forEach(building => {
                 scene.remove(building);
-                building.geometry.dispose();
-                building.material.dispose();
+                if (building.geometry) building.geometry.dispose();
+                if (building.material) building.material.dispose();
             });
             buildings = [];
+            
+            if (!roadCurve) return;
             
             // Create buildings along the road
             for (let i = 0; i < 40; i++) {
                 // Get position along curve
                 const t = i / 40;
-                const curvePoint = roadCurve.getPoint(t);
-                const tangent = roadCurve.getTangent(t).normalize();
+                let curvePoint, tangent;
+                try {
+                    curvePoint = roadCurve.getPoint(t);
+                    tangent = roadCurve.getTangent(t).normalize();
+                } catch (e) {
+                    continue;
+                }
                 
                 // Calculate perpendicular vector
                 const perpendicular = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
@@ -917,11 +1165,21 @@
             cameraShake = 0;
             
             // Remove all bots
-            bots.forEach(bot => scene.remove(bot));
+            bots.forEach(bot => {
+                scene.remove(bot);
+                bot.traverse(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) child.material.dispose();
+                });
+            });
             bots = [];
             
             // Remove all buildings
-            buildings.forEach(building => scene.remove(building));
+            buildings.forEach(building => {
+                scene.remove(building);
+                if (building.geometry) building.geometry.dispose();
+                if (building.material) building.material.dispose();
+            });
             buildings = [];
             
             // Reinitialize road
@@ -929,9 +1187,10 @@
             initRoadCurve();
             createRoad();
             
-            // Create new bots
+            // Create new bots with appropriate models
             for (let i = 0; i < 3; i++) {
-                createBot(i * 50 + 100);
+                const lane = Math.floor(Math.random() * LANE_COUNT);
+                createBotWithModel(i * 50 + 100, lane);
             }
             
             // Create new buildings
