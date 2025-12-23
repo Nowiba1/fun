@@ -14,7 +14,7 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
-            background: linear-gradient(to bottom, #87CEEB 0%, #98D8E8 100%);
+            background: #0a1929;
             color: #333;
         }
         
@@ -258,32 +258,46 @@
     <script type="module">
         // Import Three.js modules
         import * as THREE from 'three';
+        import { GLTFLoader } from 'https://unpkg.com/three@0.162.0/examples/jsm/loaders/GLTFLoader.js';
 
         // ====================
         // GAME CONFIGURATION
         // ====================
         const CONFIG = {
-            // Road settings - FIXED: Road is horizontal on XZ plane
-            ROAD_WIDTH: 20,
-            ROAD_LENGTH: 1000,
-            LANE_POSITIONS: [-4.5, -1.5, 1.5, 4.5], // Fixed lane centers
+            // Road settings
+            ROAD_WIDTH: 24,
+            SHOULDER_WIDTH: 3, // Shoulder space on each side
+            ROAD_LENGTH: 2000,
+            NUM_LANES: 4,
             SEGMENT_LENGTH: 25,
             
+            // Calculate lane positions with equal widths
+            get laneWidth() {
+                return CONFIG.ROAD_WIDTH / CONFIG.NUM_LANES;
+            },
+            
             // Game settings
-            INITIAL_SPEED: 20,
-            MAX_SPEED: 120,
+            INITIAL_SPEED: 30,
+            MAX_SPEED: 140,
             ACCELERATION: 0.1,
             LANE_CHANGE_SPEED: 0.2,
             
             // Enemy settings
             MAX_ENEMIES: 8,
-            ENEMY_SPAWN_INTERVAL: 2000,
+            ENEMY_SPAWN_INTERVAL: 2500,
             ENEMY_SPEED_VARIATION: 0.8,
             
             // NPC settings
             MAX_NPCS: 12,
             NPC_SPAWN_INTERVAL: 3000,
-            NPC_SPEED_VARIATION: 0.6
+            NPC_SPEED_VARIATION: 0.6,
+            
+            // External assets (3 specific models)
+            ASSETS: {
+                PLAYER: '/models/player.glb',
+                ENEMY: '/models/enemyCar.glb',
+                NPC: '/models/npc.glb'
+            }
         };
 
         // ====================
@@ -293,12 +307,15 @@
             score: 0,
             distance: 0,
             speed: CONFIG.INITIAL_SPEED,
-            currentLane: 2,
+            currentLane: 2, // Index 0-3
             targetLane: 2,
             gameOver: false,
             playerCar: null,
             enemies: [],
             npcs: [],
+            playerModel: null,
+            enemyModel: null,
+            npcModel: null,
             lastEnemySpawn: 0,
             lastNPCSpawn: 0,
             gamepad: null
@@ -309,7 +326,27 @@
         // ====================
         let scene, camera, renderer;
         let roadMesh, roadLines = [];
+        let asphaltTexture;
         let clock = new THREE.Clock();
+        let modelsLoaded = 0;
+        const totalModels = 3;
+        
+        // Calculate lane centers
+        function getLaneCenter(laneIndex) {
+            /*
+            Calculate exact center of each lane.
+            Lane index: 0 (leftmost) to 3 (rightmost)
+            Each lane gets equal width of ROAD_WIDTH / 4
+            */
+            const halfRoad = CONFIG.ROAD_WIDTH / 2;
+            const laneWidth = CONFIG.laneWidth;
+            
+            // Calculate left edge of each lane
+            const leftEdge = -halfRoad + (laneIndex * laneWidth);
+            
+            // Return center of lane
+            return leftEdge + (laneWidth / 2);
+        }
         
         // Update loading progress
         function updateLoading(text, progress) {
@@ -323,49 +360,44 @@
             
             // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x87CEEB, 100, 500);
+            scene.fog = new THREE.Fog(0x87CEEB, 100, 800); // Fog for distance
             
-            // Camera setup (third-person) - FIXED: Proper position for horizontal road
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.set(0, 8, 15); // Behind and above the road
+            // Camera setup (third-person)
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
+            camera.position.set(0, 8, 15);
             
             // Renderer setup
             renderer = new THREE.WebGLRenderer({
                 canvas: document.getElementById('roadCanvas'),
-                antialias: true
+                antialias: true,
+                alpha: true
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
             
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
+            // Create texture for asphalt
+            createAsphaltTexture();
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(50, 100, 50);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.camera.left = -50;
-            directionalLight.shadow.camera.right = 50;
-            directionalLight.shadow.camera.top = 50;
-            directionalLight.shadow.camera.bottom = -50;
-            scene.add(directionalLight);
+            // Setup lighting
+            setupLighting();
             
-            updateLoading("Creating road...", 30);
+            updateLoading("Loading car models...", 30);
             
-            // Create road - FIXED: Horizontal plane on XZ
+            // Load models
+            await loadModels();
+            
+            updateLoading("Creating road...", 70);
+            
+            // Create road
             createRoad();
             
-            updateLoading("Creating environment...", 50);
+            updateLoading("Creating environment...", 80);
             
             // Create environment
             createEnvironment();
-            
-            updateLoading("Creating cars...", 80);
-            
-            // Create cars (simple geometry since we don't have actual GLB files)
-            createCars();
             
             // Setup event listeners
             setupEventListeners();
@@ -380,191 +412,180 @@
         }
         
         // ====================
-        // ROAD CREATION (FIXED: Horizontal on XZ plane)
+        // TEXTURE CREATION
         // ====================
-        function createRoad() {
-            // Create asphalt texture with grain
+        function createAsphaltTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
             
-            // Asphalt base
-            ctx.fillStyle = '#333333';
+            // Asphalt base color (dark gray)
+            ctx.fillStyle = '#2a2a2a';
             ctx.fillRect(0, 0, 512, 512);
             
-            // Add asphalt grain
+            // Add asphalt texture grain
             ctx.fillStyle = '#222222';
-            for (let i = 0; i < 20000; i++) {
+            for (let i = 0; i < 15000; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 512;
+                const size = Math.random() * 3;
+                ctx.fillRect(x, y, size, size);
+            }
+            
+            // Add some lighter spots
+            ctx.fillStyle = '#3a3a3a';
+            for (let i = 0; i < 3000; i++) {
                 const x = Math.random() * 512;
                 const y = Math.random() * 512;
                 const size = Math.random() * 2;
                 ctx.fillRect(x, y, size, size);
             }
             
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.wrapS = THREE.RepeatWrapping;
-            texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(20, 100); // Tile the texture
-            
-            // Create road geometry - FIXED: Flat plane on XZ
-            const roadGeometry = new THREE.PlaneGeometry(
-                CONFIG.ROAD_WIDTH, 
-                CONFIG.ROAD_LENGTH
-            );
-            roadGeometry.rotateX(-Math.PI / 2); // Rotate to be horizontal
-            
-            // Create road material with texture
-            const roadMaterial = new THREE.MeshStandardMaterial({
-                map: texture,
-                roughness: 0.9,
-                metalness: 0.1
-            });
-            
-            // Create road mesh
-            roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
-            roadMesh.receiveShadow = true;
-            roadMesh.position.y = 0; // Road is at ground level
-            roadMesh.position.z = -CONFIG.ROAD_LENGTH / 2; // Center the road
-            scene.add(roadMesh);
-            
-            // Create road markings - painted on the road surface
-            createRoadMarkings();
-        }
-        
-        function createRoadMarkings() {
-            // Center line (yellow)
-            const centerLineGeometry = new THREE.PlaneGeometry(0.3, CONFIG.ROAD_LENGTH);
-            centerLineGeometry.rotateX(-Math.PI / 2);
-            const centerLineMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-            const centerLine = new THREE.Mesh(centerLineGeometry, centerLineMaterial);
-            centerLine.position.set(0, 0.01, -CONFIG.ROAD_LENGTH / 2); // Slightly above road
-            scene.add(centerLine);
-            
-            // Lane markings (white)
-            const laneMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-            
-            // Left side markings (between lanes 1-2 and 2-3)
-            const leftMarking1 = new THREE.Mesh(
-                new THREE.PlaneGeometry(0.15, CONFIG.ROAD_LENGTH).rotateX(-Math.PI / 2),
-                laneMaterial
-            );
-            leftMarking1.position.set(-3, 0.01, -CONFIG.ROAD_LENGTH / 2); // Between lane 1 and 2
-            scene.add(leftMarking1);
-            
-            const leftMarking2 = new THREE.Mesh(
-                new THREE.PlaneGeometry(0.15, CONFIG.ROAD_LENGTH).rotateX(-Math.PI / 2),
-                laneMaterial
-            );
-            leftMarking2.position.set(0, 0.01, -CONFIG.ROAD_LENGTH / 2); // Between lane 2 and 3
-            scene.add(leftMarking2);
-            
-            // Right side marking (between lanes 3-4)
-            const rightMarking = new THREE.Mesh(
-                new THREE.PlaneGeometry(0.15, CONFIG.ROAD_LENGTH).rotateX(-Math.PI / 2),
-                laneMaterial
-            );
-            rightMarking.position.set(3, 0.01, -CONFIG.ROAD_LENGTH / 2); // Between lane 3 and 4
-            scene.add(rightMarking);
-            
-            // Store for later updates
-            roadLines.push(centerLine, leftMarking1, leftMarking2, rightMarking);
+            asphaltTexture = new THREE.CanvasTexture(canvas);
+            asphaltTexture.wrapS = THREE.RepeatWrapping;
+            asphaltTexture.wrapT = THREE.RepeatWrapping;
+            asphaltTexture.repeat.set(20, 200); // Tile properly
         }
         
         // ====================
-        // ENVIRONMENT
+        // LIGHTING SETUP
         // ====================
-        function createEnvironment() {
-            // Ground
-            const groundGeometry = new THREE.PlaneGeometry(200, CONFIG.ROAD_LENGTH * 2);
-            groundGeometry.rotateX(-Math.PI / 2);
-            const groundMaterial = new THREE.MeshBasicMaterial({ color: 0x7CFC00 });
-            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-            ground.position.set(0, -0.1, 0);
-            scene.add(ground);
+        function setupLighting() {
+            // Ambient light for overall illumination
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
             
-            // Create buildings along the sides
-            const buildingColors = [0x8B4513, 0xA0522D, 0xDEB887, 0xD2691E, 0xCD853F];
+            // Directional light (sunlight)
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
             
-            for (let i = 0; i < 20; i++) {
-                // Left side buildings
-                const leftBuilding = createBuilding(buildingColors);
-                leftBuilding.position.set(
-                    -(CONFIG.ROAD_WIDTH / 2 + 15 + Math.random() * 20),
-                    0,
-                    -100 + i * 100
-                );
-                scene.add(leftBuilding);
+            // Optimize shadow map
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.left = -100;
+            directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100;
+            directionalLight.shadow.camera.bottom = -100;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
+            
+            scene.add(directionalLight);
+            
+            // Add a second directional light from opposite direction for fill
+            const fillLight = new THREE.DirectionalLight(0x88aaff, 0.3);
+            fillLight.position.set(-30, 50, -50);
+            scene.add(fillLight);
+        }
+        
+        // ====================
+        // MODEL LOADING
+        // ====================
+        async function loadModels() {
+            const loader = new GLTFLoader();
+            
+            return new Promise((resolve) => {
+                let loadedCount = 0;
                 
-                // Right side buildings
-                const rightBuilding = createBuilding(buildingColors);
-                rightBuilding.position.set(
-                    CONFIG.ROAD_WIDTH / 2 + 15 + Math.random() * 20,
-                    0,
-                    -100 + i * 100
-                );
-                scene.add(rightBuilding);
-            }
-        }
-        
-        function createBuilding(colors) {
-            const width = 8 + Math.random() * 12;
-            const height = 15 + Math.random() * 25;
-            const depth = 8 + Math.random() * 12;
-            
-            const geometry = new THREE.BoxGeometry(width, height, depth);
-            const material = new THREE.MeshStandardMaterial({
-                color: colors[Math.floor(Math.random() * colors.length)],
-                roughness: 0.7
+                function onModelLoad() {
+                    loadedCount++;
+                    const progress = 30 + (loadedCount / totalModels) * 40;
+                    updateLoading(`Loading models... ${loadedCount}/${totalModels}`, progress);
+                    
+                    if (loadedCount === totalModels) {
+                        resolve();
+                    }
+                }
+                
+                // Load player model
+                loader.load(CONFIG.ASSETS.PLAYER, (gltf) => {
+                    gameState.playerModel = gltf.scene;
+                    gameState.playerModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    onModelLoad();
+                }, undefined, (error) => {
+                    console.error('Error loading player model:', error);
+                    createPlaceholderCar(0x2196F3).then(model => {
+                        gameState.playerModel = model;
+                        onModelLoad();
+                    });
+                });
+                
+                // Load enemy model
+                loader.load(CONFIG.ASSETS.ENEMY, (gltf) => {
+                    gameState.enemyModel = gltf.scene;
+                    gameState.enemyModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    onModelLoad();
+                }, undefined, (error) => {
+                    console.error('Error loading enemy model:', error);
+                    createPlaceholderCar(0xFF4444).then(model => {
+                        gameState.enemyModel = model;
+                        onModelLoad();
+                    });
+                });
+                
+                // Load NPC model
+                loader.load(CONFIG.ASSETS.NPC, (gltf) => {
+                    gameState.npcModel = gltf.scene;
+                    gameState.npcModel.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = true;
+                            child.receiveShadow = true;
+                        }
+                    });
+                    onModelLoad();
+                }, undefined, (error) => {
+                    console.error('Error loading NPC model:', error);
+                    createPlaceholderCar(0x44FF44).then(model => {
+                        gameState.npcModel = model;
+                        onModelLoad();
+                    });
+                });
             });
-            
-            const building = new THREE.Mesh(geometry, material);
-            building.castShadow = true;
-            building.receiveShadow = true;
-            building.position.y = height / 2; // Buildings sit on ground
-            
-            return building;
         }
         
-        // ====================
-        // CAR CREATION (Simple geometry)
-        // ====================
-        function createCars() {
-            // Create player car (blue)
-            gameState.playerCar = createCar(0x2196F3);
-            gameState.playerCar.position.set(
-                CONFIG.LANE_POSITIONS[gameState.currentLane], // FIXED: Start in correct lane
-                0.5, // Car sits on road surface
-                0
-            );
-            scene.add(gameState.playerCar);
-        }
-        
-        function createCar(color) {
+        // Fallback placeholder car creation
+        async function createPlaceholderCar(color) {
             const group = new THREE.Group();
             
             // Car body
-            const bodyGeometry = new THREE.BoxGeometry(2.5, 1, 4);
+            const bodyGeometry = new THREE.BoxGeometry(2, 1.2, 4);
             const bodyMaterial = new THREE.MeshStandardMaterial({ 
                 color: color,
                 roughness: 0.5,
-                metalness: 0.5
+                metalness: 0.3
             });
             const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
             body.castShadow = true;
-            body.position.y = 0.5;
+            body.receiveShadow = true;
+            body.position.y = 0.6;
             group.add(body);
             
             // Roof
-            const roofGeometry = new THREE.BoxGeometry(1.8, 0.5, 2);
+            const roofGeometry = new THREE.BoxGeometry(1.5, 0.4, 1.8);
             const roof = new THREE.Mesh(roofGeometry, bodyMaterial);
-            roof.position.y = 1.25;
+            roof.position.y = 1.4;
+            roof.position.z = -0.2;
             roof.castShadow = true;
             group.add(roof);
             
             // Wheels
             const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 12);
-            const wheelMaterial = new THREE.MeshStandardMaterial({ color: 0x111111 });
+            const wheelMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x111111,
+                roughness: 0.8,
+                metalness: 0.5
+            });
             
             const wheelPositions = [
                 [-1, -0.2, 1.2],
@@ -581,45 +602,236 @@
                 group.add(wheel);
             });
             
-            // Front lights
-            const lightGeometry = new THREE.SphereGeometry(0.2, 8, 8);
-            const lightMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFF00 });
-            
-            const leftLight = new THREE.Mesh(lightGeometry, lightMaterial);
-            leftLight.position.set(-0.8, 0.5, 1.8);
-            group.add(leftLight);
-            
-            const rightLight = new THREE.Mesh(lightGeometry, lightMaterial);
-            rightLight.position.set(0.8, 0.5, 1.8);
-            group.add(rightLight);
-            
             return group;
         }
         
+        // ====================
+        // ROAD CREATION
+        // ====================
+        function createRoad() {
+            // Create road geometry
+            const roadGeometry = new THREE.PlaneGeometry(
+                CONFIG.ROAD_WIDTH + (CONFIG.SHOULDER_WIDTH * 2), // Road + shoulders
+                CONFIG.ROAD_LENGTH
+            );
+            roadGeometry.rotateX(-Math.PI / 2);
+            
+            // Create road material with asphalt texture
+            const roadMaterial = new THREE.MeshStandardMaterial({
+                map: asphaltTexture,
+                roughness: 0.9,
+                metalness: 0.1,
+                side: THREE.DoubleSide
+            });
+            
+            // Create road mesh
+            roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
+            roadMesh.receiveShadow = true;
+            roadMesh.position.y = 0;
+            roadMesh.position.z = -CONFIG.ROAD_LENGTH / 2;
+            scene.add(roadMesh);
+            
+            // Create road markings
+            createRoadMarkings();
+            
+            // Create shoulders
+            createShoulders();
+        }
+        
+        function createRoadMarkings() {
+            // Create dashed line material
+            const dashedLineMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.9
+            });
+            
+            // Create 3 dashed lines between 4 lanes
+            // Lines are at 25%, 50%, and 75% of road width
+            const linePositions = [
+                getLaneCenter(0) + (CONFIG.laneWidth / 2), // Between lane 0 and 1
+                getLaneCenter(1) + (CONFIG.laneWidth / 2), // Between lane 1 and 2
+                getLaneCenter(2) + (CONFIG.laneWidth / 2)  // Between lane 2 and 3
+            ];
+            
+            const dashLength = 4;
+            const gapLength = 6;
+            const dashWidth = 0.2;
+            const dashHeight = 0.02;
+            
+            linePositions.forEach((xPos, lineIndex) => {
+                const totalDashes = Math.floor(CONFIG.ROAD_LENGTH / (dashLength + gapLength));
+                
+                for (let i = 0; i < totalDashes; i++) {
+                    const dashGeometry = new THREE.PlaneGeometry(dashWidth, dashLength);
+                    dashGeometry.rotateX(-Math.PI / 2);
+                    
+                    const dash = new THREE.Mesh(dashGeometry, dashedLineMaterial);
+                    dash.position.x = xPos;
+                    dash.position.y = dashHeight;
+                    dash.position.z = (-CONFIG.ROAD_LENGTH / 2) + (i * (dashLength + gapLength)) + dashLength/2;
+                    
+                    scene.add(dash);
+                    roadLines.push(dash);
+                }
+            });
+            
+            // Add solid outer lines
+            const solidLineMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff
+            });
+            
+            // Left outer line
+            const leftLineGeometry = new THREE.PlaneGeometry(0.3, CONFIG.ROAD_LENGTH);
+            leftLineGeometry.rotateX(-Math.PI / 2);
+            const leftLine = new THREE.Mesh(leftLineGeometry, solidLineMaterial);
+            leftLine.position.x = -(CONFIG.ROAD_WIDTH / 2);
+            leftLine.position.y = dashHeight;
+            leftLine.position.z = -CONFIG.ROAD_LENGTH / 2;
+            scene.add(leftLine);
+            roadLines.push(leftLine);
+            
+            // Right outer line
+            const rightLineGeometry = new THREE.PlaneGeometry(0.3, CONFIG.ROAD_LENGTH);
+            rightLineGeometry.rotateX(-Math.PI / 2);
+            const rightLine = new THREE.Mesh(rightLineGeometry, solidLineMaterial);
+            rightLine.position.x = CONFIG.ROAD_WIDTH / 2;
+            rightLine.position.y = dashHeight;
+            rightLine.position.z = -CONFIG.ROAD_LENGTH / 2;
+            scene.add(rightLine);
+            roadLines.push(rightLine);
+        }
+        
+        function createShoulders() {
+            // Create shoulder material (gravel/dirt texture)
+            const shoulderMaterial = new THREE.MeshStandardMaterial({
+                color: 0x555555,
+                roughness: 0.9,
+                metalness: 0
+            });
+            
+            // Left shoulder
+            const leftShoulderGeometry = new THREE.PlaneGeometry(
+                CONFIG.SHOULDER_WIDTH,
+                CONFIG.ROAD_LENGTH
+            );
+            leftShoulderGeometry.rotateX(-Math.PI / 2);
+            const leftShoulder = new THREE.Mesh(leftShoulderGeometry, shoulderMaterial);
+            leftShoulder.position.x = -(CONFIG.ROAD_WIDTH / 2 + CONFIG.SHOULDER_WIDTH / 2);
+            leftShoulder.position.y = 0;
+            leftShoulder.position.z = -CONFIG.ROAD_LENGTH / 2;
+            leftShoulder.receiveShadow = true;
+            scene.add(leftShoulder);
+            
+            // Right shoulder
+            const rightShoulderGeometry = new THREE.PlaneGeometry(
+                CONFIG.SHOULDER_WIDTH,
+                CONFIG.ROAD_LENGTH
+            );
+            rightShoulderGeometry.rotateX(-Math.PI / 2);
+            const rightShoulder = new THREE.Mesh(rightShoulderGeometry, shoulderMaterial);
+            rightShoulder.position.x = CONFIG.ROAD_WIDTH / 2 + CONFIG.SHOULDER_WIDTH / 2;
+            rightShoulder.position.y = 0;
+            rightShoulder.position.z = -CONFIG.ROAD_LENGTH / 2;
+            rightShoulder.receiveShadow = true;
+            scene.add(rightShoulder);
+        }
+        
+        // ====================
+        // ENVIRONMENT
+        // ====================
+        function createEnvironment() {
+            // Ground with natural dark green color
+            const groundGeometry = new THREE.PlaneGeometry(300, CONFIG.ROAD_LENGTH * 2);
+            groundGeometry.rotateX(-Math.PI / 2);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1a472a, // Natural dark green
+                roughness: 0.9,
+                metalness: 0
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.position.set(0, -0.1, 0);
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // Add some trees/buildings in the distance
+            const treeColors = [0x2d5016, 0x3a6520, 0x285015];
+            
+            for (let i = 0; i < 40; i++) {
+                const side = Math.random() > 0.5 ? 1 : -1;
+                const distance = 60 + Math.random() * 80;
+                const zPos = -100 + Math.random() * CONFIG.ROAD_LENGTH;
+                
+                // Tree trunk
+                const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.7, 3 + Math.random() * 8, 8);
+                const trunkMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x8B4513,
+                    roughness: 0.8
+                });
+                const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+                trunk.position.set(
+                    side * (CONFIG.ROAD_WIDTH/2 + CONFIG.SHOULDER_WIDTH + distance),
+                    1.5,
+                    zPos
+                );
+                trunk.castShadow = true;
+                scene.add(trunk);
+                
+                // Tree foliage
+                const foliageGeometry = new THREE.SphereGeometry(2 + Math.random() * 4, 8, 8);
+                const foliageMaterial = new THREE.MeshStandardMaterial({ 
+                    color: treeColors[Math.floor(Math.random() * treeColors.length)],
+                    roughness: 0.7
+                });
+                const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+                foliage.position.copy(trunk.position);
+                foliage.position.y += 3 + Math.random() * 4;
+                foliage.castShadow = true;
+                scene.add(foliage);
+            }
+        }
+        
+        // ====================
+        // CAR CREATION
+        // ====================
+        function createPlayerCar() {
+            if (!gameState.playerModel) return;
+            
+            gameState.playerCar = gameState.playerModel.clone();
+            gameState.playerCar.position.set(
+                getLaneCenter(gameState.currentLane), // Center in lane
+                0.5, // On road surface
+                0
+            );
+            gameState.playerCar.scale.set(1, 1, 1);
+            scene.add(gameState.playerCar);
+        }
+        
         function createEnemyCar() {
-            if (gameState.enemies.length >= CONFIG.MAX_ENEMIES) return;
+            if (!gameState.enemyModel || gameState.enemies.length >= CONFIG.MAX_ENEMIES) return;
             
-            const enemyCar = createCar(0xFF4444); // Red enemy car
+            const enemyCar = gameState.enemyModel.clone();
             
-            // Random lane
-            const laneIndex = Math.floor(Math.random() * CONFIG.LANE_POSITIONS.length);
-            const lanePos = CONFIG.LANE_POSITIONS[laneIndex];
+            // Random lane (0-3)
+            const laneIndex = Math.floor(Math.random() * CONFIG.NUM_LANES);
             
             // Position behind player
-            const distanceBehind = 30 + Math.random() * 50;
+            const distanceBehind = 30 + Math.random() * 60;
             
             enemyCar.position.set(
-                lanePos,
-                0.5, // Same height as player car
+                getLaneCenter(laneIndex), // Center in lane
+                0.5,
                 gameState.playerCar.position.z - distanceBehind
             );
             
             enemyCar.userData = {
                 lane: laneIndex,
                 speed: gameState.speed * (0.8 + Math.random() * 0.4),
-                type: 'enemy'
+                type: 'enemy',
+                model: enemyCar
             };
             
+            enemyCar.scale.set(1, 1, 1);
             scene.add(enemyCar);
             gameState.enemies.push(enemyCar);
             
@@ -627,19 +839,18 @@
         }
         
         function createNPCCar() {
-            if (gameState.npcs.length >= CONFIG.MAX_NPCS) return;
+            if (!gameState.npcModel || gameState.npcs.length >= CONFIG.MAX_NPCS) return;
             
-            const npcCar = createCar(0x44FF44); // Green NPC car
+            const npcCar = gameState.npcModel.clone();
             
-            // Random lane (different from enemies for variety)
-            const laneIndex = Math.floor(Math.random() * CONFIG.LANE_POSITIONS.length);
-            const lanePos = CONFIG.LANE_POSITIONS[laneIndex];
+            // Random lane (0-3)
+            const laneIndex = Math.floor(Math.random() * CONFIG.NUM_LANES);
             
-            // Random position behind player
+            // Position behind player
             const distanceBehind = 20 + Math.random() * 80;
             
             npcCar.position.set(
-                lanePos,
+                getLaneCenter(laneIndex), // Center in lane
                 0.5,
                 gameState.playerCar.position.z - distanceBehind
             );
@@ -647,24 +858,21 @@
             npcCar.userData = {
                 lane: laneIndex,
                 speed: gameState.speed * (0.5 + Math.random() * 0.5),
-                type: 'npc'
+                type: 'npc',
+                model: npcCar
             };
             
+            npcCar.scale.set(1, 1, 1);
             scene.add(npcCar);
             gameState.npcs.push(npcCar);
         }
         
         // ====================
-        // LANE SYSTEM (FIXED: Proper lane snapping)
+        // LANE SYSTEM
         // ====================
-        function getLanePosition(laneIndex) {
-            return CONFIG.LANE_POSITIONS[laneIndex];
-        }
-        
         function updatePlayerLane() {
-            // Smoothly interpolate between current and target lane
             const currentX = gameState.playerCar.position.x;
-            const targetX = getLanePosition(gameState.targetLane);
+            const targetX = getLaneCenter(gameState.targetLane);
             
             if (Math.abs(currentX - targetX) > 0.01) {
                 const newX = THREE.MathUtils.lerp(currentX, targetX, CONFIG.LANE_CHANGE_SPEED);
@@ -681,7 +889,7 @@
         function updatePlayer(delta) {
             if (!gameState.playerCar || gameState.gameOver) return;
             
-            // Move player forward (negative Z direction for forward movement)
+            // Move player forward
             gameState.playerCar.position.z -= gameState.speed * delta;
             
             // Update lane position
@@ -693,7 +901,6 @@
             
             // Reset position when reaching end of road segment
             if (gameState.playerCar.position.z < -CONFIG.ROAD_LENGTH / 2) {
-                // Move everything back to create illusion of endless road
                 const resetAmount = CONFIG.ROAD_LENGTH;
                 gameState.playerCar.position.z += resetAmount;
                 
@@ -711,6 +918,9 @@
                 roadLines.forEach(line => {
                     line.position.z += resetAmount;
                 });
+                
+                // Move road mesh
+                roadMesh.position.z += resetAmount;
             }
             
             updateUI();
@@ -720,18 +930,18 @@
             for (let i = gameState.enemies.length - 1; i >= 0; i--) {
                 const enemy = gameState.enemies[i];
                 
-                // Simple AI: occasionally change lanes
-                if (Math.random() < 0.005) {
-                    const newLane = Math.floor(Math.random() * CONFIG.LANE_POSITIONS.length);
+                // AI: Occasionally change lanes
+                if (Math.random() < 0.003) {
+                    const newLane = Math.floor(Math.random() * CONFIG.NUM_LANES);
                     enemy.userData.lane = newLane;
                 }
                 
-                // Move toward target lane
+                // Move toward lane center
                 const currentX = enemy.position.x;
-                const targetX = getLanePosition(enemy.userData.lane);
+                const targetX = getLaneCenter(enemy.userData.lane);
                 
                 if (Math.abs(currentX - targetX) > 0.1) {
-                    const newX = THREE.MathUtils.lerp(currentX, targetX, 0.05);
+                    const newX = THREE.MathUtils.lerp(currentX, targetX, 0.03);
                     enemy.position.x = newX;
                 }
                 
@@ -739,10 +949,10 @@
                 enemy.position.z -= enemy.userData.speed * delta;
                 
                 // Try to match player speed
-                enemy.userData.speed += (gameState.speed - enemy.userData.speed) * 0.01;
+                enemy.userData.speed += (gameState.speed - enemy.userData.speed) * 0.005;
                 
                 // Remove enemies that are far behind
-                if (enemy.position.z < gameState.playerCar.position.z - 200) {
+                if (enemy.position.z < gameState.playerCar.position.z - 250) {
                     scene.remove(enemy);
                     gameState.enemies.splice(i, 1);
                     updateUI();
@@ -763,14 +973,14 @@
                 npc.position.z -= npc.userData.speed * delta;
                 
                 // Remove NPCs that are far behind
-                if (npc.position.z < gameState.playerCar.position.z - 200) {
+                if (npc.position.z < gameState.playerCar.position.z - 250) {
                     scene.remove(npc);
                     gameState.npcs.splice(i, 1);
                 }
                 
                 // Check collision with player
                 if (checkCollision(gameState.playerCar, npc)) {
-                    gameState.speed = Math.max(10, gameState.speed * 0.7);
+                    gameState.speed = Math.max(20, gameState.speed * 0.6);
                     scene.remove(npc);
                     gameState.npcs.splice(i, 1);
                     updateUI();
@@ -782,22 +992,26 @@
             const dx = car1.position.x - car2.position.x;
             const dz = car1.position.z - car2.position.z;
             const distance = Math.sqrt(dx * dx + dz * dz);
-            return distance < 2.5; // Collision distance
+            return distance < 2.0; // Collision distance
         }
         
         function updateCamera() {
             if (!gameState.playerCar) return;
             
-            // Third-person camera behind and above the car
-            camera.position.x = gameState.playerCar.position.x;
-            camera.position.y = 8; // Fixed height above road
-            camera.position.z = gameState.playerCar.position.z + 15; // Behind the car
+            // Third-person camera
+            const cameraDistance = 15;
+            const cameraHeight = 8;
+            const lookAhead = 20;
             
-            // Look at a point ahead of the car
+            camera.position.x = gameState.playerCar.position.x;
+            camera.position.y = cameraHeight;
+            camera.position.z = gameState.playerCar.position.z + cameraDistance;
+            
+            // Look ahead of the car
             camera.lookAt(
                 gameState.playerCar.position.x,
-                gameState.playerCar.position.y + 1,
-                gameState.playerCar.position.z - 20
+                gameState.playerCar.position.y + 2,
+                gameState.playerCar.position.z - lookAhead
             );
         }
         
@@ -822,7 +1036,7 @@
                 gameState.lastEnemySpawn = now;
                 
                 // Increase spawn rate with score
-                CONFIG.ENEMY_SPAWN_INTERVAL = Math.max(500, 2000 - gameState.score * 10);
+                CONFIG.ENEMY_SPAWN_INTERVAL = Math.max(1000, 2500 - gameState.score * 15);
             }
             
             // Spawn NPCs
@@ -847,7 +1061,7 @@
                         break;
                     case 'd':
                     case 'arrowright':
-                        gameState.targetLane = Math.min(CONFIG.LANE_POSITIONS.length - 1, gameState.targetLane + 1);
+                        gameState.targetLane = Math.min(CONFIG.NUM_LANES - 1, gameState.targetLane + 1);
                         break;
                     case 'w':
                     case 'arrowup':
@@ -855,7 +1069,7 @@
                         break;
                     case 's':
                     case 'arrowdown':
-                        gameState.speed = Math.max(10, gameState.speed - 5);
+                        gameState.speed = Math.max(20, gameState.speed - 5);
                         break;
                 }
             });
@@ -889,19 +1103,19 @@
             if (stickX < -0.5) {
                 gameState.targetLane = Math.max(0, gameState.targetLane - 1);
             } else if (stickX > 0.5) {
-                gameState.targetLane = Math.min(CONFIG.LANE_POSITIONS.length - 1, gameState.targetLane + 1);
+                gameState.targetLane = Math.min(CONFIG.NUM_LANES - 1, gameState.targetLane + 1);
             }
             
             // Right trigger for acceleration
             const acceleration = gamepad.buttons[7].value;
             if (acceleration > 0.1) {
-                gameState.speed = Math.min(CONFIG.MAX_SPEED, gameState.speed + acceleration * 2);
+                gameState.speed = Math.min(CONFIG.MAX_SPEED, gameState.speed + acceleration * 3);
             }
             
             // Left trigger for brake
             const brake = gamepad.buttons[6].value;
             if (brake > 0.1) {
-                gameState.speed = Math.max(10, gameState.speed - brake * 2);
+                gameState.speed = Math.max(20, gameState.speed - brake * 3);
             }
         }
         
@@ -928,19 +1142,22 @@
                 playerCar: gameState.playerCar,
                 enemies: [],
                 npcs: [],
+                playerModel: gameState.playerModel,
+                enemyModel: gameState.enemyModel,
+                npcModel: gameState.npcModel,
                 lastEnemySpawn: 0,
                 lastNPCSpawn: 0,
                 gamepad: gameState.gamepad
             };
             
-            // Remove all cars from scene except player
+            // Remove all cars from scene
             gameState.enemies.forEach(enemy => scene.remove(enemy));
             gameState.npcs.forEach(npc => scene.remove(npc));
             
             // Reset player car position
             if (gameState.playerCar) {
                 gameState.playerCar.position.set(
-                    CONFIG.LANE_POSITIONS[gameState.currentLane],
+                    getLaneCenter(gameState.currentLane),
                     0.5,
                     0
                 );
