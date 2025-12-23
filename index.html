@@ -266,7 +266,7 @@
         const CONFIG = {
             // Road settings
             ROAD_WIDTH: 24,
-            SHOULDER_WIDTH: 3, // Shoulder space on each side
+            SHOULDER_WIDTH: 3,
             ROAD_LENGTH: 2000,
             NUM_LANES: 4,
             SEGMENT_LENGTH: 25,
@@ -292,7 +292,7 @@
             NPC_SPAWN_INTERVAL: 3000,
             NPC_SPEED_VARIATION: 0.6,
             
-            // External assets (3 specific models)
+            // Asset paths - FIXED: Using relative paths
             ASSETS: {
                 PLAYER: 'models/player.glb',
                 ENEMY: 'models/enemyCar.glb',
@@ -307,7 +307,7 @@
             score: 0,
             distance: 0,
             speed: CONFIG.INITIAL_SPEED,
-            currentLane: 2, // Index 0-3
+            currentLane: 2,
             targetLane: 2,
             gameOver: false,
             playerCar: null,
@@ -316,6 +316,7 @@
             playerModel: null,
             enemyModel: null,
             npcModel: null,
+            assetsLoaded: false, // NEW: Track when all assets are loaded
             lastEnemySpawn: 0,
             lastNPCSpawn: 0,
             gamepad: null
@@ -333,18 +334,9 @@
         
         // Calculate lane centers
         function getLaneCenter(laneIndex) {
-            /*
-            Calculate exact center of each lane.
-            Lane index: 0 (leftmost) to 3 (rightmost)
-            Each lane gets equal width of ROAD_WIDTH / 4
-            */
             const halfRoad = CONFIG.ROAD_WIDTH / 2;
             const laneWidth = CONFIG.laneWidth;
-            
-            // Calculate left edge of each lane
             const leftEdge = -halfRoad + (laneIndex * laneWidth);
-            
-            // Return center of lane
             return leftEdge + (laneWidth / 2);
         }
         
@@ -360,9 +352,9 @@
             
             // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x87CEEB, 100, 800); // Fog for distance
+            scene.fog = new THREE.Fog(0x87CEEB, 100, 800);
             
-            // Camera setup (third-person)
+            // Camera setup
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 3000);
             camera.position.set(0, 8, 15);
             
@@ -376,7 +368,6 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.outputEncoding = THREE.sRGBEncoding;
             
             // Create texture for asphalt
             createAsphaltTexture();
@@ -384,20 +375,21 @@
             // Setup lighting
             setupLighting();
             
-            updateLoading("Loading car models...", 30);
+            updateLoading("Creating road...", 40);
             
-            // Load models
-            await loadModels();
-            
-            updateLoading("Creating road...", 70);
-            
-            // Create road
+            // Create road and environment FIRST
             createRoad();
-            
-            updateLoading("Creating environment...", 80);
-            
-            // Create environment
             createEnvironment();
+            
+            updateLoading("Loading car models...", 60);
+            
+            // Load models in sequence to avoid timing issues
+            await loadModelsSequentially();
+            
+            updateLoading("Creating player car...", 90);
+            
+            // Create player car AFTER models are loaded
+            createPlayerCar();
             
             // Setup event listeners
             setupEventListeners();
@@ -407,6 +399,7 @@
             // Hide loading screen after a brief delay
             setTimeout(() => {
                 document.getElementById('loading').style.display = 'none';
+                gameState.assetsLoaded = true; // Mark assets as loaded
                 animate();
             }, 500);
         }
@@ -420,11 +413,9 @@
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
             
-            // Asphalt base color (dark gray)
             ctx.fillStyle = '#2a2a2a';
             ctx.fillRect(0, 0, 512, 512);
             
-            // Add asphalt texture grain
             ctx.fillStyle = '#222222';
             for (let i = 0; i < 15000; i++) {
                 const x = Math.random() * 512;
@@ -433,7 +424,6 @@
                 ctx.fillRect(x, y, size, size);
             }
             
-            // Add some lighter spots
             ctx.fillStyle = '#3a3a3a';
             for (let i = 0; i < 3000; i++) {
                 const x = Math.random() * 512;
@@ -445,23 +435,20 @@
             asphaltTexture = new THREE.CanvasTexture(canvas);
             asphaltTexture.wrapS = THREE.RepeatWrapping;
             asphaltTexture.wrapT = THREE.RepeatWrapping;
-            asphaltTexture.repeat.set(20, 200); // Tile properly
+            asphaltTexture.repeat.set(20, 200);
         }
         
         // ====================
         // LIGHTING SETUP
         // ====================
         function setupLighting() {
-            // Ambient light for overall illumination
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
             scene.add(ambientLight);
             
-            // Directional light (sunlight)
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(50, 100, 50);
             directionalLight.castShadow = true;
             
-            // Optimize shadow map
             directionalLight.shadow.mapSize.width = 2048;
             directionalLight.shadow.mapSize.height = 2048;
             directionalLight.shadow.camera.left = -100;
@@ -473,90 +460,82 @@
             
             scene.add(directionalLight);
             
-            // Add a second directional light from opposite direction for fill
             const fillLight = new THREE.DirectionalLight(0x88aaff, 0.3);
             fillLight.position.set(-30, 50, -50);
             scene.add(fillLight);
         }
         
         // ====================
-        // MODEL LOADING
+        // MODEL LOADING (SEQUENTIAL - FIXES TIMING ISSUES)
         // ====================
-        async function loadModels() {
+        async function loadModelsSequentially() {
             const loader = new GLTFLoader();
+            let loadedCount = 0;
             
-            return new Promise((resolve) => {
-                let loadedCount = 0;
-                
-                function onModelLoad() {
-                    loadedCount++;
-                    const progress = 30 + (loadedCount / totalModels) * 40;
-                    updateLoading(`Loading models... ${loadedCount}/${totalModels}`, progress);
-                    
-                    if (loadedCount === totalModels) {
-                        resolve();
-                    }
-                }
-                
-                // Load player model
-                loader.load(CONFIG.ASSETS.PLAYER, (gltf) => {
-                    gameState.playerModel = gltf.scene;
-                    gameState.playerModel.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
+            // Helper function to load a single model
+            const loadSingleModel = (url, modelType) => {
+                return new Promise((resolve, reject) => {
+                    loader.load(
+                        url,
+                        (gltf) => {
+                            gltf.scene.traverse((child) => {
+                                if (child.isMesh) {
+                                    child.castShadow = true;
+                                    child.receiveShadow = true;
+                                }
+                            });
+                            
+                            // Store the model
+                            if (modelType === 'player') {
+                                gameState.playerModel = gltf.scene;
+                            } else if (modelType === 'enemy') {
+                                gameState.enemyModel = gltf.scene;
+                            } else if (modelType === 'npc') {
+                                gameState.npcModel = gltf.scene;
+                            }
+                            
+                            loadedCount++;
+                            const progress = 60 + (loadedCount / totalModels) * 30;
+                            updateLoading(`Loaded ${modelType} model... ${loadedCount}/${totalModels}`, progress);
+                            resolve();
+                        },
+                        undefined,
+                        (error) => {
+                            console.warn(`Error loading ${modelType} model, using placeholder:`, error);
+                            // Create placeholder if model fails to load
+                            createPlaceholderCar(modelType).then(placeholder => {
+                                if (modelType === 'player') {
+                                    gameState.playerModel = placeholder;
+                                } else if (modelType === 'enemy') {
+                                    gameState.enemyModel = placeholder;
+                                } else if (modelType === 'npc') {
+                                    gameState.npcModel = placeholder;
+                                }
+                                loadedCount++;
+                                const progress = 60 + (loadedCount / totalModels) * 30;
+                                updateLoading(`Created placeholder for ${modelType}... ${loadedCount}/${totalModels}`, progress);
+                                resolve();
+                            });
                         }
-                    });
-                    onModelLoad();
-                }, undefined, (error) => {
-                    console.error('Error loading player model:', error);
-                    createPlaceholderCar(0x2196F3).then(model => {
-                        gameState.playerModel = model;
-                        onModelLoad();
-                    });
+                    );
                 });
-                
-                // Load enemy model
-                loader.load(CONFIG.ASSETS.ENEMY, (gltf) => {
-                    gameState.enemyModel = gltf.scene;
-                    gameState.enemyModel.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
-                    onModelLoad();
-                }, undefined, (error) => {
-                    console.error('Error loading enemy model:', error);
-                    createPlaceholderCar(0xFF4444).then(model => {
-                        gameState.enemyModel = model;
-                        onModelLoad();
-                    });
-                });
-                
-                // Load NPC model
-                loader.load(CONFIG.ASSETS.NPC, (gltf) => {
-                    gameState.npcModel = gltf.scene;
-                    gameState.npcModel.traverse((child) => {
-                        if (child.isMesh) {
-                            child.castShadow = true;
-                            child.receiveShadow = true;
-                        }
-                    });
-                    onModelLoad();
-                }, undefined, (error) => {
-                    console.error('Error loading NPC model:', error);
-                    createPlaceholderCar(0x44FF44).then(model => {
-                        gameState.npcModel = model;
-                        onModelLoad();
-                    });
-                });
-            });
+            };
+            
+            // Load models in sequence to ensure they're all loaded
+            await loadSingleModel(CONFIG.ASSETS.PLAYER, 'player');
+            await loadSingleModel(CONFIG.ASSETS.ENEMY, 'enemy');
+            await loadSingleModel(CONFIG.ASSETS.NPC, 'npc');
         }
         
         // Fallback placeholder car creation
-        async function createPlaceholderCar(color) {
+        async function createPlaceholderCar(type) {
             const group = new THREE.Group();
+            
+            // Set color based on type
+            let color;
+            if (type === 'player') color = 0x2196F3;
+            else if (type === 'enemy') color = 0xFF4444;
+            else color = 0x44FF44;
             
             // Car body
             const bodyGeometry = new THREE.BoxGeometry(2, 1.2, 4);
@@ -609,14 +588,12 @@
         // ROAD CREATION
         // ====================
         function createRoad() {
-            // Create road geometry
             const roadGeometry = new THREE.PlaneGeometry(
-                CONFIG.ROAD_WIDTH + (CONFIG.SHOULDER_WIDTH * 2), // Road + shoulders
+                CONFIG.ROAD_WIDTH + (CONFIG.SHOULDER_WIDTH * 2),
                 CONFIG.ROAD_LENGTH
             );
             roadGeometry.rotateX(-Math.PI / 2);
             
-            // Create road material with asphalt texture
             const roadMaterial = new THREE.MeshStandardMaterial({
                 map: asphaltTexture,
                 roughness: 0.9,
@@ -624,34 +601,27 @@
                 side: THREE.DoubleSide
             });
             
-            // Create road mesh
             roadMesh = new THREE.Mesh(roadGeometry, roadMaterial);
             roadMesh.receiveShadow = true;
             roadMesh.position.y = 0;
             roadMesh.position.z = -CONFIG.ROAD_LENGTH / 2;
             scene.add(roadMesh);
             
-            // Create road markings
             createRoadMarkings();
-            
-            // Create shoulders
             createShoulders();
         }
         
         function createRoadMarkings() {
-            // Create dashed line material
             const dashedLineMaterial = new THREE.MeshBasicMaterial({ 
                 color: 0xffffff,
                 transparent: true,
                 opacity: 0.9
             });
             
-            // Create 3 dashed lines between 4 lanes
-            // Lines are at 25%, 50%, and 75% of road width
             const linePositions = [
-                getLaneCenter(0) + (CONFIG.laneWidth / 2), // Between lane 0 and 1
-                getLaneCenter(1) + (CONFIG.laneWidth / 2), // Between lane 1 and 2
-                getLaneCenter(2) + (CONFIG.laneWidth / 2)  // Between lane 2 and 3
+                getLaneCenter(0) + (CONFIG.laneWidth / 2),
+                getLaneCenter(1) + (CONFIG.laneWidth / 2),
+                getLaneCenter(2) + (CONFIG.laneWidth / 2)
             ];
             
             const dashLength = 4;
@@ -676,12 +646,10 @@
                 }
             });
             
-            // Add solid outer lines
             const solidLineMaterial = new THREE.MeshBasicMaterial({ 
                 color: 0xffffff
             });
             
-            // Left outer line
             const leftLineGeometry = new THREE.PlaneGeometry(0.3, CONFIG.ROAD_LENGTH);
             leftLineGeometry.rotateX(-Math.PI / 2);
             const leftLine = new THREE.Mesh(leftLineGeometry, solidLineMaterial);
@@ -691,7 +659,6 @@
             scene.add(leftLine);
             roadLines.push(leftLine);
             
-            // Right outer line
             const rightLineGeometry = new THREE.PlaneGeometry(0.3, CONFIG.ROAD_LENGTH);
             rightLineGeometry.rotateX(-Math.PI / 2);
             const rightLine = new THREE.Mesh(rightLineGeometry, solidLineMaterial);
@@ -703,14 +670,12 @@
         }
         
         function createShoulders() {
-            // Create shoulder material (gravel/dirt texture)
             const shoulderMaterial = new THREE.MeshStandardMaterial({
                 color: 0x555555,
                 roughness: 0.9,
                 metalness: 0
             });
             
-            // Left shoulder
             const leftShoulderGeometry = new THREE.PlaneGeometry(
                 CONFIG.SHOULDER_WIDTH,
                 CONFIG.ROAD_LENGTH
@@ -723,7 +688,6 @@
             leftShoulder.receiveShadow = true;
             scene.add(leftShoulder);
             
-            // Right shoulder
             const rightShoulderGeometry = new THREE.PlaneGeometry(
                 CONFIG.SHOULDER_WIDTH,
                 CONFIG.ROAD_LENGTH
@@ -741,11 +705,10 @@
         // ENVIRONMENT
         // ====================
         function createEnvironment() {
-            // Ground with natural dark green color
             const groundGeometry = new THREE.PlaneGeometry(300, CONFIG.ROAD_LENGTH * 2);
             groundGeometry.rotateX(-Math.PI / 2);
             const groundMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x1a472a, // Natural dark green
+                color: 0x1a472a,
                 roughness: 0.9,
                 metalness: 0
             });
@@ -754,15 +717,13 @@
             ground.receiveShadow = true;
             scene.add(ground);
             
-            // Add some trees/buildings in the distance
             const treeColors = [0x2d5016, 0x3a6520, 0x285015];
             
-            for (let i = 0; i < 40; i++) {
+            for (let i = 0; i < 20; i++) {
                 const side = Math.random() > 0.5 ? 1 : -1;
                 const distance = 60 + Math.random() * 80;
                 const zPos = -100 + Math.random() * CONFIG.ROAD_LENGTH;
                 
-                // Tree trunk
                 const trunkGeometry = new THREE.CylinderGeometry(0.5, 0.7, 3 + Math.random() * 8, 8);
                 const trunkMaterial = new THREE.MeshStandardMaterial({ 
                     color: 0x8B4513,
@@ -777,7 +738,6 @@
                 trunk.castShadow = true;
                 scene.add(trunk);
                 
-                // Tree foliage
                 const foliageGeometry = new THREE.SphereGeometry(2 + Math.random() * 4, 8, 8);
                 const foliageMaterial = new THREE.MeshStandardMaterial({ 
                     color: treeColors[Math.floor(Math.random() * treeColors.length)],
@@ -792,15 +752,18 @@
         }
         
         // ====================
-        // CAR CREATION
+        // CAR CREATION (WITH NULL CHECKS)
         // ====================
         function createPlayerCar() {
-            if (!gameState.playerModel) return;
+            if (!gameState.playerModel) {
+                console.error("Player model not loaded!");
+                return;
+            }
             
             gameState.playerCar = gameState.playerModel.clone();
             gameState.playerCar.position.set(
-                getLaneCenter(gameState.currentLane), // Center in lane
-                0.5, // On road surface
+                getLaneCenter(gameState.currentLane),
+                0.5,
                 0
             );
             gameState.playerCar.scale.set(1, 1, 1);
@@ -808,18 +771,19 @@
         }
         
         function createEnemyCar() {
-            if (!gameState.enemyModel || gameState.enemies.length >= CONFIG.MAX_ENEMIES) return;
+            // FIXED: Check if assets are loaded before spawning
+            if (!gameState.assetsLoaded || !gameState.enemyModel || 
+                gameState.enemies.length >= CONFIG.MAX_ENEMIES || 
+                !gameState.playerCar) {
+                return;
+            }
             
             const enemyCar = gameState.enemyModel.clone();
-            
-            // Random lane (0-3)
             const laneIndex = Math.floor(Math.random() * CONFIG.NUM_LANES);
-            
-            // Position behind player
             const distanceBehind = 30 + Math.random() * 60;
             
             enemyCar.position.set(
-                getLaneCenter(laneIndex), // Center in lane
+                getLaneCenter(laneIndex),
                 0.5,
                 gameState.playerCar.position.z - distanceBehind
             );
@@ -839,18 +803,19 @@
         }
         
         function createNPCCar() {
-            if (!gameState.npcModel || gameState.npcs.length >= CONFIG.MAX_NPCS) return;
+            // FIXED: Check if assets are loaded before spawning
+            if (!gameState.assetsLoaded || !gameState.npcModel || 
+                gameState.npcs.length >= CONFIG.MAX_NPCS || 
+                !gameState.playerCar) {
+                return;
+            }
             
             const npcCar = gameState.npcModel.clone();
-            
-            // Random lane (0-3)
             const laneIndex = Math.floor(Math.random() * CONFIG.NUM_LANES);
-            
-            // Position behind player
             const distanceBehind = 20 + Math.random() * 80;
             
             npcCar.position.set(
-                getLaneCenter(laneIndex), // Center in lane
+                getLaneCenter(laneIndex),
                 0.5,
                 gameState.playerCar.position.z - distanceBehind
             );
@@ -871,6 +836,8 @@
         // LANE SYSTEM
         // ====================
         function updatePlayerLane() {
+            if (!gameState.playerCar) return;
+            
             const currentX = gameState.playerCar.position.x;
             const targetX = getLaneCenter(gameState.targetLane);
             
@@ -889,37 +856,28 @@
         function updatePlayer(delta) {
             if (!gameState.playerCar || gameState.gameOver) return;
             
-            // Move player forward
             gameState.playerCar.position.z -= gameState.speed * delta;
-            
-            // Update lane position
             updatePlayerLane();
             
-            // Update distance and score
             gameState.distance += gameState.speed * delta;
             gameState.score = Math.floor(gameState.distance / 10);
             
-            // Reset position when reaching end of road segment
             if (gameState.playerCar.position.z < -CONFIG.ROAD_LENGTH / 2) {
                 const resetAmount = CONFIG.ROAD_LENGTH;
                 gameState.playerCar.position.z += resetAmount;
                 
-                // Move enemies
                 gameState.enemies.forEach(enemy => {
                     enemy.position.z += resetAmount;
                 });
                 
-                // Move NPCs
                 gameState.npcs.forEach(npc => {
                     npc.position.z += resetAmount;
                 });
                 
-                // Move road lines
                 roadLines.forEach(line => {
                     line.position.z += resetAmount;
                 });
                 
-                // Move road mesh
                 roadMesh.position.z += resetAmount;
             }
             
@@ -927,16 +885,16 @@
         }
         
         function updateEnemies(delta) {
+            if (!gameState.playerCar) return;
+            
             for (let i = gameState.enemies.length - 1; i >= 0; i--) {
                 const enemy = gameState.enemies[i];
                 
-                // AI: Occasionally change lanes
                 if (Math.random() < 0.003) {
                     const newLane = Math.floor(Math.random() * CONFIG.NUM_LANES);
                     enemy.userData.lane = newLane;
                 }
                 
-                // Move toward lane center
                 const currentX = enemy.position.x;
                 const targetX = getLaneCenter(enemy.userData.lane);
                 
@@ -945,20 +903,15 @@
                     enemy.position.x = newX;
                 }
                 
-                // Move enemy forward
                 enemy.position.z -= enemy.userData.speed * delta;
-                
-                // Try to match player speed
                 enemy.userData.speed += (gameState.speed - enemy.userData.speed) * 0.005;
                 
-                // Remove enemies that are far behind
                 if (enemy.position.z < gameState.playerCar.position.z - 250) {
                     scene.remove(enemy);
                     gameState.enemies.splice(i, 1);
                     updateUI();
                 }
                 
-                // Check collision with player
                 if (checkCollision(gameState.playerCar, enemy)) {
                     gameOver();
                 }
@@ -966,19 +919,17 @@
         }
         
         function updateNPCs(delta) {
+            if (!gameState.playerCar) return;
+            
             for (let i = gameState.npcs.length - 1; i >= 0; i--) {
                 const npc = gameState.npcs[i];
-                
-                // Move NPC forward
                 npc.position.z -= npc.userData.speed * delta;
                 
-                // Remove NPCs that are far behind
                 if (npc.position.z < gameState.playerCar.position.z - 250) {
                     scene.remove(npc);
                     gameState.npcs.splice(i, 1);
                 }
                 
-                // Check collision with player
                 if (checkCollision(gameState.playerCar, npc)) {
                     gameState.speed = Math.max(20, gameState.speed * 0.6);
                     scene.remove(npc);
@@ -992,13 +943,12 @@
             const dx = car1.position.x - car2.position.x;
             const dz = car1.position.z - car2.position.z;
             const distance = Math.sqrt(dx * dx + dz * dz);
-            return distance < 2.0; // Collision distance
+            return distance < 2.0;
         }
         
         function updateCamera() {
             if (!gameState.playerCar) return;
             
-            // Third-person camera
             const cameraDistance = 15;
             const cameraHeight = 8;
             const lookAhead = 20;
@@ -1007,7 +957,6 @@
             camera.position.y = cameraHeight;
             camera.position.z = gameState.playerCar.position.z + cameraDistance;
             
-            // Look ahead of the car
             camera.lookAt(
                 gameState.playerCar.position.x,
                 gameState.playerCar.position.y + 2,
@@ -1022,24 +971,22 @@
             document.getElementById('enemies').textContent = gameState.enemies.length;
             document.getElementById('lane').textContent = gameState.currentLane + 1;
             
-            // Update speed bar
             const speedPercent = (gameState.speed / CONFIG.MAX_SPEED) * 100;
             document.getElementById('speedFill').style.width = `${speedPercent}%`;
         }
         
         function spawnCars() {
+            // FIXED: Only spawn if assets are loaded
+            if (!gameState.assetsLoaded) return;
+            
             const now = Date.now();
             
-            // Spawn enemies
             if (now - gameState.lastEnemySpawn > CONFIG.ENEMY_SPAWN_INTERVAL) {
                 createEnemyCar();
                 gameState.lastEnemySpawn = now;
-                
-                // Increase spawn rate with score
                 CONFIG.ENEMY_SPAWN_INTERVAL = Math.max(1000, 2500 - gameState.score * 15);
             }
             
-            // Spawn NPCs
             if (now - gameState.lastNPCSpawn > CONFIG.NPC_SPAWN_INTERVAL) {
                 createNPCCar();
                 gameState.lastNPCSpawn = now;
@@ -1050,7 +997,6 @@
         // INPUT HANDLING
         // ====================
         function setupEventListeners() {
-            // Keyboard input
             document.addEventListener('keydown', (e) => {
                 if (gameState.gameOver) return;
                 
@@ -1074,7 +1020,6 @@
                 }
             });
             
-            // Gamepad support
             window.addEventListener('gamepadconnected', (e) => {
                 console.log('Gamepad connected:', e.gamepad.id);
                 gameState.gamepad = e.gamepad;
@@ -1084,7 +1029,6 @@
                 gameState.gamepad = null;
             });
             
-            // Window resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -1098,7 +1042,6 @@
             const gamepad = navigator.getGamepads()[gameState.gamepad.index];
             if (!gamepad) return;
             
-            // Left stick for lane changes
             const stickX = gamepad.axes[0];
             if (stickX < -0.5) {
                 gameState.targetLane = Math.max(0, gameState.targetLane - 1);
@@ -1106,13 +1049,11 @@
                 gameState.targetLane = Math.min(CONFIG.NUM_LANES - 1, gameState.targetLane + 1);
             }
             
-            // Right trigger for acceleration
             const acceleration = gamepad.buttons[7].value;
             if (acceleration > 0.1) {
                 gameState.speed = Math.min(CONFIG.MAX_SPEED, gameState.speed + acceleration * 3);
             }
             
-            // Left trigger for brake
             const brake = gamepad.buttons[6].value;
             if (brake > 0.1) {
                 gameState.speed = Math.max(20, gameState.speed - brake * 3);
@@ -1131,7 +1072,6 @@
         }
         
         function restartGame() {
-            // Reset game state
             gameState = {
                 score: 0,
                 distance: 0,
@@ -1145,16 +1085,15 @@
                 playerModel: gameState.playerModel,
                 enemyModel: gameState.enemyModel,
                 npcModel: gameState.npcModel,
+                assetsLoaded: true,
                 lastEnemySpawn: 0,
                 lastNPCSpawn: 0,
                 gamepad: gameState.gamepad
             };
             
-            // Remove all cars from scene
             gameState.enemies.forEach(enemy => scene.remove(enemy));
             gameState.npcs.forEach(npc => scene.remove(npc));
             
-            // Reset player car position
             if (gameState.playerCar) {
                 gameState.playerCar.position.set(
                     getLaneCenter(gameState.currentLane),
@@ -1163,9 +1102,7 @@
                 );
             }
             
-            // Hide game over screen
             document.getElementById('gameOver').style.display = 'none';
-            
             updateUI();
         }
         
@@ -1173,25 +1110,19 @@
         // ANIMATION LOOP
         // ====================
         function animate() {
-            if (gameState.gameOver) return;
-            
             requestAnimationFrame(animate);
             
             const delta = Math.min(clock.getDelta(), 0.1);
             
-            // Update gamepad input
+            if (gameState.gameOver) return;
+            
             updateGamepadInput();
-            
-            // Spawn new cars
             spawnCars();
-            
-            // Update game objects
             updatePlayer(delta);
             updateEnemies(delta);
             updateNPCs(delta);
             updateCamera();
             
-            // Render
             renderer.render(scene, camera);
         }
         
@@ -1200,7 +1131,6 @@
         // ====================
         init().catch(console.error);
         
-        // Make restartGame available globally
         window.restartGame = restartGame;
     </script>
 </body>
