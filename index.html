@@ -199,7 +199,7 @@
             </div>
             <div class="ui-row">
                 <span class="ui-label">SPEED:</span>
-                <span id="speed" class="ui-value">30 km/h</span>
+                <span id="speed" class="ui-value">60 km/h</span>
             </div>
             <div class="ui-row">
                 <span class="ui-label">DISTANCE:</span>
@@ -267,20 +267,19 @@
             // Road settings
             ROAD_WIDTH: 24,
             SHOULDER_WIDTH: 3,
-            ROAD_LENGTH: 1000, // FIXED: Reduced for better looping
+            ROAD_LENGTH: 500, // Shorter segments for better performance
             NUM_LANES: 4,
-            SEGMENT_LENGTH: 25,
             
             // Calculate lane positions with equal widths
             get laneWidth() {
                 return CONFIG.ROAD_WIDTH / CONFIG.NUM_LANES;
             },
             
-            // FIXED: Realistic car physics
-            INITIAL_SPEED: 30, // Realistic starting speed (km/h)
-            MAX_SPEED: 180,    // Realistic max speed (km/h)
-            ACCELERATION_RATE: 0.8, // Realistic acceleration (km/h per second)
-            DECELERATION_RATE: 1.2, // Realistic braking
+            // FIXED: REALISTIC CAR PHYSICS (FASTER!)
+            INITIAL_SPEED: 60, // Realistic city speed (km/h)
+            MAX_SPEED: 220,    // Realistic highway speed (km/h)
+            ACCELERATION_RATE: 30, // Much faster acceleration (km/h per second)
+            DECELERATION_RATE: 50, // Strong braking
             LANE_CHANGE_SPEED: 0.2,
             
             // Convert km/h to m/s for game physics
@@ -290,18 +289,18 @@
             
             // Enemy settings
             MAX_ENEMIES: 8,
-            ENEMY_SPAWN_INTERVAL: 2500,
+            ENEMY_SPAWN_INTERVAL: 2000,
             ENEMY_SPEED_VARIATION: 0.8,
             
             // NPC settings
             MAX_NPCS: 12,
-            NPC_SPAWN_INTERVAL: 3000,
+            NPC_SPAWN_INTERVAL: 2500,
             NPC_SPEED_VARIATION: 0.6,
             
             // Asset paths
             ASSETS: {
                 PLAYER: 'models/player.glb',
-                ENEMY: 'models/enemy2.glb',
+                ENEMY: 'models/enemyCar.glb',
                 NPC: 'models/npc.glb'
             }
         };
@@ -326,7 +325,6 @@
             lastEnemySpawn: 0,
             lastNPCSpawn: 0,
             gamepad: null,
-            // FIXED: Track road segments for proper looping
             roadSegments: [],
             groundSegments: [],
             roadOffset: 0
@@ -361,9 +359,9 @@
             scene = new THREE.Scene();
             scene.fog = new THREE.Fog(0x87CEEB, 100, 500);
             
-            // Camera setup
+            // FIXED: Camera positioned lower and tilted down
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.set(0, 8, 15);
+            camera.position.set(0, 4, 12); // Lower camera height
             
             // Renderer setup
             renderer = new THREE.WebGLRenderer({
@@ -434,6 +432,7 @@
             asphaltTexture = new THREE.CanvasTexture(asphaltCanvas);
             asphaltTexture.wrapS = THREE.RepeatWrapping;
             asphaltTexture.wrapT = THREE.RepeatWrapping;
+            asphaltTexture.repeat.set(40, 400); // More tiling for faster movement
             
             // Grass texture
             const grassCanvas = document.createElement('canvas');
@@ -457,31 +456,62 @@
         }
         
         // ====================
-        // LIGHTING SETUP
+        // LIGHTING SETUP WITH SHADOW BIAS FIX
         // ====================
         function setupLighting() {
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambientLight);
             
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            // Main directional light (sun)
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
             directionalLight.position.set(50, 100, 50);
             directionalLight.castShadow = true;
             
-            directionalLight.shadow.mapSize.width = 1024;
-            directionalLight.shadow.mapSize.height = 1024;
-            directionalLight.shadow.camera.left = -50;
-            directionalLight.shadow.camera.right = 50;
-            directionalLight.shadow.camera.top = 50;
-            directionalLight.shadow.camera.bottom = -50;
+            // FIXED: Shadow bias adjustment
+            directionalLight.shadow.bias = -0.0001;
+            directionalLight.shadow.normalBias = 0.05;
+            
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.left = -100;
+            directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100;
+            directionalLight.shadow.camera.bottom = -100;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
             
             scene.add(directionalLight);
+            
+            // Additional fill light
+            const fillLight = new THREE.DirectionalLight(0x88aaff, 0.3);
+            fillLight.position.set(-30, 50, -50);
+            scene.add(fillLight);
+        }
+        
+        // Create contact shadow texture
+        function createContactShadowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            
+            // Create radial gradient for soft shadow
+            const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.3)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 128, 128);
+            
+            return new THREE.CanvasTexture(canvas);
         }
         
         // ====================
-        // INFINITE ROAD SYSTEM (FIXED)
+        // INFINITE ROAD SYSTEM
         // ====================
         function createInfiniteRoad() {
-            const segmentCount = 3; // Create 3 overlapping segments for smooth looping
+            const segmentCount = 4; // More segments for smoother looping
             
             for (let i = 0; i < segmentCount; i++) {
                 // Create road segment
@@ -503,7 +533,7 @@
                 roadSegment.position.z = i * CONFIG.ROAD_LENGTH - CONFIG.ROAD_LENGTH;
                 
                 // Create ground segment
-                const groundGeometry = new THREE.PlaneGeometry(300, CONFIG.ROAD_LENGTH);
+                const groundGeometry = new THREE.PlaneGeometry(400, CONFIG.ROAD_LENGTH);
                 groundGeometry.rotateX(-Math.PI / 2);
                 
                 const groundMaterial = new THREE.MeshStandardMaterial({
@@ -527,7 +557,7 @@
                 gameState.groundSegments.push(groundSegment);
             }
             
-            // Create shoulders once (static)
+            // Create shoulders
             createShoulders();
         }
         
@@ -544,8 +574,8 @@
                 getLaneCenter(2) + (CONFIG.laneWidth / 2)
             ];
             
-            const dashLength = 4;
-            const gapLength = 6;
+            const dashLength = 3;
+            const gapLength = 5;
             const dashWidth = 0.2;
             const dashHeight = 0.02;
             
@@ -593,8 +623,7 @@
                 metalness: 0
             });
             
-            // Shoulders span the entire visible area
-            const shoulderLength = CONFIG.ROAD_LENGTH * 3;
+            const shoulderLength = CONFIG.ROAD_LENGTH * 4;
             
             const leftShoulderGeometry = new THREE.PlaneGeometry(
                 CONFIG.SHOULDER_WIDTH,
@@ -604,7 +633,7 @@
             const leftShoulder = new THREE.Mesh(leftShoulderGeometry, shoulderMaterial);
             leftShoulder.position.x = -(CONFIG.ROAD_WIDTH / 2 + CONFIG.SHOULDER_WIDTH / 2);
             leftShoulder.position.y = 0;
-            leftShoulder.position.z = -CONFIG.ROAD_LENGTH;
+            leftShoulder.position.z = -CONFIG.ROAD_LENGTH * 1.5;
             leftShoulder.receiveShadow = true;
             scene.add(leftShoulder);
             
@@ -616,7 +645,7 @@
             const rightShoulder = new THREE.Mesh(rightShoulderGeometry, shoulderMaterial);
             rightShoulder.position.x = CONFIG.ROAD_WIDTH / 2 + CONFIG.SHOULDER_WIDTH / 2;
             rightShoulder.position.y = 0;
-            rightShoulder.position.z = -CONFIG.ROAD_LENGTH;
+            rightShoulder.position.z = -CONFIG.ROAD_LENGTH * 1.5;
             rightShoulder.receiveShadow = true;
             scene.add(rightShoulder);
         }
@@ -624,30 +653,34 @@
         function updateRoadSystem(delta) {
             if (!gameState.playerCar) return;
             
-            // Calculate movement in meters per second
+            // FIXED: Movement is now in the CAR'S forward direction
+            // Since cars are rotated 180°, forward is negative Z
             const movement = CONFIG.getSpeedInMps(gameState.speed) * delta;
             gameState.roadOffset += movement;
             
-            // Update road and ground segments
+            // Update ALL road and ground segments
             gameState.roadSegments.forEach((segment, index) => {
-                segment.position.z += movement;
+                segment.position.z -= movement; // Road moves backward
                 
-                // Loop segment when it goes too far back
-                if (segment.position.z > CONFIG.ROAD_LENGTH) {
-                    segment.position.z -= CONFIG.ROAD_LENGTH * gameState.roadSegments.length;
+                // FIXED: Proper looping with seamless transition
+                if (segment.position.z < -CONFIG.ROAD_LENGTH * 2) {
+                    segment.position.z += CONFIG.ROAD_LENGTH * gameState.roadSegments.length;
+                    
+                    // Update texture offset for seamless appearance
+                    segment.material.map.offset.y -= 0.1;
                 }
             });
             
             gameState.groundSegments.forEach((segment, index) => {
-                segment.position.z += movement;
+                segment.position.z -= movement;
                 
-                // Loop ground segment
-                if (segment.position.z > CONFIG.ROAD_LENGTH) {
-                    segment.position.z -= CONFIG.ROAD_LENGTH * gameState.groundSegments.length;
+                if (segment.position.z < -CONFIG.ROAD_LENGTH * 2) {
+                    segment.position.z += CONFIG.ROAD_LENGTH * gameState.groundSegments.length;
+                    segment.material.map.offset.y -= 0.05;
                 }
             });
             
-            // Update distance
+            // Update distance and score
             gameState.distance += movement;
             gameState.score = Math.floor(gameState.distance / 10);
         }
@@ -665,7 +698,7 @@
                         url,
                         (gltf) => {
                             // FIXED: Rotate model by 180 degrees on Y-axis
-                            gltf.scene.rotation.y = Math.PI; // 180 degrees in radians
+                            gltf.scene.rotation.y = Math.PI;
                             
                             gltf.scene.traverse((child) => {
                                 if (child.isMesh) {
@@ -690,7 +723,6 @@
                         (error) => {
                             console.warn(`Error loading ${modelType} model:`, error);
                             createPlaceholderCar(modelType).then(placeholder => {
-                                // FIXED: Rotate placeholder too
                                 placeholder.rotation.y = Math.PI;
                                 
                                 if (modelType === 'player') {
@@ -722,7 +754,8 @@
             else if (type === 'enemy') color = 0xFF4444;
             else color = 0x44FF44;
             
-            const bodyGeometry = new THREE.BoxGeometry(2, 1.2, 4);
+            // Car body - FIXED: Lowered position
+            const bodyGeometry = new THREE.BoxGeometry(2, 0.8, 4); // Lower height
             const bodyMaterial = new THREE.MeshStandardMaterial({ 
                 color: color,
                 roughness: 0.5,
@@ -731,22 +764,19 @@
             const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
             body.castShadow = true;
             body.receiveShadow = true;
-            body.position.y = 0.6;
+            body.position.y = 0.4; // FIXED: Lowered car body
             group.add(body);
             
-            // Add taillights (since car is rotated 180°, these will be at the back)
-            const tailLightGeometry = new THREE.SphereGeometry(0.2, 8, 8);
-            const tailLightMaterial = new THREE.MeshBasicMaterial({ color: 0xFF0000 });
+            // Roof
+            const roofGeometry = new THREE.BoxGeometry(1.5, 0.4, 1.8);
+            const roof = new THREE.Mesh(roofGeometry, bodyMaterial);
+            roof.position.y = 0.8; // Adjusted for lower body
+            roof.position.z = -0.2;
+            roof.castShadow = true;
+            group.add(roof);
             
-            const leftTailLight = new THREE.Mesh(tailLightGeometry, tailLightMaterial);
-            leftTailLight.position.set(-0.6, 0.6, -1.8);
-            group.add(leftTailLight);
-            
-            const rightTailLight = new THREE.Mesh(tailLightGeometry, tailLightMaterial);
-            rightTailLight.position.set(0.6, 0.6, -1.8);
-            group.add(rightTailLight);
-            
-            const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.3, 12);
+            // FIXED: Wheels positioned at ground level
+            const wheelGeometry = new THREE.CylinderGeometry(0.35, 0.35, 0.25, 12);
             const wheelMaterial = new THREE.MeshStandardMaterial({ 
                 color: 0x111111,
                 roughness: 0.8,
@@ -754,10 +784,10 @@
             });
             
             const wheelPositions = [
-                [-1, -0.2, 1.2],
-                [1, -0.2, 1.2],
-                [-1, -0.2, -1.2],
-                [1, -0.2, -1.2]
+                [-0.8, 0.15, 1.2],   // Front left
+                [0.8, 0.15, 1.2],    // Front right
+                [-0.8, 0.15, -1.2],  // Rear left
+                [0.8, 0.15, -1.2]    // Rear right
             ];
             
             wheelPositions.forEach(pos => {
@@ -768,22 +798,51 @@
                 group.add(wheel);
             });
             
+            // Add contact shadow under each wheel
+            const shadowTexture = createContactShadowTexture();
+            const shadowMaterial = new THREE.MeshBasicMaterial({
+                map: shadowTexture,
+                transparent: true,
+                opacity: 0.5,
+                depthWrite: false
+            });
+            
+            const shadowGeometry = new THREE.PlaneGeometry(0.8, 0.8);
+            shadowGeometry.rotateX(-Math.PI / 2);
+            
+            const shadowPositions = [
+                [-0.8, 0.01, 1.2],
+                [0.8, 0.01, 1.2],
+                [-0.8, 0.01, -1.2],
+                [0.8, 0.01, -1.2]
+            ];
+            
+            shadowPositions.forEach(pos => {
+                const contactShadow = new THREE.Mesh(shadowGeometry, shadowMaterial);
+                contactShadow.position.set(pos[0], pos[1], pos[2]);
+                contactShadow.renderOrder = -1; // Render before other objects
+                group.add(contactShadow);
+            });
+            
             return group;
         }
         
         // ====================
-        // CAR CREATION
+        // CAR CREATION WITH PROPER POSITIONING
         // ====================
         function createPlayerCar() {
             if (!gameState.playerModel) return;
             
             gameState.playerCar = gameState.playerModel.clone();
-            // FIXED: Car already rotated 180° by loadModelsSequentially
+            
+            // FIXED: Car positioned correctly on road surface
+            // Y-position at 0.15 so wheels touch ground at y=0.01
             gameState.playerCar.position.set(
                 getLaneCenter(gameState.currentLane),
-                0.5,
+                0.15, // FIXED: Lowered to ground level
                 0
             );
+            
             gameState.playerCar.scale.set(1, 1, 1);
             scene.add(gameState.playerCar);
         }
@@ -795,19 +854,19 @@
             
             const enemyCar = gameState.enemyModel.clone();
             const laneIndex = Math.floor(Math.random() * CONFIG.NUM_LANES);
-            const distanceBehind = 30 + Math.random() * 60;
+            const distanceBehind = 20 + Math.random() * 40;
             
-            // FIXED: Car faces forward (toward negative Z) because it's rotated 180°
+            // FIXED: Proper Y-positioning for enemy cars
             enemyCar.position.set(
                 getLaneCenter(laneIndex),
-                0.5,
+                0.15, // Same as player car
                 gameState.playerCar.position.z - distanceBehind
             );
             
             enemyCar.userData = {
                 lane: laneIndex,
-                // FIXED: Realistic enemy speed based on player speed
-                speed: gameState.speed * (0.9 + Math.random() * 0.2),
+                // FIXED: Faster enemy speeds
+                speed: gameState.speed * (1.0 + Math.random() * 0.3),
                 type: 'enemy'
             };
             
@@ -825,19 +884,19 @@
             
             const npcCar = gameState.npcModel.clone();
             const laneIndex = Math.floor(Math.random() * CONFIG.NUM_LANES);
-            const distanceBehind = 20 + Math.random() * 80;
+            const distanceBehind = 15 + Math.random() * 60;
             
-            // FIXED: Car faces forward (toward negative Z)
+            // FIXED: Proper Y-positioning for NPC cars
             npcCar.position.set(
                 getLaneCenter(laneIndex),
-                0.5,
+                0.15, // Same as player car
                 gameState.playerCar.position.z - distanceBehind
             );
             
             npcCar.userData = {
                 lane: laneIndex,
-                // FIXED: Realistic NPC speed variation
-                speed: gameState.speed * (0.7 + Math.random() * 0.6),
+                // FIXED: Varied NPC speeds
+                speed: gameState.speed * (0.6 + Math.random() * 0.8),
                 type: 'npc'
             };
             
@@ -870,14 +929,12 @@
         function updatePlayer(delta) {
             if (!gameState.playerCar || gameState.gameOver) return;
             
-            // FIXED: Update lane position
             updatePlayerLane();
-            
-            // FIXED: Use the new road system
             updateRoadSystem(delta);
             
-            // FIXED: Update player's Z position to follow road
-            gameState.playerCar.position.z = 0; // Player stays at origin, road moves underneath
+            // FIXED: Player car stays at origin, road moves underneath
+            // This creates the illusion of forward movement
+            gameState.playerCar.position.z = 0;
             
             updateUI();
         }
@@ -888,7 +945,8 @@
             for (let i = gameState.enemies.length - 1; i >= 0; i--) {
                 const enemy = gameState.enemies[i];
                 
-                if (Math.random() < 0.003) {
+                // AI: Occasionally change lanes
+                if (Math.random() < 0.005) {
                     const newLane = Math.floor(Math.random() * CONFIG.NUM_LANES);
                     enemy.userData.lane = newLane;
                 }
@@ -897,17 +955,16 @@
                 const targetX = getLaneCenter(enemy.userData.lane);
                 
                 if (Math.abs(currentX - targetX) > 0.1) {
-                    const newX = THREE.MathUtils.lerp(currentX, targetX, 0.03);
+                    const newX = THREE.MathUtils.lerp(currentX, targetX, 0.05);
                     enemy.position.x = newX;
                 }
                 
-                // FIXED: Enemies move with road system
-                // They stay relative to player position
-                const relativeSpeed = enemy.userData.speed - gameState.speed;
-                enemy.position.z -= CONFIG.getSpeedInMps(relativeSpeed) * delta;
+                // FIXED: Enemies move relative to player
+                // Negative Z movement = forward (since car faces -Z)
+                enemy.position.z -= CONFIG.getSpeedInMps(enemy.userData.speed - gameState.speed) * delta;
                 
                 // Remove enemies that are far behind
-                if (enemy.position.z < gameState.playerCar.position.z - 150) {
+                if (enemy.position.z < gameState.playerCar.position.z - 100) {
                     scene.remove(enemy);
                     gameState.enemies.splice(i, 1);
                     updateUI();
@@ -925,18 +982,17 @@
             for (let i = gameState.npcs.length - 1; i >= 0; i--) {
                 const npc = gameState.npcs[i];
                 
-                // FIXED: NPCs move with road system
-                const relativeSpeed = npc.userData.speed - gameState.speed;
-                npc.position.z -= CONFIG.getSpeedInMps(relativeSpeed) * delta;
+                // FIXED: NPCs move relative to player
+                npc.position.z -= CONFIG.getSpeedInMps(npc.userData.speed - gameState.speed) * delta;
                 
-                if (npc.position.z < gameState.playerCar.position.z - 150) {
+                if (npc.position.z < gameState.playerCar.position.z - 100) {
                     scene.remove(npc);
                     gameState.npcs.splice(i, 1);
                 }
                 
                 if (checkCollision(gameState.playerCar, npc)) {
                     // FIXED: Realistic collision effect
-                    gameState.speed = Math.max(20, gameState.speed * 0.7);
+                    gameState.speed = Math.max(30, gameState.speed * 0.6);
                     scene.remove(npc);
                     gameState.npcs.splice(i, 1);
                     updateUI();
@@ -954,17 +1010,19 @@
         function updateCamera() {
             if (!gameState.playerCar) return;
             
-            const cameraDistance = 15;
-            const cameraHeight = 8;
-            const lookAhead = 20;
+            // FIXED: Camera positioned lower and tilted down more
+            const cameraDistance = 12;
+            const cameraHeight = 4; // Lower camera
+            const lookAhead = 15;
             
             camera.position.x = gameState.playerCar.position.x;
             camera.position.y = cameraHeight;
             camera.position.z = gameState.playerCar.position.z + cameraDistance;
             
+            // Look at a point lower and closer to create downward tilt
             camera.lookAt(
                 gameState.playerCar.position.x,
-                gameState.playerCar.position.y + 2,
+                gameState.playerCar.position.y + 0.5, // Lower lookAt point
                 gameState.playerCar.position.z - lookAhead
             );
         }
@@ -988,7 +1046,7 @@
             if (now - gameState.lastEnemySpawn > CONFIG.ENEMY_SPAWN_INTERVAL) {
                 createEnemyCar();
                 gameState.lastEnemySpawn = now;
-                CONFIG.ENEMY_SPAWN_INTERVAL = Math.max(1500, 2500 - gameState.score * 10);
+                CONFIG.ENEMY_SPAWN_INTERVAL = Math.max(1000, 2000 - gameState.score * 8);
             }
             
             if (now - gameState.lastNPCSpawn > CONFIG.NPC_SPAWN_INTERVAL) {
@@ -1008,7 +1066,7 @@
                 
                 keys[e.key.toLowerCase()] = true;
                 
-                // Lane changes (instant response)
+                // Lane changes
                 if (e.key.toLowerCase() === 'a' || e.key.toLowerCase() === 'arrowleft') {
                     gameState.targetLane = Math.max(0, gameState.targetLane - 1);
                 }
@@ -1021,11 +1079,11 @@
                 keys[e.key.toLowerCase()] = false;
             });
             
-            // FIXED: Continuous acceleration/deceleration with realistic physics
+            // Continuous input handling
             function handleContinuousInput(delta) {
                 if (gameState.gameOver) return;
                 
-                // Acceleration (W/Up Arrow)
+                // FIXED: Much faster acceleration
                 if (keys['w'] || keys['arrowup']) {
                     gameState.speed = Math.min(
                         CONFIG.MAX_SPEED,
@@ -1033,7 +1091,7 @@
                     );
                 }
                 
-                // Braking (S/Down Arrow)
+                // FIXED: Strong braking
                 if (keys['s'] || keys['arrowdown']) {
                     gameState.speed = Math.max(
                         0,
@@ -1043,16 +1101,14 @@
                 
                 // Natural deceleration when no input
                 if (!keys['w'] && !keys['arrowup'] && !keys['s'] && !keys['arrowdown']) {
-                    // Gentle deceleration (like engine braking)
                     gameState.speed = Math.max(
-                        CONFIG.INITIAL_SPEED * 0.8,
-                        gameState.speed - (CONFIG.ACCELERATION_RATE * 0.3) * delta
+                        CONFIG.INITIAL_SPEED * 0.5,
+                        gameState.speed - (CONFIG.ACCELERATION_RATE * 0.2) * delta
                     );
                 }
             }
             
-            // Update the animation loop to include continuous input
-            const originalAnimate = animate;
+            // Store function for animation loop
             window.handleContinuousInput = handleContinuousInput;
             
             window.addEventListener('gamepadconnected', (e) => {
@@ -1136,7 +1192,7 @@
             if (gameState.playerCar) {
                 gameState.playerCar.position.set(
                     getLaneCenter(gameState.currentLane),
-                    0.5,
+                    0.15,
                     0
                 );
             }
@@ -1144,10 +1200,12 @@
             // Reset road positions
             gameState.roadSegments.forEach((segment, index) => {
                 segment.position.z = index * CONFIG.ROAD_LENGTH - CONFIG.ROAD_LENGTH;
+                segment.material.map.offset.set(0, 0);
             });
             
             gameState.groundSegments.forEach((segment, index) => {
                 segment.position.z = index * CONFIG.ROAD_LENGTH - CONFIG.ROAD_LENGTH;
+                segment.material.map.offset.set(0, 0);
             });
             
             document.getElementById('gameOver').style.display = 'none';
