@@ -732,6 +732,37 @@
 
     <script>
         // ============================================================================
+        // CUSTOM SEEDABLE RNG (Replaces Math.seedrandom)
+        // ============================================================================
+        class SeededRandom {
+            constructor(seed) {
+                this.seed = seed || Date.now();
+                this.current = this.seed;
+            }
+            
+            next() {
+                this.current = (this.current * 9301 + 49297) % 233280;
+                return this.current / 233280;
+            }
+            
+            random() {
+                return this.next();
+            }
+            
+            range(min, max) {
+                return min + this.next() * (max - min);
+            }
+            
+            int(min, max) {
+                return Math.floor(this.range(min, max));
+            }
+            
+            choice(array) {
+                return array[this.int(0, array.length)];
+            }
+        }
+
+        // ============================================================================
         // GAME CONFIGURATION
         // ============================================================================
         const CONFIG = {
@@ -784,7 +815,9 @@
             connectionEstablished: false,
             lastUpdate: 0,
             fps: 60,
-            gameLoaded: false
+            gameLoaded: false,
+            prisonSeed: Date.now(),
+            rng: null
         };
 
         // ============================================================================
@@ -823,6 +856,9 @@
                 return;
             }
             
+            // Initialize RNG with current time
+            gameState.rng = new SeededRandom(Date.now());
+            
             // Initialize UI
             updateConnectionStatus('ready', 'Ready to play');
             
@@ -850,6 +886,8 @@
             gameState.isHost = true;
             gameState.playerId = 'host_' + generateRandomId();
             gameState.roomCode = generateRoomCode();
+            gameState.prisonSeed = Date.now();
+            gameState.rng = new SeededRandom(gameState.prisonSeed);
             
             // Create peer connection with proper configuration
             gameState.peer = new RTCPeerConnection({
@@ -886,7 +924,16 @@
                     updateConnectionStatus('connected', 'Player connected!');
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('connectionCount').textContent = 'Player connected!';
+                } else if (gameState.peer.connectionState === 'failed' || 
+                          gameState.peer.connectionState === 'disconnected') {
+                    updateConnectionStatus('disconnected', 'Connection lost');
+                    showMessage("Connection lost. Please try again.");
                 }
+            };
+            
+            // Handle ice connection state
+            gameState.peer.oniceconnectionstatechange = () => {
+                console.log('ICE connection state:', gameState.peer.iceConnectionState);
             };
             
             // Create and store offer
@@ -898,6 +945,7 @@
                         sdp: gameState.peer.localDescription,
                         roomCode: gameState.roomCode,
                         playerId: gameState.playerId,
+                        prisonSeed: gameState.prisonSeed,
                         timestamp: Date.now()
                     }));
                     
@@ -908,9 +956,12 @@
                     // Show room info
                     document.getElementById('roomInfo').style.display = 'block';
                     document.getElementById('displayCode').textContent = gameState.roomCode;
-                    updateConnectionStatus('connecting', 'Waiting for player...');
+                    updateConnectionStatus('connecting', 'Waiting for player... Room: ' + gameState.roomCode);
                     
-                    console.log('Host created room:', gameState.roomCode);
+                    console.log('Host created room:', gameState.roomCode, 'Seed:', gameState.prisonSeed);
+                    
+                    // Start checking for connection
+                    checkForConnection();
                 })
                 .catch(error => {
                     console.error('Error creating offer:', error);
@@ -918,15 +969,13 @@
                     showMessage("Failed to create room. Please try again.");
                     disableButtons(false);
                 });
-            
-            // Start checking for connection
-            checkForConnection();
         }
 
         function joinGame() {
             document.getElementById('joinSection').style.display = 'block';
             document.getElementById('hostBtn').disabled = true;
             document.getElementById('joinBtn').disabled = true;
+            document.getElementById('roomCode').focus();
         }
 
         function cancelJoin() {
@@ -939,7 +988,7 @@
             const roomCode = roomCodeInput.value.trim().toUpperCase();
             
             if (!roomCode || roomCode.length !== 6) {
-                showMessage("Please enter a valid 6-digit code");
+                showMessage("Please enter a valid 6-digit code", "error");
                 roomCodeInput.focus();
                 return;
             }
@@ -954,7 +1003,7 @@
             // Get host offer from localStorage
             const hostData = localStorage.getItem('hostOffer');
             if (!hostData) {
-                showMessage("Room not found. Make sure host created a room.");
+                showMessage("Room not found. Make sure host created a room first.", "error");
                 disableButtons(false);
                 return;
             }
@@ -965,18 +1014,23 @@
                 
                 // Check if offer is expired (older than 2 minutes)
                 if (Date.now() - hostOffer.timestamp > 120000) {
-                    showMessage("Room expired. Ask host to create new room.");
+                    showMessage("Room expired. Ask host to create new room.", "error");
                     disableButtons(false);
                     return;
                 }
                 
                 if (hostOffer.roomCode !== roomCode) {
-                    showMessage("Invalid room code.");
+                    showMessage("Invalid room code.", "error");
                     disableButtons(false);
                     return;
                 }
+                
+                // Store the prison seed
+                gameState.prisonSeed = hostOffer.prisonSeed || Date.now();
+                gameState.rng = new SeededRandom(gameState.prisonSeed);
+                
             } catch (e) {
-                showMessage("Error reading room data.");
+                showMessage("Error reading room data.", "error");
                 disableButtons(false);
                 return;
             }
@@ -1010,6 +1064,14 @@
                 }
             };
             
+            // Handle connection state
+            gameState.peer.onconnectionstatechange = () => {
+                console.log('Joiner connection state:', gameState.peer.connectionState);
+                if (gameState.peer.connectionState === 'connected') {
+                    updateConnectionStatus('connected', 'Connected to host!');
+                }
+            };
+            
             // Set remote description
             gameState.peer.setRemoteDescription(new RTCSessionDescription(hostOffer.sdp))
                 .then(() => gameState.peer.createAnswer())
@@ -1026,16 +1088,18 @@
                     // Add any stored ICE candidates from host
                     const iceCandidates = JSON.parse(localStorage.getItem('iceCandidates') || '[]');
                     iceCandidates.forEach(candidate => {
-                        gameState.peer.addIceCandidate(new RTCIceCandidate(candidate));
+                        if (candidate) {
+                            gameState.peer.addIceCandidate(new RTCIceCandidate(candidate));
+                        }
                     });
                     
-                    console.log('Joiner connected to room:', roomCode);
-                    showMessage("Connected! Waiting for host to start game...");
+                    console.log('Joiner connected to room:', roomCode, 'Seed:', gameState.prisonSeed);
+                    showMessage("Connected! Waiting for host to start game...", "success");
                 })
                 .catch(error => {
                     console.error('Error connecting:', error);
                     updateConnectionStatus('disconnected', 'Connection failed');
-                    showMessage("Failed to connect. Check room code and try again.");
+                    showMessage("Failed to connect. Check room code and try again.", "error");
                     disableButtons(false);
                 });
         }
@@ -1048,8 +1112,9 @@
                 
                 if (gameState.isHost) {
                     document.getElementById('startBtn').disabled = false;
+                    document.getElementById('connectionCount').textContent = 'Player connected! Ready to start!';
                 } else {
-                    showMessage("Connected! Waiting for host to start...");
+                    showMessage("Connected! Waiting for host to start...", "success");
                 }
                 
                 // Send initial player info
@@ -1075,7 +1140,7 @@
                 updateConnectionStatus('disconnected', 'Disconnected from partner');
                 
                 if (gameState.gameStarted) {
-                    showMessage("Partner disconnected!");
+                    showMessage("Partner disconnected!", "error");
                 }
             };
             
@@ -1113,7 +1178,10 @@
                 console.error('Error checking connection:', e);
             }
             
-            setTimeout(checkForConnection, 1000);
+            // Only continue checking if we're still waiting
+            if (!gameState.connectionEstablished) {
+                setTimeout(checkForConnection, 1000);
+            }
         }
 
         function sendNetworkMessage(type, data) {
@@ -1124,7 +1192,11 @@
                     data: data,
                     timestamp: Date.now()
                 };
-                gameState.dataChannel.send(JSON.stringify(message));
+                try {
+                    gameState.dataChannel.send(JSON.stringify(message));
+                } catch (e) {
+                    console.error('Error sending network message:', e);
+                }
             }
         }
 
@@ -1154,6 +1226,9 @@
                 case 'gameOver':
                     handleGameOver(message.data);
                     break;
+                case 'ping':
+                    sendNetworkMessage('pong', { timestamp: message.data.timestamp });
+                    break;
             }
         }
 
@@ -1172,7 +1247,8 @@
                     health: 100,
                     contraband: 0,
                     reputation: 0,
-                    inventory: []
+                    inventory: [],
+                    mesh: null
                 };
                 
                 // Update UI
@@ -1192,7 +1268,7 @@
         // ============================================================================
         function startGame() {
             if (!gameState.isHost || !gameState.connectionEstablished) {
-                showMessage("Wait for player to connect first");
+                showMessage("Wait for player to connect first", "warning");
                 return;
             }
             
@@ -1202,36 +1278,48 @@
             // Initialize Three.js
             initThreeJS();
             
-            // Generate prison
-            generatePrison();
+            // Generate prison with current seed
+            generatePrison(gameState.prisonSeed);
             
             // Create local player
             createPlayer(gameState.playerId, true);
             
+            // Create position for other player
+            const otherPlayerPositions = {};
+            Object.keys(gameState.players).forEach(playerId => {
+                if (playerId !== gameState.playerId) {
+                    otherPlayerPositions[playerId] = { x: 10, y: 1, z: 0 };
+                }
+            });
+            
             // Notify other player to start
             sendNetworkMessage('gameStart', {
-                prisonSeed: Date.now(),
+                prisonSeed: gameState.prisonSeed,
                 playerPositions: {
                     [gameState.playerId]: { x: -10, y: 1, z: 0 },
-                    [Object.keys(gameState.players)[0]]: { x: 10, y: 1, z: 0 }
+                    ...otherPlayerPositions
                 }
             });
             
             // Start game locally
             setTimeout(() => {
                 startGameLocal();
-            }, 1000);
+            }, 500);
         }
 
         function startGameFromNetwork(data) {
             setLoadingText("Joining prison...");
             showLoadingScreen(true);
             
+            // Store prison seed from host
+            gameState.prisonSeed = data.prisonSeed;
+            gameState.rng = new SeededRandom(gameState.prisonSeed);
+            
             // Initialize Three.js
             initThreeJS();
             
             // Generate prison with same seed
-            generatePrison(data.prisonSeed);
+            generatePrison(gameState.prisonSeed);
             
             // Create local player at assigned position
             const myPosition = data.playerPositions[gameState.playerId];
@@ -1254,7 +1342,7 @@
             // Start game
             setTimeout(() => {
                 startGameLocal();
-            }, 1000);
+            }, 500);
         }
 
         function startGameLocal() {
@@ -1276,7 +1364,7 @@
             // Setup event listeners
             setupEventListeners();
             
-            console.log('Game started!');
+            console.log('Game started! Seed:', gameState.prisonSeed);
         }
 
         // ============================================================================
@@ -1349,24 +1437,42 @@
         }
 
         // ============================================================================
-        // PRISON GENERATION
+        // PRISON GENERATION (Fixed - using our SeededRandom)
         // ============================================================================
         function generatePrison(seed = Date.now()) {
             console.log('Generating prison with seed:', seed);
             
+            // Initialize RNG with seed
+            const rng = new SeededRandom(seed);
+            
             // Clear existing objects
-            wallMeshes.forEach(mesh => scene.remove(mesh));
-            itemMeshes.forEach(mesh => scene.remove(mesh));
-            botMeshes.forEach(mesh => scene.remove(mesh));
+            if (wallMeshes) {
+                wallMeshes.forEach(mesh => {
+                    if (mesh && mesh.parent) {
+                        scene.remove(mesh);
+                    }
+                });
+            }
+            if (itemMeshes) {
+                itemMeshes.forEach(mesh => {
+                    if (mesh && mesh.parent) {
+                        scene.remove(mesh);
+                    }
+                });
+            }
+            if (botMeshes) {
+                botMeshes.forEach(mesh => {
+                    if (mesh && mesh.parent) {
+                        scene.remove(mesh);
+                    }
+                });
+            }
             
             wallMeshes = [];
             itemMeshes = [];
             botMeshes = [];
             gameState.items = [];
             gameState.bots = [];
-            
-            // Use seed for reproducibility
-            const rng = new Math.seedrandom(seed);
             
             // Generate walls
             const wallMaterial = new THREE.MeshStandardMaterial({ 
@@ -1432,8 +1538,8 @@
 
         function generateItems(rng) {
             CONFIG.ITEM_TYPES.forEach((itemType, index) => {
-                const x = (rng() * 80) - 40;
-                const z = (rng() * 80) - 40;
+                const x = rng.range(-40, 40);
+                const z = rng.range(-40, 40);
                 
                 let geometry;
                 switch(itemType.id) {
@@ -1458,7 +1564,7 @@
                 
                 const item = new THREE.Mesh(geometry, material);
                 item.position.set(x, 1, z);
-                item.rotation.y = rng() * Math.PI * 2;
+                item.rotation.y = rng.range(0, Math.PI * 2);
                 item.castShadow = true;
                 item.userData = {
                     type: itemType.id,
@@ -1480,8 +1586,8 @@
         function generateBots(rng) {
             // Guard bots
             for (let i = 0; i < CONFIG.GUARD_COUNT; i++) {
-                const x = (rng() * 60) - 30;
-                const z = (rng() * 60) - 30;
+                const x = rng.range(-30, 30);
+                const z = rng.range(-30, 30);
                 
                 const geometry = new THREE.CylinderGeometry(0.6, 0.6, 2, 8);
                 const material = new THREE.MeshStandardMaterial({ 
@@ -1499,8 +1605,8 @@
                 const patrolPath = [];
                 for (let j = 0; j < 4; j++) {
                     patrolPath.push({
-                        x: x + (rng() * 20) - 10,
-                        z: z + (rng() * 20) - 10
+                        x: x + rng.range(-10, 10),
+                        z: z + rng.range(-10, 10)
                     });
                 }
                 
@@ -1510,15 +1616,15 @@
                     patrolPath,
                     patrolIndex: 0,
                     alertLevel: 0,
-                    personality: rng() > 0.5 ? 'strict' : 'lazy',
-                    speed: 0.03 + rng() * 0.02
+                    personality: rng.next() > 0.5 ? 'strict' : 'lazy',
+                    speed: 0.03 + rng.next() * 0.02
                 });
             }
             
             // Inmate bots
             for (let i = 0; i < CONFIG.INMATE_BOT_COUNT; i++) {
-                const x = (rng() * 60) - 30;
-                const z = (rng() * 60) - 30;
+                const x = rng.range(-30, 30);
+                const z = rng.range(-30, 30);
                 
                 const geometry = new THREE.BoxGeometry(1, 2, 1);
                 const material = new THREE.MeshStandardMaterial({ 
@@ -1535,8 +1641,8 @@
                 gameState.bots.push({
                     type: 'inmate',
                     position: { x, y: 1, z },
-                    personality: ['lazy', 'violent', 'helpful'][Math.floor(rng() * 3)],
-                    speed: 0.01 + rng() * 0.02,
+                    personality: rng.choice(['lazy', 'violent', 'helpful']),
+                    speed: 0.01 + rng.next() * 0.02,
                     activity: 'wandering',
                     lastActivityChange: 0
                 });
@@ -1582,6 +1688,14 @@
                 };
             } else {
                 gameState.players[playerId].mesh = player;
+                gameState.players[playerId].isLocal = isLocal;
+            }
+            
+            // Update UI
+            if (isLocal) {
+                document.getElementById('playerName1').textContent = ' (You)';
+            } else {
+                document.getElementById('playerName2').textContent = ' (Partner)';
             }
             
             return player;
@@ -1605,6 +1719,11 @@
             if (data.contraband !== undefined) player.contraband = data.contraband;
             if (data.reputation !== undefined) player.reputation = data.reputation;
             if (data.inventory !== undefined) player.inventory = data.inventory;
+            
+            // Update player position in state
+            if (data.x !== undefined && data.y !== undefined && data.z !== undefined) {
+                player.position = { x: data.x, y: data.y, z: data.z };
+            }
             
             // Update UI for other player
             if (playerId !== gameState.playerId) {
@@ -1804,7 +1923,7 @@
             
             // Check item collisions
             itemMeshes.forEach((item, index) => {
-                if (!item.userData.collected) {
+                if (item && !item.userData.collected) {
                     const distance = playerMesh.position.distanceTo(item.position);
                     if (distance < 1.5) {
                         collectItem(item.userData.type, index);
@@ -1866,9 +1985,13 @@
                 player.contraband++;
                 
                 // Mark item as collected
-                itemMeshes[index].visible = false;
-                itemMeshes[index].userData.collected = true;
-                gameState.items[index].collected = true;
+                if (itemMeshes[index]) {
+                    itemMeshes[index].visible = false;
+                    itemMeshes[index].userData.collected = true;
+                }
+                if (gameState.items[index]) {
+                    gameState.items[index].collected = true;
+                }
                 
                 // Notify other player
                 sendNetworkMessage('itemCollected', { index, type });
@@ -1878,9 +2001,6 @@
                 updateEscapeOptions();
                 
                 showMessage(`Collected: ${getItemName(type)}!`, 'success');
-                
-                // Play sound (if we had audio)
-                // playSound('collect');
             }
         }
 
@@ -2148,8 +2268,11 @@
             
             // Animate guard patrol
             let direction = 1;
-            setInterval(() => {
-                if (!document.getElementById('solitaryScreen').style.display === 'flex') return;
+            const guardInterval = setInterval(() => {
+                if (document.getElementById('solitaryScreen').style.display !== 'flex') {
+                    clearInterval(guardInterval);
+                    return;
+                }
                 
                 const currentLeft = parseInt(guard.style.left) || 0;
                 if (currentLeft > 300) direction = -1;
@@ -2169,25 +2292,35 @@
         // ============================================================================
         function updateConnectionStatus(status, message) {
             const element = document.getElementById('connectionStatus');
-            element.textContent = `Status: ${message}`;
-            element.className = `status-${status}`;
+            if (element) {
+                element.textContent = `Status: ${message}`;
+                element.className = `status-${status}`;
+            }
         }
 
         function updatePlayerUI(playerNum, player) {
             const num = playerNum === 1 ? '1' : '2';
-            document.getElementById(`health${num}`).textContent = player.health;
-            document.getElementById(`healthBar${num}`).style.width = `${player.health}%`;
-            document.getElementById(`contraband${num}`).textContent = player.contraband;
-            document.getElementById(`rep${num}`).textContent = player.reputation;
+            const healthElement = document.getElementById(`health${num}`);
+            const healthBarElement = document.getElementById(`healthBar${num}`);
+            const contrabandElement = document.getElementById(`contraband${num}`);
+            const repElement = document.getElementById(`rep${num}`);
+            const posElement = document.getElementById(`pos${num}`);
             
-            if (player.position) {
-                document.getElementById(`pos${num}`).textContent = 
+            if (healthElement) healthElement.textContent = player.health;
+            if (healthBarElement) healthBarElement.style.width = `${player.health}%`;
+            if (contrabandElement) contrabandElement.textContent = player.contraband;
+            if (repElement) repElement.textContent = player.reputation;
+            
+            if (posElement && player.position) {
+                posElement.textContent = 
                     `${Math.round(player.position.x)},${Math.round(player.position.z)}`;
             }
         }
 
         function showMessage(text, type = 'info') {
             const messageDiv = document.getElementById('messageDisplay');
+            if (!messageDiv) return;
+            
             messageDiv.textContent = text;
             messageDiv.style.display = 'block';
             
@@ -2217,19 +2350,31 @@
         }
 
         function showLoadingScreen(show) {
-            document.getElementById('loadingScreen').style.display = show ? 'flex' : 'none';
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.style.display = show ? 'flex' : 'none';
+            }
         }
 
         function hideObjective() {
-            document.getElementById('objective').style.display = 'none';
+            const objective = document.getElementById('objective');
+            if (objective) {
+                objective.style.display = 'none';
+            }
         }
 
         function showTutorial() {
-            document.getElementById('tutorialSection').style.display = 'block';
+            const tutorialSection = document.getElementById('tutorialSection');
+            if (tutorialSection) {
+                tutorialSection.style.display = 'block';
+            }
         }
 
         function hideTutorial() {
-            document.getElementById('tutorialSection').style.display = 'none';
+            const tutorialSection = document.getElementById('tutorialSection');
+            if (tutorialSection) {
+                tutorialSection.style.display = 'none';
+            }
         }
 
         function cancelHost() {
@@ -2238,9 +2383,12 @@
             }
             localStorage.removeItem('hostOffer');
             localStorage.removeItem('iceCandidates');
-            document.getElementById('roomInfo').style.display = 'none';
+            const roomInfo = document.getElementById('roomInfo');
+            if (roomInfo) {
+                roomInfo.style.display = 'none';
+            }
             disableButtons(false);
-            updateConnectionStatus('disconnected', 'Disconnected');
+            updateConnectionStatus('disconnected', 'Ready to play');
         }
 
         function returnToLobby() {
@@ -2271,6 +2419,10 @@
             gameState.escapeInProgress = false;
             gameState.timeOfDay = 0.5;
             
+            // Generate new seed for new prison
+            gameState.prisonSeed = Date.now() + Math.floor(Math.random() * 1000);
+            gameState.rng = new SeededRandom(gameState.prisonSeed);
+            
             playerMesh = null;
             otherPlayerMesh = null;
             botMeshes = [];
@@ -2282,22 +2434,30 @@
             document.getElementById('gameScreen').style.display = 'flex';
             
             // Reinitialize game
-            initThreeJS();
-            generatePrison(Date.now() + Math.random() * 1000);
-            createPlayer(gameState.playerId, true);
-            
-            // Reset player stats but keep connection
-            const player = gameState.players[gameState.playerId];
-            player.health = 100;
-            player.contraband = 0;
-            player.reputation = 0;
-            player.inventory = [];
-            
-            // Start game
-            gameState.gameStarted = true;
-            animate();
-            
-            showMessage("New attempt! Good luck!", 'success');
+            try {
+                initThreeJS();
+                generatePrison(gameState.prisonSeed);
+                createPlayer(gameState.playerId, true);
+                
+                // Reset player stats
+                const player = gameState.players[gameState.playerId];
+                if (player) {
+                    player.health = 100;
+                    player.contraband = 0;
+                    player.reputation = 0;
+                    player.inventory = [];
+                }
+                
+                // Start game
+                gameState.gameStarted = true;
+                animate();
+                
+                showMessage("New attempt! Good luck!", 'success');
+            } catch (e) {
+                console.error('Error in retry:', e);
+                showMessage("Error restarting game", 'error');
+                returnToLobby();
+            }
         }
 
         // ============================================================================
@@ -2393,7 +2553,7 @@
         function attemptInteraction() {
             // Check for nearby items
             itemMeshes.forEach((item, index) => {
-                if (!item.userData.collected && playerMesh) {
+                if (item && !item.userData.collected && playerMesh) {
                     const distance = playerMesh.position.distanceTo(item.position);
                     if (distance < 2) {
                         collectItem(item.userData.type, index);
@@ -2505,6 +2665,8 @@
 
         function displayChatMessage(sender, message, isLocal) {
             const chatMessages = document.getElementById('chatMessages');
+            if (!chatMessages) return;
+            
             const messageDiv = document.createElement('div');
             messageDiv.className = `chat-message ${isLocal ? 'you' : 'partner'}`;
             messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
@@ -2529,9 +2691,13 @@
         }
 
         function disableButtons(disabled) {
-            document.getElementById('hostBtn').disabled = disabled;
-            document.getElementById('joinBtn').disabled = disabled;
-            document.getElementById('tutorialBtn').disabled = disabled;
+            const hostBtn = document.getElementById('hostBtn');
+            const joinBtn = document.getElementById('joinBtn');
+            const tutorialBtn = document.getElementById('tutorialBtn');
+            
+            if (hostBtn) hostBtn.disabled = disabled;
+            if (joinBtn) joinBtn.disabled = disabled;
+            if (tutorialBtn) tutorialBtn.disabled = disabled;
         }
 
         // ============================================================================
@@ -2557,6 +2723,11 @@
             if (renderer) {
                 renderer.dispose();
             }
+            // Clean up localStorage
+            localStorage.removeItem('hostOffer');
+            localStorage.removeItem('iceCandidates');
+            localStorage.removeItem('playerAnswer');
+            localStorage.removeItem('playerIceCandidate');
         });
 
         console.log('Cell Block Zero - Game code loaded successfully');
