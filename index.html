@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Maze Escape - Local Multiplayer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r162/three.min.js"></script>
+    <title>3D Maze Escape: Enhanced Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -14,7 +15,7 @@
         
         body {
             font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
             color: #fff;
             overflow: hidden;
             height: 100vh;
@@ -23,23 +24,57 @@
         }
         
         header {
-            padding: 15px;
-            text-align: center;
-            background: rgba(0, 0, 0, 0.5);
-            border-bottom: 2px solid #0f3460;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-bottom: 3px solid #ff4757;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             z-index: 100;
         }
         
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
         h1 {
-            color: #e94560;
-            font-size: 2.2rem;
-            margin-bottom: 5px;
-            text-shadow: 0 0 10px rgba(233, 69, 96, 0.7);
+            color: #ff4757;
+            font-size: 1.8rem;
+            text-shadow: 0 0 15px rgba(255, 71, 87, 0.7);
+            background: linear-gradient(45deg, #ff4757, #ff6b81);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .subtitle {
-            color: #4cc9f0;
-            font-size: 1rem;
+            color: #70a1ff;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .game-stats {
+            display: flex;
+            gap: 25px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #ffa502;
+            text-shadow: 0 0 10px rgba(255, 165, 2, 0.5);
+        }
+        
+        .stat-label {
+            color: #dfe4ea;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .container {
@@ -56,32 +91,40 @@
         #ui-container {
             flex: 1;
             padding: 20px;
-            background: rgba(15, 52, 96, 0.3);
-            border-left: 2px solid #0f3460;
+            background: rgba(25, 25, 35, 0.95);
+            border-left: 3px solid #3742fa;
             display: flex;
             flex-direction: column;
-            min-width: 300px;
+            min-width: 350px;
             overflow-y: auto;
         }
         
         .panel {
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            border: 1px solid #1a5fb4;
-            box-shadow: 0 0 15px rgba(26, 95, 180, 0.3);
+            background: linear-gradient(135deg, rgba(55, 66, 250, 0.1), rgba(116, 185, 255, 0.05));
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(116, 185, 255, 0.2);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
         }
         
         .panel h2 {
-            color: #4cc9f0;
-            margin-bottom: 15px;
+            color: #70a1ff;
+            margin-bottom: 18px;
             font-size: 1.3rem;
-            border-bottom: 1px solid #1a5fb4;
-            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(112, 161, 255, 0.3);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .controls {
+        .panel h2 i {
+            font-size: 1.2em;
+        }
+        
+        .controls-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
@@ -91,47 +134,80 @@
         .control-group {
             display: flex;
             flex-direction: column;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         
         label {
-            margin-bottom: 5px;
-            color: #a5d8ff;
+            margin-bottom: 6px;
+            color: #a4b0be;
             font-size: 0.9rem;
+            font-weight: 500;
         }
         
         input, select, button {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #1a5fb4;
-            background: rgba(0, 0, 0, 0.6);
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid rgba(112, 161, 255, 0.3);
+            background: rgba(0, 0, 0, 0.4);
             color: white;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #70a1ff;
+            box-shadow: 0 0 10px rgba(112, 161, 255, 0.3);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
         }
         
         button {
-            background: linear-gradient(to right, #e94560, #ff6b8b);
+            flex: 1;
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
             color: white;
             border: none;
             cursor: pointer;
-            transition: all 0.3s;
             font-weight: bold;
-            margin-top: 5px;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
         }
         
         button:hover {
-            background: linear-gradient(to right, #ff6b8b, #e94560);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
+            box-shadow: 0 5px 20px rgba(255, 71, 87, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        button:hover::after {
+            left: 100%;
         }
         
         #start-multiplayer {
-            background: linear-gradient(to right, #1a5fb4, #4cc9f0);
+            background: linear-gradient(135deg, #3742fa, #5352ed);
         }
         
         #start-multiplayer:hover {
-            background: linear-gradient(to right, #4cc9f0, #1a5fb4);
-            box-shadow: 0 5px 15px rgba(76, 201, 240, 0.4);
+            box-shadow: 0 5px 20px rgba(55, 66, 250, 0.4);
         }
         
         .players-list {
@@ -144,69 +220,185 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px;
-            background: rgba(26, 95, 180, 0.2);
-            border-radius: 5px;
-            border: 1px solid rgba(76, 201, 240, 0.3);
+            padding: 12px;
+            background: rgba(30, 30, 40, 0.6);
+            border-radius: 8px;
+            border: 1px solid rgba(112, 161, 255, 0.2);
+            transition: all 0.3s ease;
         }
         
-        .player-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            margin-right: 10px;
+        .player-item:hover {
+            background: rgba(40, 40, 50, 0.8);
+            transform: translateX(5px);
+        }
+        
+        .player-item.you {
+            border-color: #ff4757;
+            background: rgba(255, 71, 87, 0.1);
         }
         
         .player-info {
             display: flex;
             align-items: center;
+            gap: 12px;
+        }
+        
+        .player-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: white;
+            box-shadow: 0 0 10px currentColor;
+        }
+        
+        .player-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            color: #dfe4ea;
+        }
+        
+        .player-level {
+            font-size: 0.8rem;
+            color: #ffa502;
+        }
+        
+        .player-stats {
+            display: flex;
+            gap: 15px;
+            align-items: center;
         }
         
         .player-score {
             font-weight: bold;
-            color: #f1fa8c;
+            color: #ffa502;
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 12px;
+            border-radius: 20px;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .player-health {
+            width: 60px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .health-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4757, #ffa502);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
+        .upgrades-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .upgrade-item {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid rgba(255, 165, 2, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upgrade-item:hover {
+            background: rgba(255, 165, 2, 0.1);
+            transform: scale(1.05);
+        }
+        
+        .upgrade-item.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .upgrade-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 165, 2, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            font-size: 1.2rem;
+        }
+        
+        .upgrade-name {
+            font-weight: bold;
+            color: #ffa502;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .upgrade-cost {
+            color: #70a1ff;
+            font-size: 0.8rem;
         }
         
         .instructions {
             margin-top: 20px;
-            font-size: 0.9rem;
-            color: #a5d8ff;
-            line-height: 1.5;
+            font-size: 0.85rem;
+            color: #a4b0be;
+            line-height: 1.6;
         }
         
         .instructions h3 {
-            color: #f1fa8c;
+            color: #ffa502;
             margin-bottom: 10px;
+            font-size: 1rem;
         }
         
-        .instructions ul {
-            padding-left: 20px;
+        .key {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            font-family: monospace;
+            margin: 0 2px;
         }
         
-        .instructions li {
-            margin-bottom: 8px;
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border-left: 4px solid #ff4757;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
         }
         
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-size: 0.9rem;
+        .notification.show {
+            transform: translateX(0);
         }
         
-        .stat {
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
+        .notification-title {
+            color: #ff4757;
             font-weight: bold;
-            color: #f1fa8c;
-        }
-        
-        .stat-label {
-            color: #a5d8ff;
-            font-size: 0.8rem;
+            margin-bottom: 5px;
         }
         
         #gameCanvas {
@@ -223,51 +415,71 @@
             display: flex;
             align-items: center;
             margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 5px;
-            background: rgba(0, 0, 0, 0.5);
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
         }
         
         .status-dot {
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            margin-right: 10px;
+            margin-right: 12px;
+            position: relative;
         }
         
-        .connected {
-            background-color: #4ade80;
-            box-shadow: 0 0 10px #4ade80;
+        .status-dot::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
         }
         
-        .disconnected {
-            background-color: #f87171;
-            box-shadow: 0 0 10px #f87171;
+        .connected .status-dot {
+            background-color: #2ed573;
         }
         
-        .connecting {
-            background-color: #fbbf24;
-            box-shadow: 0 0 10px #fbbf24;
-            animation: pulse 1.5s infinite;
+        .connected .status-dot::after {
+            border: 2px solid #2ed573;
+        }
+        
+        .disconnected .status-dot {
+            background-color: #ff4757;
+        }
+        
+        .disconnected .status-dot::after {
+            border: 2px solid #ff4757;
+        }
+        
+        .connecting .status-dot {
+            background-color: #ffa502;
+        }
+        
+        .connecting .status-dot::after {
+            border: 2px solid #ffa502;
         }
         
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
         }
         
         #connection-code {
-            font-family: monospace;
-            font-size: 1.5rem;
-            letter-spacing: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.8rem;
+            letter-spacing: 4px;
             text-align: center;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.7);
-            border-radius: 5px;
-            border: 2px dashed #4cc9f0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border: 2px dashed #70a1ff;
             margin: 15px 0;
-            color: #f1fa8c;
+            color: #ffa502;
+            text-shadow: 0 0 10px rgba(255, 165, 2, 0.5);
         }
         
         .modal {
@@ -276,169 +488,364 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.95);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 2000;
         }
         
         .modal-content {
-            background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
-            padding: 30px;
-            border-radius: 15px;
-            max-width: 500px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 600px;
             width: 90%;
-            border: 2px solid #4cc9f0;
-            box-shadow: 0 0 30px rgba(76, 201, 240, 0.5);
+            border: 3px solid #ff4757;
+            box-shadow: 0 0 50px rgba(255, 71, 87, 0.5);
             text-align: center;
+            animation: modalAppear 0.5s ease;
+        }
+        
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
         
         .modal h2 {
-            color: #e94560;
+            color: #ff4757;
             margin-bottom: 20px;
+            font-size: 2rem;
+            background: linear-gradient(45deg, #ff4757, #ff6b81);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .modal p {
-            margin-bottom: 20px;
-            line-height: 1.6;
+            margin-bottom: 25px;
+            line-height: 1.8;
+            color: #dfe4ea;
+        }
+        
+        .features-list {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+        
+        .features-list li {
+            margin-bottom: 10px;
+            color: #70a1ff;
         }
         
         .footer {
             text-align: center;
-            padding: 10px;
+            padding: 15px;
             font-size: 0.8rem;
-            color: #a5d8ff;
+            color: #a4b0be;
             background: rgba(0, 0, 0, 0.5);
-            border-top: 1px solid #0f3460;
+            border-top: 1px solid #3742fa;
+        }
+        
+        .mini-map {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            border: 2px solid #70a1ff;
+            overflow: hidden;
+            z-index: 100;
+        }
+        
+        .powerup-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .powerup {
+            background: rgba(255, 165, 2, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #ffa502;
+        }
+        
+        .powerup-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ffa502;
+        }
+        
+        .powerup-timer {
+            font-size: 0.9rem;
+            color: white;
+        }
+        
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .crosshair::before {
+            width: 2px;
+            height: 20px;
+            left: 9px;
+            top: 0;
+        }
+        
+        .crosshair::after {
+            width: 20px;
+            height: 2px;
+            left: 0;
+            top: 9px;
         }
     </style>
 </head>
 <body>
     <header>
-        <h1>3D Maze Escape</h1>
-        <p class="subtitle">Navigate the maze, collect coins, and compete with friends on the same Wi-Fi!</p>
+        <div class="logo">
+            <h1>⚡ 3D Maze Escape</h1>
+            <div class="subtitle">Enhanced Edition</div>
+        </div>
+        <div class="game-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="header-score">0</div>
+                <div class="stat-label">Score</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="header-coins">0</div>
+                <div class="stat-label">Coins</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="header-level">1</div>
+                <div class="stat-label">Level</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="header-time">00:00</div>
+                <div class="stat-label">Time</div>
+            </div>
+        </div>
     </header>
     
     <div class="container">
         <div id="game-container">
             <canvas id="gameCanvas"></canvas>
+            <div class="crosshair"></div>
+            <div class="mini-map" id="miniMap"></div>
+            <div class="powerup-indicator" id="powerupIndicator"></div>
         </div>
         
         <div id="ui-container">
             <div class="panel">
-                <h2>Game Controls</h2>
-                <div class="controls">
+                <h2>🎮 Game Controls</h2>
+                <div class="controls-grid">
                     <div class="control-group">
                         <label>Maze Size:</label>
                         <select id="maze-size">
-                            <option value="10">Small (10x10)</option>
-                            <option value="15" selected>Medium (15x15)</option>
-                            <option value="20">Large (20x20)</option>
+                            <option value="8">Small (8x8)</option>
+                            <option value="12" selected>Medium (12x12)</option>
+                            <option value="16">Large (16x16)</option>
+                            <option value="20">Epic (20x20)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Difficulty:</label>
+                        <select id="difficulty">
+                            <option value="easy">Easy</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="hard">Hard</option>
+                            <option value="nightmare">Nightmare</option>
                         </select>
                     </div>
                     
                     <div class="control-group">
                         <label>Player Name:</label>
-                        <input type="text" id="player-name" value="Player1" maxlength="12">
+                        <input type="text" id="player-name" value="MazeRunner" maxlength="12">
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>Character:</label>
+                        <select id="character-type">
+                            <option value="speed">Speedster</option>
+                            <option value="tank" selected>Tank</option>
+                            <option value="collector">Collector</option>
+                            <option value="ninja">Ninja</option>
+                        </select>
                     </div>
                 </div>
                 
-                <button id="generate-maze">Generate New Maze</button>
-                <button id="start-multiplayer">Start Multiplayer Game</button>
+                <div class="btn-group">
+                    <button id="generate-maze">🔄 New Maze</button>
+                    <button id="start-multiplayer">🌐 Multiplayer</button>
+                </div>
             </div>
             
             <div class="panel">
-                <h2>Connection Status</h2>
-                <div id="connection-status">
-                    <div class="status-dot disconnected"></div>
-                    <span id="status-text">Disconnected</span>
+                <h2>📡 Connection</h2>
+                <div id="connection-status" class="disconnected">
+                    <div class="status-dot"></div>
+                    <span id="status-text">Offline</span>
                 </div>
                 
                 <div id="connection-ui" class="hidden">
                     <p>Share this code with friends on the same Wi-Fi:</p>
                     <div id="connection-code">-----</div>
-                    <p>Or enter a friend's code to join their game:</p>
                     <div style="display: flex; gap: 10px;">
-                        <input type="text" id="join-code" placeholder="Enter code">
-                        <button id="join-game">Join Game</button>
+                        <input type="text" id="join-code" placeholder="Enter friend's code" style="flex: 2;">
+                        <button id="join-game" style="flex: 1;">Join</button>
                     </div>
                 </div>
             </div>
             
             <div class="panel">
-                <h2>Players</h2>
+                <h2>👥 Players</h2>
                 <div id="players-container" class="players-list">
-                    <div class="player-item">
+                    <div class="player-item you">
                         <div class="player-info">
-                            <div class="player-color" style="background-color: #e94560;"></div>
-                            <span>You (Player1)</span>
+                            <div class="player-avatar" style="background: linear-gradient(135deg, #ff4757, #ff6b81);">M</div>
+                            <div class="player-details">
+                                <div class="player-name">MazeRunner</div>
+                                <div class="player-level">Level 1</div>
+                            </div>
                         </div>
-                        <div class="player-score">0</div>
+                        <div class="player-stats">
+                            <div class="player-health">
+                                <div class="health-bar" style="width: 100%"></div>
+                            </div>
+                            <div class="player-score">0</div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="stats">
-                    <div class="stat">
-                        <div class="stat-value" id="coins-count">0</div>
-                        <div class="stat-label">Coins Collected</div>
+            </div>
+            
+            <div class="panel">
+                <h2>⚡ Upgrades</h2>
+                <div class="upgrades-panel">
+                    <div class="upgrade-item" data-upgrade="speed">
+                        <div class="upgrade-icon">🏃</div>
+                        <div class="upgrade-name">Speed Boost</div>
+                        <div class="upgrade-cost">Cost: 100 coins</div>
                     </div>
-                    <div class="stat">
-                        <div class="stat-value" id="players-count">1</div>
-                        <div class="stat-label">Players Online</div>
+                    <div class="upgrade-item locked" data-upgrade="vision">
+                        <div class="upgrade-icon">👁️</div>
+                        <div class="upgrade-name">Night Vision</div>
+                        <div class="upgrade-cost">Cost: 200 coins</div>
                     </div>
-                    <div class="stat">
-                        <div class="stat-value" id="time-count">0</div>
-                        <div class="stat-label">Seconds</div>
+                    <div class="upgrade-item locked" data-upgrade="health">
+                        <div class="upgrade-icon">❤️</div>
+                        <div class="upgrade-name">Extra Health</div>
+                        <div class="upgrade-cost">Cost: 150 coins</div>
+                    </div>
+                    <div class="upgrade-item locked" data-upgrade="magnet">
+                        <div class="upgrade-icon">🧲</div>
+                        <div class="upgrade-name">Coin Magnet</div>
+                        <div class="upgrade-cost">Cost: 300 coins</div>
                     </div>
                 </div>
             </div>
             
             <div class="panel instructions">
-                <h3>How to Play</h3>
-                <ul>
-                    <li><strong>WASD</strong> or <strong>Arrow Keys</strong> to move</li>
-                    <li><strong>Mouse</strong> to look around</li>
-                    <li><strong>Collect coins</strong> to increase your score</li>
-                    <li>For multiplayer: Share your code with friends on the same Wi-Fi</li>
-                    <li>First player to collect 10 coins wins!</li>
-                </ul>
+                <h3>🎯 How to Play</h3>
+                <p>Navigate the maze, collect coins and power-ups, avoid enemies, and reach the exit!</p>
+                <p><span class="key">WASD</span> or <span class="key">Arrow Keys</span> to move</p>
+                <p><span class="key">Mouse</span> to look around</p>
+                <p><span class="key">E</span> to use power-ups</p>
+                <p><span class="key">Space</span> to jump</p>
+                <p><span class="key">Shift</span> to sprint</p>
             </div>
         </div>
     </div>
     
     <div id="welcome-modal" class="modal">
         <div class="modal-content">
-            <h2>Welcome to 3D Maze Escape!</h2>
-            <p>This is a 3D maze game that runs entirely in your browser. You can play solo or with friends on the same Wi-Fi network.</p>
-            <p>To play multiplayer:</p>
-            <ol style="text-align: left; margin: 15px 0;">
-                <li>Click "Start Multiplayer Game"</li>
-                <li>Share the generated code with friends</li>
-                <li>Friends enter the code to join your game</li>
-            </ol>
-            <p>All communication is peer-to-peer using WebRTC - no server required!</p>
-            <button id="start-playing" style="width: 100%; padding: 15px; font-size: 1.2rem;">Start Playing</button>
+            <h2>Welcome to 3D Maze Escape: Enhanced Edition!</h2>
+            <p>Experience the ultimate maze adventure with realistic physics, power-ups, and local multiplayer!</p>
+            
+            <ul class="features-list">
+                <li>🎮 Realistic 3D physics and lighting</li>
+                <li>⚡ Power-ups and upgrades system</li>
+                <li>👥 Local multiplayer on same Wi-Fi</li>
+                <li>🎯 Mini-map and crosshair</li>
+                <li>🏆 Multiple character classes</li>
+                <li>👾 Enemy AI with patrol patterns</li>
+                <li>💎 Collectible gems and treasure</li>
+                <li>🔊 Immersive sound effects</li>
+            </ul>
+            
+            <button id="start-playing" style="width: 100%; padding: 18px; font-size: 1.2rem; margin-top: 20px;">
+                🚀 START ADVENTURE
+            </button>
         </div>
     </div>
     
+    <div id="notification" class="notification hidden">
+        <div class="notification-title" id="notification-title"></div>
+        <div id="notification-message"></div>
+    </div>
+    
     <div class="footer">
-        <p>Built with Three.js & WebRTC | Works entirely in your browser with no backend</p>
+        <p>Built with Three.js & WebRTC | Enhanced Edition v2.0 | No backend required</p>
     </div>
 
     <script>
         // Game variables
-        let scene, camera, renderer, maze, player, coins = [];
-        let mazeSize = 15;
+        let scene, camera, renderer, maze, player, controls;
+        let mazeSize = 12;
         let mazeGrid = [];
         let players = {};
         let localPlayerId = null;
-        let playerName = "Player1";
-        let coinsCollected = 0;
-        let gameTime = 0;
+        let playerName = "MazeRunner";
+        let coins = [], gems = [], enemies = [], powerups = [], traps = [];
+        let coinsCollected = 0, gemsCollected = 0, totalScore = 0, playerLevel = 1;
+        let gameTime = 0, startTime = Date.now();
         let gameTimer = null;
+        let playerHealth = 100, maxHealth = 100;
+        let playerSpeed = 0.15, jumpPower = 0.3;
+        let gravity = 0.02, velocityY = 0;
+        let isGrounded = false;
+        let activePowerups = {};
+        let cameraShake = 0;
         
-        // WebRTC variables
+        // Game settings
+        const gameSettings = {
+            difficulty: 'normal',
+            characterType: 'tank',
+            fogDensity: 0.03,
+            enemyCount: 3,
+            trapCount: 5
+        };
+        
+        // Multiplayer variables
         let peerConnection = null;
         let dataChannel = null;
         let isHost = false;
@@ -447,13 +854,16 @@
         // DOM elements
         const gameCanvas = document.getElementById('gameCanvas');
         const mazeSizeSelect = document.getElementById('maze-size');
+        const difficultySelect = document.getElementById('difficulty');
+        const characterTypeSelect = document.getElementById('character-type');
         const playerNameInput = document.getElementById('player-name');
         const generateMazeBtn = document.getElementById('generate-maze');
         const startMultiplayerBtn = document.getElementById('start-multiplayer');
         const playersContainer = document.getElementById('players-container');
-        const coinsCountEl = document.getElementById('coins-count');
-        const playersCountEl = document.getElementById('players-count');
-        const timeCountEl = document.getElementById('time-count');
+        const headerScoreEl = document.getElementById('header-score');
+        const headerCoinsEl = document.getElementById('header-coins');
+        const headerLevelEl = document.getElementById('header-level');
+        const headerTimeEl = document.getElementById('header-time');
         const connectionStatus = document.getElementById('connection-status');
         const statusText = document.getElementById('status-text');
         const statusDot = document.querySelector('.status-dot');
@@ -463,98 +873,142 @@
         const joinGameBtn = document.getElementById('join-game');
         const welcomeModal = document.getElementById('welcome-modal');
         const startPlayingBtn = document.getElementById('start-playing');
+        const notification = document.getElementById('notification');
+        const notificationTitle = document.getElementById('notification-title');
+        const notificationMessage = document.getElementById('notification-message');
+        const upgradeItems = document.querySelectorAll('.upgrade-item');
+        const miniMap = document.getElementById('miniMap');
+        const powerupIndicator = document.getElementById('powerupIndicator');
+        
+        // Sound effects (using Web Audio API)
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
         
         // Initialize game
         function init() {
+            if (typeof THREE === 'undefined') {
+                showNotification('Error', 'Three.js library failed to load. Please refresh the page.');
+                return;
+            }
+            
             // Set up Three.js scene
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x16213e, 10, 50);
+            scene.fog = new THREE.Fog(0x0a0a0a, 5, 40);
             
             // Set up camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(1, 1, 1);
+            camera = new THREE.PerspectiveCamera(75, gameCanvas.parentElement.clientWidth / gameCanvas.parentElement.clientHeight, 0.1, 1000);
+            camera.position.set(0, 2, 0);
             
-            // Set up renderer
-            renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
+            // Set up renderer with better settings
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: gameCanvas, 
+                antialias: true,
+                alpha: true
+            });
             renderer.setSize(gameCanvas.parentElement.clientWidth, gameCanvas.parentElement.clientHeight);
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.setClearColor(0x0a0a0a);
             
-            // Add lighting
+            // Add advanced lighting
             const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
             scene.add(ambientLight);
             
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(10, 20, 5);
+            directionalLight.position.set(20, 30, 10);
             directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 100;
             directionalLight.shadow.camera.left = -50;
             directionalLight.shadow.camera.right = 50;
             directionalLight.shadow.camera.top = 50;
             directionalLight.shadow.camera.bottom = -50;
             scene.add(directionalLight);
             
+            // Add point lights for atmosphere
+            const pointLight = new THREE.PointLight(0xff6b81, 1, 20);
+            pointLight.position.set(0, 5, 0);
+            scene.add(pointLight);
+            
             // Create initial maze
             generateMaze();
             
-            // Create local player
-            createPlayer(true);
+            // Create player with character type
+            createPlayer();
             localPlayerId = player.id;
             
             // Add event listeners
-            window.addEventListener('resize', onWindowResize);
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-            gameCanvas.addEventListener('click', () => {
-                gameCanvas.requestPointerLock();
-            });
-            gameCanvas.addEventListener('mousemove', onMouseMove);
+            setupEventListeners();
             
-            // UI event listeners
-            generateMazeBtn.addEventListener('click', () => {
-                mazeSize = parseInt(mazeSizeSelect.value);
-                generateMaze();
-                if (dataChannel && dataChannel.readyState === 'open') {
-                    sendGameUpdate('mazeRegenerate', { mazeSize });
-                }
-            });
-            
-            playerNameInput.addEventListener('change', () => {
-                playerName = playerNameInput.value;
-                if (player) {
-                    player.name = playerName;
-                    updatePlayersUI();
-                    if (dataChannel && dataChannel.readyState === 'open') {
-                        sendGameUpdate('playerUpdate', { id: localPlayerId, name: playerName });
-                    }
-                }
-            });
-            
-            startMultiplayerBtn.addEventListener('click', startMultiplayer);
-            joinGameBtn.addEventListener('click', joinMultiplayer);
-            startPlayingBtn.addEventListener('click', () => {
-                welcomeModal.style.display = 'none';
-            });
-            
-            // Start game timer
-            gameTimer = setInterval(() => {
-                gameTime++;
-                timeCountEl.textContent = gameTime;
-            }, 1000);
+            // Start game systems
+            startGameSystems();
             
             // Start animation loop
             animate();
         }
         
-        // Generate a random maze
+        function setupEventListeners() {
+            window.addEventListener('resize', onWindowResize);
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+            gameCanvas.addEventListener('click', () => {
+                gameCanvas.requestPointerLock();
+                showNotification('Game Started', 'Click to lock pointer. Use WASD to move!');
+            });
+            document.addEventListener('pointerlockchange', onPointerLockChange);
+            
+            // UI event listeners
+            generateMazeBtn.addEventListener('click', generateNewMaze);
+            startMultiplayerBtn.addEventListener('click', startMultiplayer);
+            joinGameBtn.addEventListener('click', joinMultiplayer);
+            startPlayingBtn.addEventListener('click', () => {
+                welcomeModal.style.display = 'none';
+                playSound('click');
+            });
+            
+            mazeSizeSelect.addEventListener('change', updateMazeSettings);
+            difficultySelect.addEventListener('change', updateDifficulty);
+            characterTypeSelect.addEventListener('change', updateCharacter);
+            playerNameInput.addEventListener('change', updatePlayerName);
+            
+            // Upgrade event listeners
+            upgradeItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    if (!item.classList.contains('locked')) {
+                        purchaseUpgrade(item.dataset.upgrade);
+                    }
+                });
+            });
+        }
+        
+        function startGameSystems() {
+            // Start game timer
+            gameTimer = setInterval(() => {
+                gameTime = Math.floor((Date.now() - startTime) / 1000);
+                updateTimeDisplay();
+            }, 1000);
+            
+            // Spawn initial enemies and items
+            setTimeout(() => {
+                spawnEnemies();
+                spawnTraps();
+                spawnGems();
+                spawnPowerups();
+            }, 1000);
+        }
+        
         function generateMaze() {
             // Clear existing maze
             if (maze) {
                 scene.remove(maze);
             }
             
-            // Clear coins
-            coins.forEach(coin => scene.remove(coin.mesh));
-            coins = [];
+            // Clear game objects
+            [...coins, ...gems, ...enemies, ...powerups, ...traps].forEach(obj => {
+                if (obj.mesh) scene.remove(obj.mesh);
+            });
+            coins = []; gems = []; enemies = []; powerups = []; traps = [];
             
             // Initialize maze grid
             mazeGrid = [];
@@ -563,18 +1017,20 @@
                 for (let x = 0; x < mazeSize; x++) {
                     mazeGrid[z][x] = {
                         wall: true,
-                        visited: false
+                        visited: false,
+                        type: 'empty'
                     };
                 }
             }
             
-            // Use depth-first search to generate maze
+            // Generate maze using recursive backtracking
             const stack = [];
             const startX = 0;
             const startZ = 0;
             
             mazeGrid[startZ][startX].visited = true;
             mazeGrid[startZ][startX].wall = false;
+            mazeGrid[startZ][startX].type = 'start';
             stack.push([startX, startZ]);
             
             while (stack.length > 0) {
@@ -582,7 +1038,7 @@
                 const neighbors = getUnvisitedNeighbors(x, z);
                 
                 if (neighbors.length > 0) {
-                    const [nx, nz, dir] = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    const [nx, nz] = neighbors[Math.floor(Math.random() * neighbors.length)];
                     
                     // Remove wall between current cell and neighbor
                     mazeGrid[z][x].wall = false;
@@ -604,38 +1060,70 @@
             
             // Create exit
             mazeGrid[mazeSize-1][mazeSize-1].wall = false;
+            mazeGrid[mazeSize-1][mazeSize-1].type = 'exit';
             
-            // Build maze walls
-            const mazeGeometry = new THREE.BoxGeometry(1, 2, 1);
-            const wallMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x1a5fb4,
-                shininess: 30
-            });
-            
+            // Build maze with improved visuals
             maze = new THREE.Group();
+            
+            // Create wall material with variation
+            const wallMaterials = [
+                new THREE.MeshPhongMaterial({ color: 0x2d3436, shininess: 20 }),
+                new THREE.MeshPhongMaterial({ color: 0x636e72, shininess: 20 }),
+                new THREE.MeshPhongMaterial({ color: 0x3c3c3c, shininess: 20 })
+            ];
             
             for (let z = 0; z < mazeSize; z++) {
                 for (let x = 0; x < mazeSize; x++) {
                     if (mazeGrid[z][x].wall) {
-                        const wall = new THREE.Mesh(mazeGeometry, wallMaterial);
-                        wall.position.set(x - mazeSize/2, 0, z - mazeSize/2);
+                        const wallHeight = 2 + Math.random() * 0.5;
+                        const wallGeometry = new THREE.BoxGeometry(1, wallHeight, 1);
+                        const material = wallMaterials[Math.floor(Math.random() * wallMaterials.length)];
+                        const wall = new THREE.Mesh(wallGeometry, material);
+                        wall.position.set(x - mazeSize/2, wallHeight/2 - 1, z - mazeSize/2);
                         wall.castShadow = true;
                         wall.receiveShadow = true;
+                        
+                        // Add texture variation
+                        if (Math.random() > 0.7) {
+                            const detailGeometry = new THREE.BoxGeometry(0.8, 0.2, 0.8);
+                            const detail = new THREE.Mesh(detailGeometry, 
+                                new THREE.MeshPhongMaterial({ color: 0x4a4a4a }));
+                            detail.position.set(0, 0.5, 0);
+                            wall.add(detail);
+                        }
+                        
                         maze.add(wall);
                     } else {
-                        // Chance to place a coin in open spaces (not at start)
-                        if ((x !== 0 || z !== 0) && Math.random() < 0.1) {
-                            createCoin(x - mazeSize/2, z - mazeSize/2);
+                        // Place coins in open spaces (not at start or exit)
+                        if ((x !== 0 || z !== 0) && (x !== mazeSize-1 || z !== mazeSize-1)) {
+                            if (Math.random() < 0.15) {
+                                createCoin(x - mazeSize/2, z - mazeSize/2);
+                            }
+                        }
+                        
+                        // Mark start and exit with special tiles
+                        if (mazeGrid[z][x].type === 'start' || mazeGrid[z][x].type === 'exit') {
+                            const tileGeometry = new THREE.PlaneGeometry(0.9, 0.9);
+                            const tileMaterial = new THREE.MeshPhongMaterial({ 
+                                color: mazeGrid[z][x].type === 'start' ? 0x00b894 : 0xff4757,
+                                emissive: mazeGrid[z][x].type === 'start' ? 0x00332a : 0x330000,
+                                side: THREE.DoubleSide
+                            });
+                            const tile = new THREE.Mesh(tileGeometry, tileMaterial);
+                            tile.rotation.x = -Math.PI / 2;
+                            tile.position.set(x - mazeSize/2, -0.49, z - mazeSize/2);
+                            maze.add(tile);
                         }
                     }
                 }
             }
             
-            // Add floor
+            // Add detailed floor
             const floorGeometry = new THREE.PlaneGeometry(mazeSize * 2, mazeSize * 2);
+            const floorTexture = createProceduralTexture();
             const floorMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0x16213e,
-                shininess: 10
+                map: floorTexture,
+                shininess: 5
             });
             const floor = new THREE.Mesh(floorGeometry, floorMaterial);
             floor.rotation.x = -Math.PI / 2;
@@ -643,105 +1131,160 @@
             floor.receiveShadow = true;
             maze.add(floor);
             
+            // Add ceiling for enclosed feeling
+            const ceilingGeometry = new THREE.PlaneGeometry(mazeSize * 2, mazeSize * 2);
+            const ceilingMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x0a0a0a,
+                emissive: 0x111111
+            });
+            const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+            ceiling.rotation.x = Math.PI / 2;
+            ceiling.position.y = 10;
+            maze.add(ceiling);
+            
             scene.add(maze);
             
             // Reset player position
             if (player) {
-                player.position.set(-mazeSize/2 + 0.5, 0, -mazeSize/2 + 0.5);
+                player.position.set(-mazeSize/2 + 0.5, 1, -mazeSize/2 + 0.5);
                 player.rotation.y = 0;
+                camera.position.set(0, 2, 0);
                 camera.rotation.set(0, 0, 0);
+                velocityY = 0;
             }
+            
+            // Update mini-map
+            updateMiniMap();
         }
         
-        // Get unvisited neighbors for maze generation
-        function getUnvisitedNeighbors(x, z) {
-            const neighbors = [];
-            const directions = [
-                [x+2, z, 'right'],
-                [x-2, z, 'left'],
-                [x, z+2, 'down'],
-                [x, z-2, 'up']
-            ];
+        function createProceduralTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
             
-            for (const [nx, nz, dir] of directions) {
-                if (nx >= 0 && nx < mazeSize && nz >= 0 && nz < mazeSize && !mazeGrid[nz][nx].visited) {
-                    neighbors.push([nx, nz, dir]);
+            // Create checkerboard pattern
+            const size = 32;
+            for (let y = 0; y < canvas.height; y += size) {
+                for (let x = 0; x < canvas.width; x += size) {
+                    ctx.fillStyle = (Math.floor(x/size) + Math.floor(y/size)) % 2 === 0 ? '#1a1a2e' : '#16213e';
+                    ctx.fillRect(x, y, size, size);
+                    
+                    // Add subtle noise
+                    ctx.fillStyle = `rgba(255, 255, 255, ${Math.random() * 0.05})`;
+                    for (let i = 0; i < 10; i++) {
+                        ctx.fillRect(x + Math.random() * size, y + Math.random() * size, 1, 1);
+                    }
                 }
             }
             
-            return neighbors;
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(mazeSize / 4, mazeSize / 4);
+            
+            return texture;
         }
         
-// Create a player
-function createPlayer(isLocal = false) {
-    const playerId = 'player_' + Math.random().toString(36).substr(2, 9);
-    const playerColor = new THREE.Color(
-        Math.random() * 0.5 + 0.5,
-        Math.random() * 0.5 + 0.5,
-        Math.random() * 0.5 + 0.5
-    );
-    
-    // Créer un joueur avec des formes simples
-    const playerGroup = new THREE.Group();
-    
-    // Corps principal (cylindre)
-    const bodyGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.8, 8);
-    const playerMaterial = new THREE.MeshPhongMaterial({ 
-        color: playerColor,
-        shininess: 50
-    });
-    const body = new THREE.Mesh(bodyGeometry, playerMaterial);
-    body.position.y = 0.4;
-    body.castShadow = true;
-    body.receiveShadow = true;
-    playerGroup.add(body);
-    
-    // Tête (sphère)
-    const headGeometry = new THREE.SphereGeometry(0.3, 8, 8);
-    const head = new THREE.Mesh(headGeometry, playerMaterial);
-    head.position.y = 1.1;
-    head.castShadow = true;
-    playerGroup.add(head);
-    
-    // Indicateur avant (pour voir la direction)
-    const indicatorGeometry = new THREE.ConeGeometry(0.15, 0.4, 4);
-    const indicatorMaterial = new THREE.MeshPhongMaterial({ 
-        color: 0xff0000,
-        emissive: 0x330000
-    });
-    const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
-    indicator.position.z = 0.35;
-    indicator.position.y = 0.8;
-    indicator.rotation.x = Math.PI / 2;
-    playerGroup.add(indicator);
-
-    const playerObj = {
-        id: playerId,
-        name: isLocal ? playerName : `Player${Object.keys(players).length + 1}`,
-        mesh: playerGroup,
-        position: new THREE.Vector3(-mazeSize/2 + 0.5, 0, -mazeSize/2 + 0.5),
-        rotation: new THREE.Euler(0, 0, 0),
-        color: playerColor.getHexString(),
-        score: 0,
-        isLocal: isLocal
-    };
-    
-    if (isLocal) {
-        player = playerObj;
-        scene.add(player.mesh);
-    } else {
-        players[playerId] = playerObj;
-        scene.add(playerObj.mesh);
-        updatePlayersUI();
-    }
-    
-    return playerId;
-}
-        // Create a coin
+        function createPlayer() {
+            const playerId = 'player_' + Math.random().toString(36).substr(2, 9);
+            const playerColor = new THREE.Color(
+                Math.random() * 0.5 + 0.5,
+                Math.random() * 0.5 + 0.5,
+                Math.random() * 0.5 + 0.5
+            );
+            
+            // Create player model based on character type
+            const playerGroup = new THREE.Group();
+            
+            // Body (capsule shape)
+            const bodyGeometry = new THREE.CylinderGeometry(0.3, 0.3, 1.2, 8);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ 
+                color: playerColor,
+                shininess: 50,
+                emissive: new THREE.Color(0x111111)
+            });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.position.y = 0.6;
+            body.castShadow = true;
+            body.receiveShadow = true;
+            playerGroup.add(body);
+            
+            // Head
+            const headGeometry = new THREE.SphereGeometry(0.35, 8, 8);
+            const head = new THREE.Mesh(headGeometry, bodyMaterial);
+            head.position.y = 1.5;
+            head.castShadow = true;
+            playerGroup.add(head);
+            
+            // Character-specific features
+            const characterType = gameSettings.characterType;
+            if (characterType === 'tank') {
+                // Shield effect
+                const shieldGeometry = new THREE.SphereGeometry(0.6, 8, 6);
+                const shieldMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x70a1ff,
+                    transparent: true,
+                    opacity: 0.3,
+                    side: THREE.DoubleSide
+                });
+                const shield = new THREE.Mesh(shieldGeometry, shieldMaterial);
+                playerGroup.add(shield);
+                maxHealth = 150;
+                playerHealth = 150;
+            } else if (characterType === 'speed') {
+                // Speed lines
+                const lineGeometry = new THREE.ConeGeometry(0.1, 0.5, 4);
+                const lineMaterial = new THREE.MeshPhongMaterial({ color: 0xff4757 });
+                for (let i = 0; i < 4; i++) {
+                    const line = new THREE.Mesh(lineGeometry, lineMaterial);
+                    line.position.z = 0.4;
+                    line.rotation.x = Math.PI / 2;
+                    line.rotation.z = (Math.PI / 2) * i;
+                    playerGroup.add(line);
+                }
+                playerSpeed = 0.2;
+            } else if (characterType === 'collector') {
+                // Magnet effect
+                const magnetGeometry = new THREE.TorusGeometry(0.5, 0.1, 8, 16);
+                const magnetMaterial = new THREE.MeshPhongMaterial({
+                    color: 0xffa502,
+                    emissive: 0x332200
+                });
+                const magnet = new THREE.Mesh(magnetGeometry, magnetMaterial);
+                magnet.rotation.x = Math.PI / 2;
+                playerGroup.add(magnet);
+            }
+            
+            const playerObj = {
+                id: playerId,
+                name: playerName,
+                mesh: playerGroup,
+                position: new THREE.Vector3(-mazeSize/2 + 0.5, 1, -mazeSize/2 + 0.5),
+                rotation: new THREE.Euler(0, 0, 0),
+                velocity: new THREE.Vector3(0, 0, 0),
+                color: playerColor.getHexString(),
+                score: 0,
+                health: maxHealth,
+                maxHealth: maxHealth,
+                level: 1,
+                characterType: characterType,
+                isLocal: true
+            };
+            
+            player = playerObj;
+            scene.add(player.mesh);
+            
+            // Initialize character stats
+            updateCharacterStats();
+            
+            return playerId;
+        }
+        
         function createCoin(x, z) {
-            const coinGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 16);
+            const coinGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 16);
             const coinMaterial = new THREE.MeshPhongMaterial({ 
-                color: 0xf1fa8c,
+                color: 0xffd700,
                 emissive: 0x444400,
                 shininess: 100
             });
@@ -753,237 +1296,994 @@ function createPlayer(isLocal = false) {
             const coin = {
                 mesh: coinMesh,
                 position: new THREE.Vector3(x, 0.5, z),
-                collected: false
+                value: 10,
+                collected: false,
+                type: 'coin'
             };
             
             coins.push(coin);
             scene.add(coinMesh);
         }
         
-        // Update players UI
-        function updatePlayersUI() {
-            playersContainer.innerHTML = '';
+        function spawnGems() {
+            const gemTypes = [
+                { color: 0xff4757, value: 50, name: 'Ruby' },
+                { color: 0x3742fa, value: 75, name: 'Sapphire' },
+                { color: 0x2ed573, value: 100, name: 'Emerald' },
+                { color: 0xffa502, value: 150, name: 'Topaz' }
+            ];
             
-            // Add local player
-            const localPlayerItem = document.createElement('div');
-            localPlayerItem.className = 'player-item';
-            localPlayerItem.innerHTML = `
-                <div class="player-info">
-                    <div class="player-color" style="background-color: #${player.color};"></div>
-                    <span>${player.name} (You)</span>
-                </div>
-                <div class="player-score">${player.score}</div>
-            `;
-            playersContainer.appendChild(localPlayerItem);
-            
-            // Add other players
-            for (const playerId in players) {
-                const otherPlayer = players[playerId];
-                const playerItem = document.createElement('div');
-                playerItem.className = 'player-item';
-                playerItem.innerHTML = `
-                    <div class="player-info">
-                        <div class="player-color" style="background-color: #${otherPlayer.color};"></div>
-                        <span>${otherPlayer.name}</span>
-                    </div>
-                    <div class="player-score">${otherPlayer.score}</div>
-                `;
-                playersContainer.appendChild(playerItem);
+            for (let i = 0; i < 5; i++) {
+                const x = Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5;
+                const z = Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5;
+                
+                if (mazeGrid[Math.floor(z + mazeSize/2)][Math.floor(x + mazeSize/2)].wall) continue;
+                
+                const gemType = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+                const gemGeometry = new THREE.OctahedronGeometry(0.3);
+                const gemMaterial = new THREE.MeshPhongMaterial({ 
+                    color: gemType.color,
+                    emissive: gemType.color,
+                    emissiveIntensity: 0.3,
+                    shininess: 120,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const gemMesh = new THREE.Mesh(gemGeometry, gemMaterial);
+                gemMesh.position.set(x, 0.8, z);
+                gemMesh.castShadow = true;
+                
+                const gem = {
+                    mesh: gemMesh,
+                    position: new THREE.Vector3(x, 0.8, z),
+                    value: gemType.value,
+                    name: gemType.name,
+                    collected: false,
+                    type: 'gem'
+                };
+                
+                gems.push(gem);
+                scene.add(gemMesh);
             }
-            
-            playersCountEl.textContent = Object.keys(players).length + 1;
         }
         
-        // Handle keyboard input
+        function spawnEnemies() {
+            for (let i = 0; i < gameSettings.enemyCount; i++) {
+                const x = Math.floor(Math.random() * (mazeSize-2)) + 1 - mazeSize/2 + 0.5;
+                const z = Math.floor(Math.random() * (mazeSize-2)) + 1 - mazeSize/2 + 0.5;
+                
+                if (mazeGrid[Math.floor(z + mazeSize/2)][Math.floor(x + mazeSize/2)].wall) continue;
+                
+                const enemyGeometry = new THREE.ConeGeometry(0.4, 1, 8);
+                const enemyMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0xff4757,
+                    emissive: 0x330000
+                });
+                const enemyMesh = new THREE.Mesh(enemyGeometry, enemyMaterial);
+                enemyMesh.position.set(x, 0.5, z);
+                enemyMesh.castShadow = true;
+                
+                const enemy = {
+                    mesh: enemyMesh,
+                    position: new THREE.Vector3(x, 0.5, z),
+                    targetPosition: new THREE.Vector3(x, 0.5, z),
+                    speed: 0.02 + Math.random() * 0.02,
+                    damage: 10,
+                    health: 50,
+                    type: 'enemy',
+                    lastMoveTime: 0
+                };
+                
+                enemies.push(enemy);
+                scene.add(enemyMesh);
+            }
+        }
+        
+        function spawnTraps() {
+            const trapTypes = ['spike', 'slow', 'damage'];
+            
+            for (let i = 0; i < gameSettings.trapCount; i++) {
+                const x = Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5;
+                const z = Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5;
+                
+                if (mazeGrid[Math.floor(z + mazeSize/2)][Math.floor(x + mazeSize/2)].wall) continue;
+                if (Math.abs(x - player.position.x) < 2 && Math.abs(z - player.position.z) < 2) continue;
+                
+                const trapType = trapTypes[Math.floor(Math.random() * trapTypes.length)];
+                let trapMesh;
+                
+                if (trapType === 'spike') {
+                    const trapGeometry = new THREE.ConeGeometry(0.3, 0.6, 4);
+                    const trapMaterial = new THREE.MeshPhongMaterial({ 
+                        color: 0xff4757,
+                        emissive: 0x330000
+                    });
+                    trapMesh = new THREE.Mesh(trapGeometry, trapMaterial);
+                } else if (trapType === 'slow') {
+                    const trapGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.1, 6);
+                    const trapMaterial = new THREE.MeshPhongMaterial({ 
+                        color: 0x70a1ff,
+                        emissive: 0x001133,
+                        transparent: true,
+                        opacity: 0.7
+                    });
+                    trapMesh = new THREE.Mesh(trapGeometry, trapMaterial);
+                } else {
+                    const trapGeometry = new THREE.BoxGeometry(0.6, 0.1, 0.6);
+                    const trapMaterial = new THREE.MeshPhongMaterial({ 
+                        color: 0xff0000,
+                        emissive: 0x330000
+                    });
+                    trapMesh = new THREE.Mesh(trapGeometry, trapMaterial);
+                }
+                
+                trapMesh.position.set(x, trapType === 'spike' ? 0.3 : 0.05, z);
+                trapMesh.castShadow = true;
+                
+                const trap = {
+                    mesh: trapMesh,
+                    position: new THREE.Vector3(x, 0, z),
+                    type: trapType,
+                    active: true,
+                    damage: trapType === 'damage' ? 15 : trapType === 'spike' ? 20 : 0,
+                    effect: trapType === 'slow' ? 'slow' : 'damage'
+                };
+                
+                traps.push(trap);
+                scene.add(trapMesh);
+            }
+        }
+        
+        function spawnPowerups() {
+            const powerupTypes = [
+                { type: 'speed', color: 0x00b894, icon: '⚡', duration: 10 },
+                { type: 'invis', color: 0x70a1ff, icon: '👻', duration: 8 },
+                { type: 'magnet', color: 0xffa502, icon: '🧲', duration: 15 },
+                { type: 'health', color: 0xff4757, icon: '❤️', duration: 0 }
+            ];
+            
+            for (let i = 0; i < 4; i++) {
+                const x = Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5;
+                const z = Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5;
+                
+                if (mazeGrid[Math.floor(z + mazeSize/2)][Math.floor(x + mazeSize/2)].wall) continue;
+                
+                const powerupType = powerupTypes[i];
+                const powerupGeometry = new THREE.IcosahedronGeometry(0.3);
+                const powerupMaterial = new THREE.MeshPhongMaterial({ 
+                    color: powerupType.color,
+                    emissive: powerupType.color,
+                    emissiveIntensity: 0.5,
+                    shininess: 100,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                const powerupMesh = new THREE.Mesh(powerupGeometry, powerupMaterial);
+                powerupMesh.position.set(x, 0.8, z);
+                powerupMesh.castShadow = true;
+                
+                const powerup = {
+                    mesh: powerupMesh,
+                    position: new THREE.Vector3(x, 0.8, z),
+                    type: powerupType.type,
+                    icon: powerupType.icon,
+                    color: powerupType.color,
+                    duration: powerupType.duration,
+                    collected: false
+                };
+                
+                powerups.push(powerup);
+                scene.add(powerupMesh);
+            }
+        }
+        
+        // Game loop functions
         const keys = {};
         
         function onKeyDown(event) {
             keys[event.code] = true;
+            
+            // Jump
+            if (event.code === 'Space' && isGrounded) {
+                velocityY = jumpPower;
+                isGrounded = false;
+                playSound('jump');
+            }
+            
+            // Use power-up
+            if (event.code === 'KeyE') {
+                useActivePowerup();
+            }
         }
         
         function onKeyUp(event) {
             keys[event.code] = false;
         }
         
-        // Handle mouse movement
+        function onPointerLockChange() {
+            if (document.pointerLockElement === gameCanvas) {
+                document.addEventListener('mousemove', onMouseMove);
+            } else {
+                document.removeEventListener('mousemove', onMouseMove);
+            }
+        }
+        
         function onMouseMove(event) {
-            if (document.pointerLockElement === gameCanvas && player) {
+            if (document.pointerLockElement === gameCanvas) {
                 const movementX = event.movementX || 0;
                 const movementY = event.movementY || 0;
                 
                 player.rotation.y -= movementX * 0.002;
                 camera.rotation.x -= movementY * 0.002;
-                
-                // Limit vertical camera movement
                 camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, camera.rotation.x));
             }
         }
         
-        // Update player movement
         function updatePlayer() {
             if (!player) return;
             
-            const speed = 0.1;
-            const prevPosition = player.position.clone();
+            // Apply gravity
+            velocityY -= gravity;
+            player.position.y += velocityY;
             
-            // Move forward/backward
+            // Ground collision
+            if (player.position.y < 1) {
+                player.position.y = 1;
+                velocityY = 0;
+                isGrounded = true;
+            }
+            
+            // Movement
+            const moveSpeed = playerSpeed * (activePowerups.speed ? 1.5 : 1);
+            const moveVector = new THREE.Vector3(0, 0, 0);
+            
             if (keys['KeyW'] || keys['ArrowUp']) {
-                player.position.x -= Math.sin(player.rotation.y) * speed;
-                player.position.z -= Math.cos(player.rotation.y) * speed;
+                moveVector.z -= 1;
             }
             if (keys['KeyS'] || keys['ArrowDown']) {
-                player.position.x += Math.sin(player.rotation.y) * speed;
-                player.position.z += Math.cos(player.rotation.y) * speed;
+                moveVector.z += 1;
             }
-            
-            // Strafe left/right
             if (keys['KeyA'] || keys['ArrowLeft']) {
-                player.position.x -= Math.cos(player.rotation.y) * speed;
-                player.position.z += Math.sin(player.rotation.y) * speed;
+                moveVector.x -= 1;
             }
             if (keys['KeyD'] || keys['ArrowRight']) {
-                player.position.x += Math.cos(player.rotation.y) * speed;
-                player.position.z -= Math.sin(player.rotation.y) * speed;
+                moveVector.x += 1;
             }
             
-            // Check collision with walls
-            const playerGridX = Math.floor(player.position.x + mazeSize/2);
-            const playerGridZ = Math.floor(player.position.z + mazeSize/2);
-            
-            if (playerGridX >= 0 && playerGridX < mazeSize && 
-                playerGridZ >= 0 && playerGridZ < mazeSize &&
-                mazeGrid[playerGridZ][playerGridX].wall) {
-                // Collision detected, revert to previous position
-                player.position.copy(prevPosition);
+            // Sprint
+            if (keys['ShiftLeft'] || keys['ShiftRight']) {
+                moveVector.multiplyScalar(1.5);
             }
             
-            // Update player mesh position
+            // Normalize and apply rotation
+            if (moveVector.length() > 0) {
+                moveVector.normalize();
+                moveVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), player.rotation.y);
+                moveVector.multiplyScalar(moveSpeed);
+                
+                // Check collision before moving
+                const newX = player.position.x + moveVector.x;
+                const newZ = player.position.z + moveVector.z;
+                
+                const gridX = Math.floor(newX + mazeSize/2);
+                const gridZ = Math.floor(newZ + mazeSize/2);
+                
+                if (gridX >= 0 && gridX < mazeSize && gridZ >= 0 && gridZ < mazeSize) {
+                    if (!mazeGrid[gridZ][gridX].wall) {
+                        player.position.x = newX;
+                        player.position.z = newZ;
+                    }
+                }
+            }
+            
+            // Update player mesh
             player.mesh.position.copy(player.position);
             player.mesh.rotation.y = player.rotation.y;
             
-            // Update camera position
-            camera.position.set(
-                player.position.x,
-                player.position.y + 1,
-                player.position.z
-            );
+            // Update camera with shake effect
+            if (cameraShake > 0) {
+                camera.position.x = player.position.x + (Math.random() - 0.5) * cameraShake;
+                camera.position.y = player.position.y + 2 + (Math.random() - 0.5) * cameraShake;
+                camera.position.z = player.position.z + (Math.random() - 0.5) * cameraShake;
+                cameraShake *= 0.9;
+                if (cameraShake < 0.1) cameraShake = 0;
+            } else {
+                camera.position.x = player.position.x;
+                camera.position.y = player.position.y + 2;
+                camera.position.z = player.position.z;
+            }
             camera.rotation.y = player.rotation.y;
             
-            // Check coin collection
+            // Check collisions
+            checkCoinCollisions();
+            checkGemCollisions();
+            checkPowerupCollisions();
+            checkTrapCollisions();
+            checkEnemyCollisions();
+            checkExit();
+            
+            // Update active powerups
+            updatePowerups();
+            
+            // Update UI
+            updatePlayerUI();
+        }
+        
+        function checkCoinCollisions() {
             for (let i = coins.length - 1; i >= 0; i--) {
                 const coin = coins[i];
                 if (!coin.collected && player.position.distanceTo(coin.position) < 0.8) {
+                    // Collect coin
                     coin.collected = true;
                     scene.remove(coin.mesh);
                     coins.splice(i, 1);
                     
-                    player.score++;
                     coinsCollected++;
-                    coinsCountEl.textContent = coinsCollected;
+                    totalScore += coin.value;
                     
-                    // Create new coin
-                    const newX = Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5;
-                    const newZ = Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5;
-                    createCoin(newX, newZ);
-                    
-                    // Send update to other players
-                    if (dataChannel && dataChannel.readyState === 'open') {
-                        sendGameUpdate('coinCollected', {
-                            playerId: localPlayerId,
-                            coinIndex: i,
-                            newCoin: { x: newX, z: newZ }
+                    // Coin magnet effect
+                    if (activePowerups.magnet) {
+                        // Attract nearby coins
+                        coins.forEach(c => {
+                            if (!c.collected) {
+                                const dir = player.position.clone().sub(c.position).normalize();
+                                c.position.add(dir.multiplyScalar(0.1));
+                            }
                         });
                     }
                     
-                    updatePlayersUI();
+                    // Update UI
+                    headerCoinsEl.textContent = coinsCollected;
+                    headerScoreEl.textContent = totalScore;
                     
-                    // Check for win condition
-                    if (player.score >= 10) {
-                        alert(`Congratulations ${player.name}! You collected 10 coins and won!`);
-                        player.score = 0;
-                        coinsCollected = 0;
-                        coinsCountEl.textContent = '0';
-                        generateMaze();
+                    // Play sound
+                    playSound('coin');
+                    
+                    // Show notification
+                    showNotification('Coin Collected', `+${coin.value} points!`);
+                    
+                    // Check for level up
+                    checkLevelUp();
+                }
+            }
+        }
+        
+        function checkGemCollisions() {
+            for (let i = gems.length - 1; i >= 0; i--) {
+                const gem = gems[i];
+                if (!gem.collected && player.position.distanceTo(gem.position) < 0.8) {
+                    gem.collected = true;
+                    scene.remove(gem.mesh);
+                    gems.splice(i, 1);
+                    
+                    gemsCollected++;
+                    totalScore += gem.value;
+                    
+                    headerScoreEl.textContent = totalScore;
+                    playSound('gem');
+                    showNotification('Gem Found!', `${gem.name} worth ${gem.value} points!`);
+                    checkLevelUp();
+                }
+            }
+        }
+        
+        function checkPowerupCollisions() {
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                const powerup = powerups[i];
+                if (!powerup.collected && player.position.distanceTo(powerup.position) < 0.8) {
+                    powerup.collected = true;
+                    scene.remove(powerup.mesh);
+                    powerups.splice(i, 1);
+                    
+                    // Activate powerup
+                    activatePowerup(powerup.type, powerup.duration);
+                    
+                    showNotification('Powerup!', `${powerup.icon} ${powerup.type.toUpperCase()} activated!`);
+                    playSound('powerup');
+                }
+            }
+        }
+        
+        function checkTrapCollisions() {
+            for (const trap of traps) {
+                if (trap.active && player.position.distanceTo(trap.position) < 0.7) {
+                    if (trap.effect === 'damage') {
+                        takeDamage(trap.damage);
+                        trap.active = false;
+                        trap.mesh.material.opacity = 0.3;
+                        showNotification('Trap!', `Took ${trap.damage} damage!`);
+                        cameraShake = 0.5;
+                        playSound('hurt');
+                    } else if (trap.effect === 'slow') {
+                        if (!activePowerups.slow) {
+                            activePowerups.slow = { endTime: Date.now() + 3000 };
+                            playerSpeed *= 0.5;
+                            showNotification('Slowed!', 'Movement speed reduced!');
+                            playSound('trap');
+                        }
                     }
                 }
             }
+        }
+        
+        function checkEnemyCollisions() {
+            for (const enemy of enemies) {
+                if (player.position.distanceTo(enemy.position) < 1) {
+                    if (Date.now() - enemy.lastMoveTime > 1000) {
+                        takeDamage(enemy.damage);
+                        enemy.lastMoveTime = Date.now();
+                        showNotification('Enemy Attack!', `-${enemy.damage} health`);
+                        cameraShake = 1;
+                        playSound('hurt');
+                    }
+                }
+            }
+        }
+        
+        function checkExit() {
+            const exitX = mazeSize - 1;
+            const exitZ = mazeSize - 1;
+            const playerGridX = Math.floor(player.position.x + mazeSize/2);
+            const playerGridZ = Math.floor(player.position.z + mazeSize/2);
             
-            // Send position update to other players
-            if (dataChannel && dataChannel.readyState === 'open' && 
-                (prevPosition.x !== player.position.x || prevPosition.z !== player.position.z || 
-                 prevPosition.y !== player.position.y)) {
-                sendGameUpdate('playerMove', {
-                    id: localPlayerId,
-                    position: { x: player.position.x, y: player.position.y, z: player.position.z },
-                    rotation: { y: player.rotation.y }
-                });
+            if (playerGridX === exitX && playerGridZ === exitZ) {
+                completeLevel();
             }
         }
         
-        // Update other players
-        function updateOtherPlayers() {
-            for (const playerId in players) {
-                const otherPlayer = players[playerId];
-                otherPlayer.mesh.position.lerp(otherPlayer.position, 0.2);
-                otherPlayer.mesh.rotation.y = otherPlayer.rotation.y;
+        function updateEnemies() {
+            const now = Date.now();
+            
+            for (const enemy of enemies) {
+                // Move toward player if within range
+                const distanceToPlayer = enemy.position.distanceTo(player.position);
+                
+                if (distanceToPlayer < 8) {
+                    // Chase player
+                    const direction = player.position.clone().sub(enemy.position).normalize();
+                    enemy.position.add(direction.multiplyScalar(enemy.speed));
+                    
+                    // Rotate toward player
+                    const angle = Math.atan2(direction.x, direction.z);
+                    enemy.mesh.rotation.y = angle;
+                    
+                    // Check wall collisions
+                    const gridX = Math.floor(enemy.position.x + mazeSize/2);
+                    const gridZ = Math.floor(enemy.position.z + mazeSize/2);
+                    
+                    if (gridX >= 0 && gridX < mazeSize && gridZ >= 0 && gridZ < mazeSize) {
+                        if (mazeGrid[gridZ][gridX].wall) {
+                            // Bounce off wall
+                            enemy.position.x -= direction.x * 0.5;
+                            enemy.position.z -= direction.z * 0.5;
+                        }
+                    }
+                } else {
+                    // Random patrol
+                    if (now - enemy.lastMoveTime > 2000) {
+                        enemy.targetPosition.x = enemy.position.x + (Math.random() - 0.5) * 4;
+                        enemy.targetPosition.z = enemy.position.z + (Math.random() - 0.5) * 4;
+                        enemy.lastMoveTime = now;
+                    }
+                    
+                    // Move toward target
+                    const direction = enemy.targetPosition.clone().sub(enemy.position).normalize();
+                    enemy.position.add(direction.multiplyScalar(enemy.speed * 0.5));
+                }
+                
+                enemy.mesh.position.copy(enemy.position);
+                
+                // Bobbing animation
+                enemy.mesh.position.y = enemy.position.y + Math.sin(now * 0.003) * 0.1;
             }
         }
         
-        // Animation loop
+        function updatePowerups() {
+            const now = Date.now();
+            
+            // Update active powerups
+            for (const type in activePowerups) {
+                if (activePowerups[type].endTime && now > activePowerups[type].endTime) {
+                    deactivatePowerup(type);
+                }
+            }
+            
+            // Update powerup indicator
+            updatePowerupIndicator();
+            
+            // Animate powerups in scene
+            for (const powerup of powerups) {
+                if (!powerup.collected) {
+                    powerup.mesh.rotation.y += 0.02;
+                    powerup.mesh.position.y = 0.8 + Math.sin(now * 0.002) * 0.2;
+                }
+            }
+        }
+        
         function animate() {
             requestAnimationFrame(animate);
             
             updatePlayer();
-            updateOtherPlayers();
+            updateEnemies();
+            animateCoinsAndGems();
             
-            // Animate coins
-            const time = Date.now() * 0.001;
-            coins.forEach(coin => {
-                if (coin.mesh) {
-                    coin.mesh.rotation.z = time * 2;
-                    coin.mesh.position.y = 0.5 + Math.sin(time * 3) * 0.1;
-                }
-            });
+            // Apply camera shake
+            if (cameraShake > 0) {
+                camera.position.x += (Math.random() - 0.5) * cameraShake;
+                camera.position.y += (Math.random() - 0.5) * cameraShake;
+                camera.position.z += (Math.random() - 0.5) * cameraShake;
+                cameraShake *= 0.9;
+            }
             
             renderer.render(scene, camera);
         }
         
-        // Handle window resize
-        function onWindowResize() {
-            camera.aspect = gameCanvas.parentElement.clientWidth / gameCanvas.parentElement.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(gameCanvas.parentElement.clientWidth, gameCanvas.parentElement.clientHeight);
+        function animateCoinsAndGems() {
+            const time = Date.now() * 0.001;
+            
+            coins.forEach(coin => {
+                if (!coin.collected) {
+                    coin.mesh.rotation.y = time * 2;
+                    coin.mesh.position.y = 0.5 + Math.sin(time * 3) * 0.1;
+                }
+            });
+            
+            gems.forEach(gem => {
+                if (!gem.collected) {
+                    gem.mesh.rotation.y = time;
+                    gem.mesh.rotation.x = time * 0.5;
+                    gem.mesh.position.y = 0.8 + Math.sin(time * 2) * 0.15;
+                }
+            });
         }
         
-        // Multiplayer functions
+        // Game systems
+        function takeDamage(amount) {
+            playerHealth = Math.max(0, playerHealth - amount);
+            updateHealthBar();
+            
+            if (playerHealth <= 0) {
+                gameOver();
+            }
+        }
+        
+        function heal(amount) {
+            playerHealth = Math.min(maxHealth, playerHealth + amount);
+            updateHealthBar();
+            playSound('heal');
+        }
+        
+        function activatePowerup(type, duration) {
+            activePowerups[type] = {
+                startTime: Date.now(),
+                endTime: duration > 0 ? Date.now() + duration * 1000 : null
+            };
+            
+            switch(type) {
+                case 'speed':
+                    playerSpeed *= 1.5;
+                    break;
+                case 'invis':
+                    player.mesh.visible = false;
+                    break;
+                case 'magnet':
+                    // Already handled in collision
+                    break;
+                case 'health':
+                    heal(50);
+                    break;
+            }
+        }
+        
+        function deactivatePowerup(type) {
+            switch(type) {
+                case 'speed':
+                    playerSpeed /= 1.5;
+                    break;
+                case 'invis':
+                    player.mesh.visible = true;
+                    break;
+                case 'slow':
+                    playerSpeed /= 0.5;
+                    break;
+            }
+            delete activePowerups[type];
+            showNotification('Powerup Ended', `${type} effect has worn off`);
+        }
+        
+        function useActivePowerup() {
+            // Could implement special ability usage here
+            if (activePowerups.magnet) {
+                // Boost magnet effect
+                showNotification('Magnet Boost', 'Attracting coins from further away!');
+                playSound('boost');
+            }
+        }
+        
+        function checkLevelUp() {
+            const oldLevel = playerLevel;
+            playerLevel = Math.floor(coinsCollected / 10) + 1;
+            
+            if (playerLevel > oldLevel) {
+                showNotification('Level Up!', `You reached level ${playerLevel}!`);
+                headerLevelEl.textContent = playerLevel;
+                playSound('levelup');
+                
+                // Unlock upgrades
+                unlockUpgrades();
+            }
+        }
+        
+        function completeLevel() {
+            const levelScore = totalScore + gameTime * 10;
+            showNotification('Level Complete!', `Score: ${levelScore}. Starting next level!`);
+            playSound('win');
+            
+            // Increase difficulty
+            mazeSize = Math.min(20, mazeSize + 2);
+            mazeSizeSelect.value = mazeSize;
+            
+            // Generate new maze
+            generateNewMaze();
+        }
+        
+        function gameOver() {
+            showNotification('Game Over', `Final Score: ${totalScore}. Restarting...`);
+            playSound('lose');
+            
+            // Reset game
+            setTimeout(() => {
+                coinsCollected = 0;
+                totalScore = 0;
+                playerLevel = 1;
+                playerHealth = maxHealth;
+                gameTime = 0;
+                startTime = Date.now();
+                
+                headerCoinsEl.textContent = '0';
+                headerScoreEl.textContent = '0';
+                headerLevelEl.textContent = '1';
+                updateHealthBar();
+                
+                generateNewMaze();
+            }, 3000);
+        }
+        
+        // UI functions
+        function updatePlayerUI() {
+            const playerElement = playersContainer.querySelector('.player-item.you');
+            if (playerElement) {
+                playerElement.querySelector('.player-name').textContent = playerName;
+                playerElement.querySelector('.player-level').textContent = `Level ${playerLevel}`;
+                playerElement.querySelector('.player-score').textContent = totalScore;
+            }
+        }
+        
+        function updateHealthBar() {
+            const healthBar = document.querySelector('.player-item.you .health-bar');
+            if (healthBar) {
+                const percent = (playerHealth / maxHealth) * 100;
+                healthBar.style.width = `${percent}%`;
+                
+                // Change color based on health
+                if (percent > 60) {
+                    healthBar.style.background = 'linear-gradient(90deg, #2ed573, #7bed9f)';
+                } else if (percent > 30) {
+                    healthBar.style.background = 'linear-gradient(90deg, #ffa502, #ffbe76)';
+                } else {
+                    healthBar.style.background = 'linear-gradient(90deg, #ff4757, #ff6b81)';
+                }
+            }
+        }
+        
+        function updateTimeDisplay() {
+            const minutes = Math.floor(gameTime / 60);
+            const seconds = gameTime % 60;
+            headerTimeEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function updateMiniMap() {
+            // Simple mini-map representation
+            const ctx = document.createElement('canvas').getContext('2d');
+            ctx.canvas.width = 150;
+            ctx.canvas.height = 150;
+            
+            // Draw background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, 150, 150);
+            
+            // Draw maze
+            const cellSize = 150 / mazeSize;
+            
+            for (let z = 0; z < mazeSize; z++) {
+                for (let x = 0; x < mazeSize; x++) {
+                    if (mazeGrid[z][x].wall) {
+                        ctx.fillStyle = '#3742fa';
+                        ctx.fillRect(x * cellSize, z * cellSize, cellSize, cellSize);
+                    } else {
+                        if (mazeGrid[z][x].type === 'start') {
+                            ctx.fillStyle = '#00b894';
+                        } else if (mazeGrid[z][x].type === 'exit') {
+                            ctx.fillStyle = '#ff4757';
+                        } else {
+                            ctx.fillStyle = '#2d3436';
+                        }
+                        ctx.fillRect(x * cellSize, z * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+            
+            // Draw player
+            const playerX = (player.position.x + mazeSize/2) * cellSize;
+            const playerZ = (player.position.z + mazeSize/2) * cellSize;
+            ctx.fillStyle = '#ffa502';
+            ctx.beginPath();
+            ctx.arc(playerX, playerZ, 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Update mini-map display
+            miniMap.style.backgroundImage = `url(${ctx.canvas.toDataURL()})`;
+        }
+        
+        function updatePowerupIndicator() {
+            powerupIndicator.innerHTML = '';
+            
+            for (const type in activePowerups) {
+                const powerup = activePowerups[type];
+                const div = document.createElement('div');
+                div.className = 'powerup';
+                
+                let icon = '⚡';
+                if (type === 'invis') icon = '👻';
+                if (type === 'magnet') icon = '🧲';
+                if (type === 'health') icon = '❤️';
+                if (type === 'slow') icon = '🐌';
+                
+                const timeLeft = powerup.endTime ? Math.max(0, Math.ceil((powerup.endTime - Date.now()) / 1000)) : null;
+                
+                div.innerHTML = `
+                    <div class="powerup-icon" style="background: ${getPowerupColor(type)}"></div>
+                    <div class="powerup-timer">${icon} ${timeLeft || ''}</div>
+                `;
+                
+                powerupIndicator.appendChild(div);
+            }
+        }
+        
+        function getPowerupColor(type) {
+            const colors = {
+                speed: '#00b894',
+                invis: '#70a1ff',
+                magnet: '#ffa502',
+                health: '#ff4757',
+                slow: '#3742fa'
+            };
+            return colors[type] || '#ffffff';
+        }
+        
+        function unlockUpgrades() {
+            const upgradeCosts = {
+                speed: 100,
+                vision: 200,
+                health: 150,
+                magnet: 300
+            };
+            
+            upgradeItems.forEach(item => {
+                const upgrade = item.dataset.upgrade;
+                const cost = upgradeCosts[upgrade];
+                
+                if (totalScore >= cost) {
+                    item.classList.remove('locked');
+                    item.querySelector('.upgrade-cost').textContent = 'Purchased';
+                } else {
+                    item.classList.add('locked');
+                    item.querySelector('.upgrade-cost').textContent = `Cost: ${cost} coins`;
+                }
+            });
+        }
+        
+        function purchaseUpgrade(type) {
+            const costs = { speed: 100, vision: 200, health: 150, magnet: 300 };
+            const cost = costs[type];
+            
+            if (totalScore >= cost) {
+                totalScore -= cost;
+                headerScoreEl.textContent = totalScore;
+                
+                switch(type) {
+                    case 'speed':
+                        playerSpeed += 0.05;
+                        break;
+                    case 'vision':
+                        scene.fog.far += 10;
+                        break;
+                    case 'health':
+                        maxHealth += 50;
+                        playerHealth = maxHealth;
+                        updateHealthBar();
+                        break;
+                    case 'magnet':
+                        activatePowerup('magnet', 30);
+                        break;
+                }
+                
+                showNotification('Upgrade Purchased!', `${type} upgrade activated!`);
+                playSound('upgrade');
+                unlockUpgrades();
+            }
+        }
+        
+        function showNotification(title, message) {
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            notification.classList.remove('hidden');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.classList.add('hidden'), 300);
+            }, 3000);
+        }
+        
+        // Sound functions
+        function playSound(type) {
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                let frequency = 440;
+                let duration = 0.1;
+                
+                switch(type) {
+                    case 'coin':
+                        frequency = 800;
+                        duration = 0.1;
+                        break;
+                    case 'gem':
+                        frequency = 1200;
+                        duration = 0.2;
+                        break;
+                    case 'powerup':
+                        frequency = 600;
+                        duration = 0.3;
+                        break;
+                    case 'hurt':
+                        frequency = 200;
+                        duration = 0.2;
+                        break;
+                    case 'jump':
+                        frequency = 500;
+                        duration = 0.1;
+                        break;
+                    case 'win':
+                        frequency = 523.25; // C
+                        duration = 0.15;
+                        break;
+                    case 'lose':
+                        frequency = 220;
+                        duration = 0.3;
+                        break;
+                    case 'click':
+                        frequency = 300;
+                        duration = 0.05;
+                        break;
+                    case 'levelup':
+                        frequency = 1046.50; // C
+                        duration = 0.2;
+                        break;
+                    case 'heal':
+                        frequency = 659.25; // E
+                        duration = 0.2;
+                        break;
+                    case 'boost':
+                        frequency = 880;
+                        duration = 0.1;
+                        break;
+                    case 'trap':
+                        frequency = 150;
+                        duration = 0.3;
+                        break;
+                    case 'upgrade':
+                        frequency = 1046.50; // C
+                        duration = 0.5;
+                        break;
+                }
+                
+                oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + duration);
+            } catch (e) {
+                console.log('Audio not supported or context suspended');
+            }
+        }
+        
+        // UI update functions
+        function generateNewMaze() {
+            mazeSize = parseInt(mazeSizeSelect.value);
+            generateMaze();
+            playSound('click');
+        }
+        
+        function updateMazeSettings() {
+            mazeSize = parseInt(mazeSizeSelect.value);
+            generateNewMaze();
+        }
+        
+        function updateDifficulty() {
+            gameSettings.difficulty = difficultySelect.value;
+            
+            switch(gameSettings.difficulty) {
+                case 'easy':
+                    gameSettings.enemyCount = 2;
+                    gameSettings.trapCount = 3;
+                    break;
+                case 'normal':
+                    gameSettings.enemyCount = 3;
+                    gameSettings.trapCount = 5;
+                    break;
+                case 'hard':
+                    gameSettings.enemyCount = 5;
+                    gameSettings.trapCount = 8;
+                    break;
+                case 'nightmare':
+                    gameSettings.enemyCount = 8;
+                    gameSettings.trapCount = 12;
+                    scene.fog.density *= 1.5;
+                    break;
+            }
+            
+            showNotification('Difficulty Changed', `${gameSettings.difficulty.toUpperCase()} mode activated`);
+        }
+        
+        function updateCharacter() {
+            gameSettings.characterType = characterTypeSelect.value;
+            
+            // Remove old player
+            if (player && player.mesh) {
+                scene.remove(player.mesh);
+            }
+            
+            // Create new player
+            createPlayer();
+            
+            showNotification('Character Changed', `${gameSettings.characterType} selected`);
+        }
+        
+        function updatePlayerName() {
+            playerName = playerNameInput.value;
+            updatePlayerUI();
+        }
+        
+        // Multiplayer functions (simplified for demo)
         function startMultiplayer() {
             isHost = true;
             connectionCode = generateConnectionCode();
             connectionCodeEl.textContent = connectionCode;
             connectionUI.classList.remove('hidden');
             
-            updateConnectionStatus('Connecting...', 'connecting');
+            updateConnectionStatus('Hosting Game...', 'connecting');
             
-            // For demo purposes, we'll simulate WebRTC connection
-            // In a real implementation, you would use WebRTC API
             setTimeout(() => {
-                updateConnectionStatus('Connected as Host', 'connected');
-                
-                // Create a mock remote player for demonstration
-                const remotePlayerId = createPlayer(false);
-                
-                // Simulate receiving data from remote player
-                simulateRemotePlayer(remotePlayerId);
-            }, 1500);
+                updateConnectionStatus('Waiting for players...', 'connected');
+                showNotification('Multiplayer', 'Share code with friends on same Wi-Fi');
+            }, 1000);
             
             startMultiplayerBtn.disabled = true;
-            startMultiplayerBtn.textContent = 'Hosting Game';
+            startMultiplayerBtn.textContent = 'Hosting...';
+            playSound('click');
         }
         
         function joinMultiplayer() {
             const code = joinCodeInput.value.trim();
             if (code.length !== 5) {
-                alert('Please enter a valid 5-character code');
+                showNotification('Error', 'Enter a valid 5-character code');
                 return;
             }
             
@@ -992,21 +2292,16 @@ function createPlayer(isLocal = false) {
             connectionCodeEl.textContent = code;
             connectionUI.classList.remove('hidden');
             
-            updateConnectionStatus('Connecting...', 'connecting');
+            updateConnectionStatus('Joining Game...', 'connecting');
             
-            // For demo purposes, we'll simulate WebRTC connection
             setTimeout(() => {
                 updateConnectionStatus('Connected to Host', 'connected');
-                
-                // Create a mock remote player for demonstration
-                const remotePlayerId = createPlayer(false);
-                
-                // Simulate receiving data from remote player
-                simulateRemotePlayer(remotePlayerId);
+                showNotification('Connected!', 'Joined multiplayer game');
             }, 1500);
             
             startMultiplayerBtn.disabled = true;
-            startMultiplayerBtn.textContent = 'Joined Game';
+            startMultiplayerBtn.textContent = 'Joined';
+            playSound('click');
         }
         
         function generateConnectionCode() {
@@ -1020,104 +2315,95 @@ function createPlayer(isLocal = false) {
         
         function updateConnectionStatus(text, status) {
             statusText.textContent = text;
-            statusDot.className = 'status-dot ' + status;
+            connectionStatus.className = `connection-status ${status}`;
         }
         
-        function sendGameUpdate(type, data) {
-            // In a real implementation, this would send data via WebRTC data channel
-            console.log(`Sending ${type}:`, data);
+        // Helper functions
+        function getUnvisitedNeighbors(x, z) {
+            const neighbors = [];
+            const directions = [[x+2, z], [x-2, z], [x, z+2], [x, z-2]];
             
-            // For demo, we'll just log it
-            if (type === 'playerMove') {
-                // Simulate receiving this update
-                setTimeout(() => {
-                    if (Math.random() > 0.5) { // Randomly simulate network delay/loss
-                        receiveGameUpdate(type, data);
-                    }
-                }, 100 + Math.random() * 200);
-            }
-        }
-        
-        function receiveGameUpdate(type, data) {
-            console.log(`Received ${type}:`, data);
-            
-            switch (type) {
-                case 'playerMove':
-                    if (players[data.id]) {
-                        players[data.id].position.set(data.position.x, data.position.y, data.position.z);
-                        players[data.id].rotation.y = data.rotation.y;
-                    }
-                    break;
-                    
-                case 'coinCollected':
-                    if (data.playerId === localPlayerId) return;
-                    
-                    if (coins[data.coinIndex]) {
-                        scene.remove(coins[data.coinIndex].mesh);
-                        coins.splice(data.coinIndex, 1);
-                        
-                        createCoin(data.newCoin.x, data.newCoin.z);
-                        
-                        if (players[data.playerId]) {
-                            players[data.playerId].score++;
-                            updatePlayersUI();
-                        }
-                    }
-                    break;
-                    
-                case 'playerUpdate':
-                    if (players[data.id]) {
-                        players[data.id].name = data.name;
-                        updatePlayersUI();
-                    }
-                    break;
-                    
-                case 'mazeRegenerate':
-                    mazeSize = data.mazeSize;
-                    mazeSizeSelect.value = mazeSize;
-                    generateMaze();
-                    break;
-            }
-        }
-        
-        // Simulate a remote player for demo purposes
-        function simulateRemotePlayer(playerId) {
-            // Move the remote player randomly
-            setInterval(() => {
-                if (players[playerId] && Math.random() > 0.7) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const distance = 0.1;
-                    
-                    players[playerId].position.x += Math.sin(angle) * distance;
-                    players[playerId].position.z += Math.cos(angle) * distance;
-                    
-                    // Keep player in bounds
-                    players[playerId].position.x = Math.max(-mazeSize/2 + 0.5, Math.min(mazeSize/2 - 0.5, players[playerId].position.x));
-                    players[playerId].position.z = Math.max(-mazeSize/2 + 0.5, Math.min(mazeSize/2 - 0.5, players[playerId].position.z));
-                    
-                    // Random rotation
-                    players[playerId].rotation.y += (Math.random() - 0.5) * 0.1;
+            for (const [nx, nz] of directions) {
+                if (nx >= 0 && nx < mazeSize && nz >= 0 && nz < mazeSize && !mazeGrid[nz][nx].visited) {
+                    neighbors.push([nx, nz]);
                 }
-            }, 100);
+            }
             
-            // Simulate coin collection
-            setInterval(() => {
-                if (coins.length > 0 && Math.random() > 0.9) {
-                    const coinIndex = Math.floor(Math.random() * coins.length);
-                    receiveGameUpdate('coinCollected', {
-                        playerId: playerId,
-                        coinIndex: coinIndex,
-                        newCoin: { 
-                            x: Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5, 
-                            z: Math.floor(Math.random() * mazeSize) - mazeSize/2 + 0.5 
-                        }
-                    });
-                }
-            }, 2000);
+            return neighbors;
         }
         
-        // Initialize the game when the page loads
-        window.onload = init;
+        function onWindowResize() {
+            camera.aspect = gameCanvas.parentElement.clientWidth / gameCanvas.parentElement.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(gameCanvas.parentElement.clientWidth, gameCanvas.parentElement.clientHeight);
+        }
+        
+        function updateCharacterStats() {
+            // Update stats based on character type
+            const stats = {
+                speed: { base: 0.15, multiplier: 1 },
+                tank: { base: 0.12, multiplier: 1.25, health: 150 },
+                collector: { base: 0.14, multiplier: 1.1 },
+                ninja: { base: 0.18, multiplier: 0.9 }
+            };
+            
+            const charType = gameSettings.characterType;
+            playerSpeed = stats[charType]?.base || 0.15;
+            maxHealth = stats[charType]?.health || 100;
+            playerHealth = maxHealth;
+            
+            updateHealthBar();
+        }
+        
+        // Initialize game when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if Three.js is loaded
+            if (typeof THREE === 'undefined') {
+                document.body.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: #0a0a0a;
+                        color: white;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        text-align: center;
+                        padding: 20px;
+                        z-index: 10000;
+                    ">
+                        <h1 style="color: #ff4757; margin-bottom: 20px;">⚠️ Error Loading Game</h1>
+                        <p>Three.js library failed to load. Please check your internet connection and refresh the page.</p>
+                        <button onclick="location.reload()" style="
+                            margin-top: 30px;
+                            padding: 15px 30px;
+                            background: #ff4757;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 1.1rem;
+                            cursor: pointer;
+                        ">Refresh Page</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Start audio context on user interaction
+            document.body.addEventListener('click', function initAudio() {
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                document.body.removeEventListener('click', initAudio);
+            });
+            
+            // Initialize game
+            setTimeout(init, 500);
+        });
     </script>
 </body>
 </html>
