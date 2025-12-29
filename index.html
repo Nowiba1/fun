@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Maze Escape - Local Multiplayer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r162/three.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -672,48 +672,71 @@
             return neighbors;
         }
         
-        // Create a player
-        function createPlayer(isLocal = false) {
-            const playerId = 'player_' + Math.random().toString(36).substr(2, 9);
-            const playerColor = new THREE.Color(
-                Math.random() * 0.5 + 0.5,
-                Math.random() * 0.5 + 0.5,
-                Math.random() * 0.5 + 0.5
-            );
-            
-            // Create player capsule
-            const capsuleGeometry = new THREE.CapsuleGeometry(0.3, 0.5, 4, 8);
-            const playerMaterial = new THREE.MeshPhongMaterial({ 
-                color: playerColor,
-                shininess: 50
-            });
-            const playerMesh = new THREE.Mesh(capsuleGeometry, playerMaterial);
-            playerMesh.castShadow = true;
-            playerMesh.receiveShadow = true;
-            
-            const playerObj = {
-                id: playerId,
-                name: isLocal ? playerName : `Player${Object.keys(players).length + 1}`,
-                mesh: playerMesh,
-                position: new THREE.Vector3(-mazeSize/2 + 0.5, 0, -mazeSize/2 + 0.5),
-                rotation: new THREE.Euler(0, 0, 0),
-                color: playerColor.getHexString(),
-                score: 0,
-                isLocal: isLocal
-            };
-            
-            if (isLocal) {
-                player = playerObj;
-                scene.add(player.mesh);
-            } else {
-                players[playerId] = playerObj;
-                scene.add(playerObj.mesh);
-                updatePlayersUI();
-            }
-            
-            return playerId;
-        }
-        
+// Create a player
+function createPlayer(isLocal = false) {
+    const playerId = 'player_' + Math.random().toString(36).substr(2, 9);
+    const playerColor = new THREE.Color(
+        Math.random() * 0.5 + 0.5,
+        Math.random() * 0.5 + 0.5,
+        Math.random() * 0.5 + 0.5
+    );
+    
+    // Créer un joueur avec des formes simples
+    const playerGroup = new THREE.Group();
+    
+    // Corps principal (cylindre)
+    const bodyGeometry = new THREE.CylinderGeometry(0.25, 0.25, 0.8, 8);
+    const playerMaterial = new THREE.MeshPhongMaterial({ 
+        color: playerColor,
+        shininess: 50
+    });
+    const body = new THREE.Mesh(bodyGeometry, playerMaterial);
+    body.position.y = 0.4;
+    body.castShadow = true;
+    body.receiveShadow = true;
+    playerGroup.add(body);
+    
+    // Tête (sphère)
+    const headGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+    const head = new THREE.Mesh(headGeometry, playerMaterial);
+    head.position.y = 1.1;
+    head.castShadow = true;
+    playerGroup.add(head);
+    
+    // Indicateur avant (pour voir la direction)
+    const indicatorGeometry = new THREE.ConeGeometry(0.15, 0.4, 4);
+    const indicatorMaterial = new THREE.MeshPhongMaterial({ 
+        color: 0xff0000,
+        emissive: 0x330000
+    });
+    const indicator = new THREE.Mesh(indicatorGeometry, indicatorMaterial);
+    indicator.position.z = 0.35;
+    indicator.position.y = 0.8;
+    indicator.rotation.x = Math.PI / 2;
+    playerGroup.add(indicator);
+
+    const playerObj = {
+        id: playerId,
+        name: isLocal ? playerName : `Player${Object.keys(players).length + 1}`,
+        mesh: playerGroup,
+        position: new THREE.Vector3(-mazeSize/2 + 0.5, 0, -mazeSize/2 + 0.5),
+        rotation: new THREE.Euler(0, 0, 0),
+        color: playerColor.getHexString(),
+        score: 0,
+        isLocal: isLocal
+    };
+    
+    if (isLocal) {
+        player = playerObj;
+        scene.add(player.mesh);
+    } else {
+        players[playerId] = playerObj;
+        scene.add(playerObj.mesh);
+        updatePlayersUI();
+    }
+    
+    return playerId;
+}
         // Create a coin
         function createCoin(x, z) {
             const coinGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 16);
