@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cell Block Zero - Cooperative Prison Escape</title>
+    
+    <!-- Load Three.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Courier New', monospace;
+            user-select: none;
         }
 
         body {
@@ -17,6 +22,7 @@
             color: #00ff00;
             overflow: hidden;
             height: 100vh;
+            touch-action: none;
         }
 
         #gameContainer {
@@ -40,9 +46,10 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0, 0, 0, 0.95);
             z-index: 1000;
             padding: 20px;
+            overflow-y: auto;
         }
 
         #lobbyScreen {
@@ -58,191 +65,514 @@
             background: #000;
         }
 
+        #loadingScreen {
+            display: none;
+            background: #000;
+        }
+
         /* UI Elements */
         .ui-box {
-            background: rgba(0, 20, 0, 0.8);
-            border: 2px solid #00ff00;
-            border-radius: 5px;
-            padding: 20px;
-            max-width: 600px;
+            background: rgba(0, 20, 0, 0.9);
+            border: 3px solid #00ff00;
+            border-radius: 8px;
+            padding: 25px;
+            max-width: 700px;
+            width: 90%;
             text-align: center;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
         }
 
         h1 {
             color: #ff3300;
-            font-size: 3em;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px #ff0000;
+            font-size: 3.5em;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px #ff0000;
+            letter-spacing: 2px;
+            font-weight: bold;
         }
 
         h2 {
             color: #00ccff;
+            margin: 20px 0;
+            font-size: 2em;
+        }
+
+        h3 {
+            color: #ffcc00;
             margin: 15px 0;
         }
 
         p {
-            margin: 10px 0;
-            line-height: 1.5;
+            margin: 15px 0;
+            line-height: 1.6;
+            font-size: 1.1em;
         }
 
         button {
-            background: #003300;
+            background: linear-gradient(to bottom, #003300, #001100);
             color: #00ff00;
             border: 2px solid #00ff00;
-            padding: 12px 24px;
-            margin: 10px;
-            font-size: 1.2em;
+            padding: 15px 30px;
+            margin: 15px;
+            font-size: 1.3em;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 8px;
             transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         button:hover {
-            background: #006600;
-            transform: scale(1.05);
+            background: linear-gradient(to bottom, #006600, #003300);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 0, 0.4);
         }
 
         button:active {
-            transform: scale(0.95);
+            transform: translateY(0);
         }
 
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        input {
+            background: #111;
+            color: #00ff00;
+            border: 2px solid #00ccff;
+            padding: 12px;
+            margin: 10px;
+            border-radius: 5px;
+            font-size: 1.1em;
+            width: 250px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+
+        /* Game UI */
         #connectionStatus {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid #00ff00;
-            border-radius: 5px;
+            top: 20px;
+            left: 20px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .status-connected {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+
+        .status-connecting {
+            border-color: #ffcc00;
+            color: #ffcc00;
+        }
+
+        .status-disconnected {
+            border-color: #ff3300;
+            color: #ff3300;
         }
 
         #gameUI {
             position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
             display: flex;
             justify-content: space-between;
             pointer-events: none;
+            gap: 20px;
         }
 
         .player-info {
-            background: rgba(0, 20, 0, 0.7);
-            border: 2px solid #00ff00;
-            padding: 10px;
-            min-width: 200px;
+            background: rgba(0, 30, 0, 0.85);
+            border: 2px solid;
+            padding: 20px;
+            min-width: 250px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
         }
 
+        .player1 {
+            border-color: #ff0000;
+        }
+
+        .player2 {
+            border-color: #00ff00;
+        }
+
+        .player-info h3 {
+            margin-top: 0;
+            font-size: 1.4em;
+        }
+
+        .health-bar {
+            height: 20px;
+            background: #330000;
+            border: 1px solid #666;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(to right, #ff0000, #ff6600);
+            transition: width 0.3s;
+            border-radius: 10px;
+        }
+
+        /* Inventory */
         #inventory {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 2px solid #ffcc00;
-            padding: 10px;
-            border-radius: 5px;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 3px solid #ffcc00;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            min-width: 200px;
         }
 
         .inventory-item {
             display: flex;
             align-items: center;
-            margin: 5px 0;
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(255, 204, 0, 0.1);
+            border-radius: 5px;
         }
 
         .inventory-icon {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-            border: 1px solid #ffcc00;
+            width: 30px;
+            height: 30px;
+            margin-right: 15px;
+            border: 2px solid #ffcc00;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
         }
 
+        /* Objective */
         #objective {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            border: 3px solid #ff3300;
-            padding: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 4px solid #ff3300;
+            padding: 40px;
             text-align: center;
             display: none;
+            border-radius: 15px;
+            box-shadow: 0 0 40px rgba(255, 51, 0, 0.5);
+            max-width: 600px;
+            width: 90%;
         }
 
+        /* Chat */
         #chat {
             position: absolute;
-            bottom: 100px;
-            left: 20px;
-            width: 300px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid #00ccff;
-            padding: 10px;
+            bottom: 120px;
+            left: 30px;
+            width: 350px;
+            max-height: 300px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ccff;
+            padding: 15px;
+            border-radius: 10px;
             display: none;
+            flex-direction: column;
         }
 
-        #chatInput {
-            width: 100%;
+        #chatMessages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
             padding: 5px;
-            margin-top: 5px;
-            background: #111;
-            color: #00ff00;
-            border: 1px solid #00ccff;
+            background: rgba(0, 20, 40, 0.5);
+            border-radius: 5px;
+            max-height: 200px;
         }
 
+        .chat-message {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+            word-break: break-word;
+        }
+
+        .chat-message.you {
+            background: rgba(0, 100, 0, 0.3);
+            border-left: 3px solid #00ff00;
+        }
+
+        .chat-message.partner {
+            background: rgba(0, 50, 100, 0.3);
+            border-left: 3px solid #00ccff;
+        }
+
+        /* Escape Menu */
         #escapeMenu {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(0, 20, 0, 0.95);
-            border: 3px solid #ff3300;
-            padding: 30px;
+            background: rgba(0, 30, 0, 0.97);
+            border: 4px solid #ff3300;
+            padding: 40px;
             display: none;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            gap: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 50px rgba(255, 51, 0, 0.6);
+            min-width: 700px;
         }
 
         .escape-option {
-            padding: 15px;
-            border: 2px solid #00ccff;
+            padding: 25px;
+            border: 3px solid #00ccff;
             cursor: pointer;
             text-align: center;
+            background: rgba(0, 50, 100, 0.3);
+            border-radius: 10px;
+            transition: all 0.3s;
         }
 
         .escape-option:hover {
-            background: rgba(0, 100, 100, 0.5);
+            background: rgba(0, 100, 100, 0.6);
+            transform: scale(1.05);
+            border-color: #00ff00;
         }
 
-        /* Solitary Screen Animation */
+        .escape-option.ready {
+            border-color: #00ff00;
+            background: rgba(0, 100, 0, 0.4);
+        }
+
+        .escape-option.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #666;
+        }
+
+        .escape-option.disabled:hover {
+            transform: none;
+            background: rgba(0, 50, 100, 0.3);
+        }
+
+        /* Solitary Screen */
         #solitaryAnimation {
             width: 100%;
             height: 300px;
             background: #000;
             border: 5px solid #333;
-            margin: 20px 0;
+            margin: 30px 0;
             position: relative;
             overflow: hidden;
+            border-radius: 10px;
         }
 
         .inmate-cell {
             position: absolute;
-            width: 50px;
-            height: 50px;
-            background: #666;
-            border: 2px solid #999;
+            width: 10px;
+            height: 200px;
+            background: #888;
+            top: 50px;
         }
 
         .guard-bot {
             position: absolute;
+            width: 40px;
+            height: 60px;
+            background: linear-gradient(to bottom, #0000ff, #0088ff);
+            border-radius: 20px 20px 5px 5px;
+            bottom: 20px;
+            transition: left 1s linear;
+        }
+
+        .inmate {
+            position: absolute;
             width: 30px;
-            height: 30px;
-            background: #00ccff;
+            height: 50px;
+            background: linear-gradient(to bottom, #ff0000, #880000);
+            border-radius: 15px 15px 5px 5px;
+            bottom: 20px;
+        }
+
+        /* Loading Screen */
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(0, 255, 0, 0.3);
             border-radius: 50%;
-            transition: left 2s;
+            border-top-color: #00ff00;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Mobile Controls */
+        #mobileControls {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: none;
+            gap: 15px;
+            pointer-events: none;
+        }
+
+        .mobile-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 100, 0, 0.7);
+            border: 2px solid #00ff00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            pointer-events: auto;
+            touch-action: manipulation;
+            user-select: none;
+        }
+
+        .mobile-btn:active {
+            background: rgba(0, 200, 0, 0.7);
+        }
+
+        /* Message Display */
+        #messageDisplay {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            padding: 15px 30px;
+            border-radius: 10px;
+            display: none;
+            z-index: 1001;
+            text-align: center;
+            max-width: 80%;
+            word-break: break-word;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #00ff00, #00cc00);
+            transition: width 0.3s;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: rgba(0, 30, 0, 0.95);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1002;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 2px solid #00ff00;
+            font-size: 0.9em;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5em; }
+            h2 { font-size: 1.8em; }
+            button { padding: 12px 20px; font-size: 1.1em; }
+            .ui-box { padding: 15px; }
+            #gameUI { flex-direction: column; gap: 10px; }
+            .player-info { min-width: auto; width: 100%; }
+            #escapeMenu { 
+                grid-template-columns: 1fr; 
+                min-width: 90%;
+                padding: 20px;
+            }
+            #mobileControls { display: flex; }
+        }
+
+        /* Animation Classes */
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
     </style>
 </head>
 <body>
     <div id="gameContainer">
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="screen">
+            <div class="ui-box">
+                <h1>CELL BLOCK ZERO</h1>
+                <div class="spinner"></div>
+                <h2 id="loadingText">Loading Game...</h2>
+                <p>Please wait while we initialize the prison...</p>
+            </div>
+        </div>
+
         <!-- Lobby Screen -->
         <div id="lobbyScreen" class="screen">
             <div class="ui-box">
@@ -251,27 +581,43 @@
                 <p>You and a partner must work together to escape from a maximum-security prison.</p>
                 <p>Use wit, timing, and cooperation to outsmart the guard bots!</p>
                 
-                <div id="connectionStatus">Status: Disconnected</div>
+                <div id="connectionStatus" class="status-disconnected">Status: Disconnected</div>
                 
                 <div style="margin: 30px 0;">
-                    <button onclick="hostGame()">HOST GAME</button>
-                    <button onclick="joinGame()">JOIN GAME</button>
+                    <button onclick="hostGame()" id="hostBtn">HOST GAME</button>
+                    <button onclick="joinGame()" id="joinBtn">JOIN GAME</button>
+                    <button onclick="showTutorial()" id="tutorialBtn">HOW TO PLAY</button>
                 </div>
                 
                 <div id="joinSection" style="display: none; margin: 20px 0;">
-                    <input type="text" id="roomCode" placeholder="Enter host code" style="padding: 10px; width: 200px; margin-right: 10px;">
+                    <input type="text" id="roomCode" placeholder="Enter 6-digit code" maxlength="6" pattern="[A-Z0-9]{6}">
                     <button onclick="connectToHost()">CONNECT</button>
+                    <button onclick="cancelJoin()">CANCEL</button>
                 </div>
                 
                 <div id="roomInfo" style="display: none; margin: 20px 0;">
-                    <h3>Room Code: <span id="displayCode">XXXX</span></h3>
-                    <p>Waiting for player 2...</p>
+                    <h3>Room Code: <span id="displayCode" class="pulse">XXXXXX</span></h3>
+                    <p>Share this code with your partner</p>
+                    <p id="connectionCount">Waiting for player 2...</p>
+                    <button onclick="startGame()" id="startBtn" disabled>START GAME</button>
+                    <button onclick="cancelHost()">CANCEL</button>
                 </div>
                 
-                <div style="margin-top: 20px;">
+                <div id="tutorialSection" style="display: none; margin: 20px 0; text-align: left;">
+                    <h3>How to Play:</h3>
+                    <p>1. One player HOSTS, other JOINS with the code</p>
+                    <p>2. Collect items (shovel, uniform, ID card, etc.)</p>
+                    <p>3. Work together to avoid guards</p>
+                    <p>4. Choose escape method when ready</p>
+                    <p>5. If caught, you go to solitary and retry!</p>
+                    <button onclick="hideTutorial()">BACK</button>
+                </div>
+                
+                <div style="margin-top: 30px;">
                     <h3>Controls:</h3>
-                    <p>WASD: Move | E: Interact | F: Fight | R: Run | Tab: Inventory</p>
-                    <p>C: Chat | M: Escape Menu | Space: Jump</p>
+                    <p><strong>WASD:</strong> Move | <strong>E:</strong> Interact | <strong>F:</strong> Fight</p>
+                    <p><strong>Tab:</strong> Inventory | <strong>C:</strong> Chat | <strong>M:</strong> Escape Menu</p>
+                    <p><strong>Space:</strong> Jump | <strong>Shift:</strong> Run</p>
                 </div>
             </div>
         </div>
@@ -280,70 +626,106 @@
         <div id="gameScreen" class="screen">
             <canvas id="gameCanvas"></canvas>
             
-            <div id="connectionStatus">Connected</div>
+            <div id="connectionStatus" class="status-connected">Connected</div>
             
             <div id="gameUI">
-                <div class="player-info">
-                    <h3>Player 1 (You)</h3>
+                <div class="player-info player1">
+                    <h3>Player 1 (You) <span id="playerName1"></span></h3>
                     <p>Health: <span id="health1">100</span></p>
+                    <div class="health-bar">
+                        <div id="healthBar1" class="health-fill" style="width: 100%"></div>
+                    </div>
                     <p>Contraband: <span id="contraband1">0</span></p>
                     <p>Reputation: <span id="rep1">0</span></p>
+                    <p>Position: <span id="pos1">0,0</span></p>
                 </div>
                 
-                <div class="player-info">
-                    <h3>Player 2</h3>
+                <div class="player-info player2">
+                    <h3>Player 2 <span id="playerName2"></span></h3>
                     <p>Health: <span id="health2">100</span></p>
+                    <div class="health-bar">
+                        <div id="healthBar2" class="health-fill" style="width: 100%"></div>
+                    </div>
                     <p>Contraband: <span id="contraband2">0</span></p>
                     <p>Reputation: <span id="rep2">0</span></p>
+                    <p>Position: <span id="pos2">0,0</span></p>
                 </div>
             </div>
             
-            <div id="inventory" style="display: none;">
-                <h3>Inventory</h3>
+            <div id="inventory">
+                <h3>Inventory <span id="inventoryCount">(0)</span></h3>
                 <div id="inventoryItems"></div>
+                <div class="progress-bar">
+                    <div id="escapeProgress" class="progress-fill" style="width: 0%"></div>
+                </div>
+                <p>Escape Progress</p>
             </div>
             
             <div id="objective">
                 <h2>OBJECTIVE</h2>
                 <p id="objectiveText">Escape the prison with your partner!</p>
-                <button onclick="hideObjective()">Continue</button>
+                <p id="objectiveSubtext">Work together to collect items and avoid guards.</p>
+                <button onclick="hideObjective()">START ESCAPE</button>
             </div>
             
-            <div id="chat" style="display: none;">
+            <div id="chat">
                 <div id="chatMessages"></div>
-                <input type="text" id="chatInput" placeholder="Type message... (Press Enter to send)">
+                <input type="text" id="chatInput" placeholder="Type message... (Enter to send, Esc to close)">
             </div>
             
             <div id="escapeMenu">
                 <h2 style="grid-column: span 2;">ESCAPE METHODS</h2>
-                <div class="escape-option" onclick="startEscape('tunnel')">
-                    <h3>Tunnel Digging</h3>
-                    <p>Requires: Shovel, Nighttime</p>
+                <div class="escape-option" onclick="startEscape('tunnel')" id="escapeTunnel">
+                    <h3>🏗️ Tunnel Digging</h3>
+                    <p>Dig a tunnel under the prison walls</p>
+                    <p><strong>Requires:</strong> Shovel</p>
                 </div>
-                <div class="escape-option" onclick="startEscape('disguise')">
-                    <h3>Guard Disguise</h3>
-                    <p>Requires: Uniform, ID Card</p>
+                <div class="escape-option" onclick="startEscape('disguise')" id="escapeDisguise">
+                    <h3>👮 Guard Disguise</h3>
+                    <p>Disguise as a guard and walk out</p>
+                    <p><strong>Requires:</strong> Uniform, ID Card</p>
                 </div>
-                <div class="escape-option" onclick="startEscape('riot')">
-                    <h3>Riot Chaos</h3>
-                    <p>Requires: High Reputation</p>
+                <div class="escape-option" onclick="startEscape('riot')" id="escapeRiot">
+                    <h3>🔥 Riot Chaos</h3>
+                    <p>Start a riot and escape in chaos</p>
+                    <p><strong>Requires:</strong> High Reputation (50+)</p>
                 </div>
-                <div class="escape-option" onclick="startEscape('parole')">
-                    <h3>Legal Parole</h3>
-                    <p>Requires: Clean Record</p>
+                <div class="escape-option" onclick="startEscape('parole')" id="escapeParole">
+                    <h3>📝 Legal Parole</h3>
+                    <p>Get released "legally"</p>
+                    <p><strong>Requires:</strong> Clean Record</p>
                 </div>
+                <button onclick="toggleEscapeMenu()" style="grid-column: span 2; margin-top: 20px;">BACK</button>
             </div>
+            
+            <!-- Mobile Controls -->
+            <div id="mobileControls">
+                <div class="mobile-btn" ontouchstart="mobileKeyDown('w')" ontouchend="mobileKeyUp('w')">W</div>
+                <div style="display: flex; gap: 15px;">
+                    <div class="mobile-btn" ontouchstart="mobileKeyDown('a')" ontouchend="mobileKeyUp('a')">A</div>
+                    <div class="mobile-btn" ontouchstart="mobileKeyDown('s')" ontouchend="mobileKeyUp('s')">S</div>
+                    <div class="mobile-btn" ontouchstart="mobileKeyDown('d')" ontouchend="mobileKeyUp('d')">D</div>
+                </div>
+                <div class="mobile-btn" ontouchstart="mobileKeyDown('e')" ontouchend="mobileKeyUp('e')">E</div>
+                <div class="mobile-btn" ontouchstart="mobileKeyDown(' ')" ontouchend="mobileKeyUp(' ')">⤴️</div>
+            </div>
+            
+            <div id="messageDisplay"></div>
         </div>
 
         <!-- Solitary Screen -->
         <div id="solitaryScreen" class="screen">
             <div class="ui-box">
-                <h1>SOLITARY CONFINEMENT</h1>
+                <h1>🔒 SOLITARY CONFINEMENT 🔒</h1>
                 <div id="solitaryAnimation"></div>
-                <p id="failReason">You got caught!</p>
-                <p id="funnyMessage">The guards are enjoying donuts while you're in here...</p>
-                <button onclick="retryGame()">TRY AGAIN</button>
-                <p style="margin-top: 20px; color: #ff9900;">The prison layout has changed!</p>
+                <h2 id="failReason">You got caught!</h2>
+                <p id="funnyMessage" style="font-size: 1.2em; color: #ff9900;"></p>
+                <div style="margin: 30px 0;">
+                    <button onclick="retryGame()">TRY AGAIN</button>
+                    <button onclick="returnToLobby()">MAIN MENU</button>
+                </div>
+                <p style="margin-top: 20px; color: #ffcc00;">⚠️ The prison layout has changed for your next attempt!</p>
+                <p id="escapeHint" style="color: #00ccff; font-style: italic;"></p>
             </div>
         </div>
     </div>
@@ -355,15 +737,30 @@
         const CONFIG = {
             PRISON_SIZE: 100,
             CELL_COUNT: 20,
-            GUARD_COUNT: 4,
-            INMATE_BOT_COUNT: 10,
-            DAY_CYCLE: 300, // seconds
-            ITEM_TYPES: ['shovel', 'uniform', 'idcard', 'cigarettes', 'donut', 'key'],
+            GUARD_COUNT: 6,
+            INMATE_BOT_COUNT: 12,
+            DAY_CYCLE: 300,
+            ITEM_TYPES: [
+                { id: 'shovel', name: 'Shovel', color: '#8B4513', icon: '🪚' },
+                { id: 'uniform', name: 'Guard Uniform', color: '#0000ff', icon: '👕' },
+                { id: 'idcard', name: 'ID Card', color: '#ffff00', icon: '🪪' },
+                { id: 'cigarettes', name: 'Cigarettes', color: '#f5f5f5', icon: '🚬' },
+                { id: 'donut', name: 'Donut', color: '#ff69b4', icon: '🍩' },
+                { id: 'key', name: 'Key', color: '#ffd700', icon: '🔑' },
+                { id: 'crowbar', name: 'Crowbar', color: '#808080', icon: '🔧' },
+                { id: 'rope', name: 'Rope', color: '#8B4513', icon: '🪢' }
+            ],
             ESCAPE_REQUIREMENTS: {
                 tunnel: ['shovel'],
                 disguise: ['uniform', 'idcard'],
                 riot: ['reputation_50'],
                 parole: ['clean_record']
+            },
+            ESCAPE_HINTS: {
+                tunnel: "Try digging near the western wall during night shift",
+                disguise: "The laundry room often has spare uniforms",
+                riot: "Make friends with inmate bots to build reputation",
+                parole: "Avoid getting caught with contraband"
             }
         };
 
@@ -375,476 +772,372 @@
             bots: [],
             items: [],
             prisonLayout: [],
-            timeOfDay: 0, // 0-1 (0 = midnight, 0.5 = noon)
+            timeOfDay: 0.5,
             isNight: false,
             gameStarted: false,
             escapeInProgress: false,
             playerId: null,
             peer: null,
-            connection: null,
-            isHost: false
+            dataChannel: null,
+            isHost: false,
+            roomCode: null,
+            connectionEstablished: false,
+            lastUpdate: 0,
+            fps: 60,
+            gameLoaded: false
         };
 
         // ============================================================================
-        // THREE.JS SETUP
+        // THREE.JS VARIABLES
         // ============================================================================
-        let scene, camera, renderer, controls;
+        let scene, camera, renderer;
         let playerMesh, otherPlayerMesh;
-        let botMeshes = [];
-        let itemMeshes = [];
-        let prisonWalls = [];
-
-        function initThreeJS() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x111122);
-            
-            // Fog for atmosphere
-            scene.fog = new THREE.Fog(0x111122, 10, 100);
-            
-            // Camera
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 20, 30);
-            camera.lookAt(0, 0, 0);
-            
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ 
-                canvas: document.getElementById('gameCanvas'),
-                antialias: true 
-            });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-            scene.add(ambientLight);
-            
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(50, 50, 50);
-            directionalLight.castShadow = true;
-            directionalLight.shadow.camera.left = -50;
-            directionalLight.shadow.camera.right = 50;
-            directionalLight.shadow.camera.top = 50;
-            directionalLight.shadow.camera.bottom = -50;
-            scene.add(directionalLight);
-            
-            // Simple OrbitControls
-            controls = {
-                update: function() {
-                    if (playerMesh) {
-                        camera.position.x = playerMesh.position.x;
-                        camera.position.z = playerMesh.position.z + 15;
-                        camera.position.y = 10;
-                        camera.lookAt(playerMesh.position.x, 0, playerMesh.position.z);
-                    }
-                }
-            };
-            
-            // Add grid for reference
-            const gridHelper = new THREE.GridHelper(100, 100, 0x00ff00, 0x003300);
-            scene.add(gridHelper);
-            
-            // Add simple skybox
-            const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
-            const skyMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0x112233,
-                side: THREE.BackSide 
-            });
-            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
-            scene.add(sky);
-        }
+        let botMeshes = [], itemMeshes = [], wallMeshes = [];
+        let clock = new THREE.Clock();
+        let moveSpeed = 0.15;
+        let isRunning = false;
 
         // ============================================================================
-        // PRISON GENERATION
+        // INPUT STATE
         // ============================================================================
-        function generatePrison() {
-            // Clear previous prison
-            prisonWalls.forEach(wall => scene.remove(wall));
-            prisonWalls = [];
-            
-            // Generate random prison layout
-            const wallMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x666666,
-                roughness: 0.8
-            });
-            
-            // Outer walls
-            const outerWallHeight = 10;
-            const positions = [
-                { x: -CONFIG.PRISON_SIZE/2, z: 0, width: 2, depth: CONFIG.PRISON_SIZE },
-                { x: CONFIG.PRISON_SIZE/2, z: 0, width: 2, depth: CONFIG.PRISON_SIZE },
-                { x: 0, z: -CONFIG.PRISON_SIZE/2, width: CONFIG.PRISON_SIZE, depth: 2 },
-                { x: 0, z: CONFIG.PRISON_SIZE/2, width: CONFIG.PRISON_SIZE, depth: 2 }
-            ];
-            
-            positions.forEach(pos => {
-                const wallGeometry = new THREE.BoxGeometry(pos.width, outerWallHeight, pos.depth);
-                const wall = new THREE.Mesh(wallGeometry, wallMaterial);
-                wall.position.set(pos.x, outerWallHeight/2, pos.z);
-                wall.receiveShadow = true;
-                wall.castShadow = true;
-                scene.add(wall);
-                prisonWalls.push(wall);
-            });
-            
-            // Generate cell blocks
-            const cellMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x333333,
-                roughness: 0.7
-            });
-            
-            for (let i = 0; i < CONFIG.CELL_COUNT; i++) {
-                const cellWidth = 8;
-                const cellDepth = 6;
-                const cellX = (i % 5) * 15 - 30;
-                const cellZ = Math.floor(i / 5) * 15 - 30;
-                
-                const cellGeometry = new THREE.BoxGeometry(cellWidth, 4, cellDepth);
-                const cell = new THREE.Mesh(cellGeometry, cellMaterial);
-                cell.position.set(cellX, 2, cellZ);
-                cell.receiveShadow = true;
-                cell.castShadow = true;
-                scene.add(cell);
-                prisonWalls.push(cell);
-                
-                // Add door
-                const doorGeometry = new THREE.BoxGeometry(2, 3, 1);
-                const doorMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-                const door = new THREE.Mesh(doorGeometry, doorMaterial);
-                door.position.set(cellX + cellWidth/2 - 1, 1.5, cellZ);
-                scene.add(door);
-                prisonWalls.push(door);
-            }
-            
-            // Add yard area
-            const yardMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x228822,
-                roughness: 1.0
-            });
-            const yardGeometry = new THREE.PlaneGeometry(60, 60);
-            const yard = new THREE.Mesh(yardGeometry, yardMaterial);
-            yard.rotation.x = -Math.PI / 2;
-            yard.position.set(0, 0.1, 0);
-            yard.receiveShadow = true;
-            scene.add(yard);
-            
-            // Generate items
-            generateItems();
-            
-            // Generate bots
-            generateBots();
-        }
-
-        function generateItems() {
-            // Clear previous items
-            itemMeshes.forEach(item => scene.remove(item));
-            itemMeshes = [];
-            gameState.items = [];
-            
-            const itemMaterials = {
-                shovel: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
-                uniform: new THREE.MeshStandardMaterial({ color: 0x0000ff }),
-                idcard: new THREE.MeshStandardMaterial({ color: 0xffff00 }),
-                cigarettes: new THREE.MeshStandardMaterial({ color: 0xf5f5f5 }),
-                donut: new THREE.MeshStandardMaterial({ color: 0xff69b4 }),
-                key: new THREE.MeshStandardMaterial({ color: 0xffd700 })
-            };
-            
-            CONFIG.ITEM_TYPES.forEach((type, index) => {
-                const x = Math.random() * 80 - 40;
-                const z = Math.random() * 80 - 40;
-                
-                let geometry;
-                switch(type) {
-                    case 'shovel':
-                        geometry = new THREE.BoxGeometry(0.5, 3, 0.2);
-                        break;
-                    case 'uniform':
-                        geometry = new THREE.BoxGeometry(1, 2, 0.5);
-                        break;
-                    case 'cigarettes':
-                        geometry = new THREE.BoxGeometry(0.3, 0.5, 0.1);
-                        break;
-                    default:
-                        geometry = new THREE.BoxGeometry(0.5, 0.1, 0.8);
-                }
-                
-                const item = new THREE.Mesh(geometry, itemMaterials[type]);
-                item.position.set(x, 2, z);
-                item.userData = { type: type, collected: false };
-                item.castShadow = true;
-                scene.add(item);
-                itemMeshes.push(item);
-                
-                gameState.items.push({
-                    type: type,
-                    position: { x: x, y: 2, z: z },
-                    collected: false
-                });
-            });
-        }
-
-        function generateBots() {
-            // Clear previous bots
-            botMeshes.forEach(bot => scene.remove(bot));
-            botMeshes = [];
-            gameState.bots = [];
-            
-            const guardMaterial = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-            const inmateMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-            
-            // Create guard bots
-            for (let i = 0; i < CONFIG.GUARD_COUNT; i++) {
-                const geometry = new THREE.CylinderGeometry(0.5, 0.5, 2, 8);
-                const bot = new THREE.Mesh(geometry, guardMaterial);
-                const x = Math.random() * 60 - 30;
-                const z = Math.random() * 60 - 30;
-                
-                bot.position.set(x, 1, z);
-                bot.castShadow = true;
-                scene.add(bot);
-                botMeshes.push(bot);
-                
-                gameState.bots.push({
-                    type: 'guard',
-                    position: { x: x, y: 1, z: z },
-                    patrolPath: generatePatrolPath(),
-                    patrolIndex: 0,
-                    alertLevel: 0,
-                    personality: Math.random() > 0.5 ? 'strict' : 'lazy'
-                });
-            }
-            
-            // Create inmate bots
-            for (let i = 0; i < CONFIG.INMATE_BOT_COUNT; i++) {
-                const geometry = new THREE.BoxGeometry(1, 2, 1);
-                const bot = new THREE.Mesh(geometry, inmateMaterial);
-                const x = Math.random() * 60 - 30;
-                const z = Math.random() * 60 - 30;
-                
-                bot.position.set(x, 1, z);
-                bot.castShadow = true;
-                scene.add(bot);
-                botMeshes.push(bot);
-                
-                gameState.bots.push({
-                    type: 'inmate',
-                    position: { x: x, y: 1, z: z },
-                    routine: generateInmateRoutine(),
-                    routineIndex: 0,
-                    personality: ['lazy', 'violent', 'helpful'][Math.floor(Math.random() * 3)]
-                });
-            }
-        }
-
-        function generatePatrolPath() {
-            const path = [];
-            for (let i = 0; i < 5; i++) {
-                path.push({
-                    x: Math.random() * 80 - 40,
-                    z: Math.random() * 80 - 40
-                });
-            }
-            return path;
-        }
-
-        function generateInmateRoutine() {
-            const activities = ['wander', 'eat', 'sleep', 'exercise', 'socialize'];
-            const routine = [];
-            for (let i = 0; i < 3; i++) {
-                routine.push(activities[Math.floor(Math.random() * activities.length)]);
-            }
-            return routine;
-        }
+        const keys = {};
+        const mouse = { x: 0, y: 0, down: false };
+        let touchControls = {};
 
         // ============================================================================
-        // PLAYER MANAGEMENT
+        // INITIALIZATION
         // ============================================================================
-        function createPlayer(playerId, isLocal = false) {
-            const geometry = new THREE.BoxGeometry(1, 2, 1);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: isLocal ? 0xff0000 : 0x00ff00 
-            });
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Cell Block Zero - Initializing');
+            setLoadingText("Checking browser compatibility...");
             
-            const player = new THREE.Mesh(geometry, material);
-            player.position.set(isLocal ? -10 : 10, 1, 0);
-            player.castShadow = true;
-            scene.add(player);
-            
-            if (isLocal) {
-                playerMesh = player;
-                gameState.playerId = playerId;
-            } else {
-                otherPlayerMesh = player;
+            // Check for WebRTC support
+            if (!navigator.mediaDevices || !window.RTCPeerConnection) {
+                showError("WebRTC not supported in this browser. Please use Chrome, Firefox, or Edge.");
+                return;
             }
             
-            gameState.players[playerId] = {
-                mesh: isLocal ? playerMesh : otherPlayerMesh,
-                position: player.position,
-                rotation: player.rotation,
-                health: 100,
-                contraband: 0,
-                reputation: 0,
-                inventory: [],
-                isLocal: isLocal
-            };
-            
-            return player;
-        }
-
-        function updatePlayer(playerId, data) {
-            if (gameState.players[playerId]) {
-                const player = gameState.players[playerId];
-                if (player.mesh && !player.isLocal) {
-                    player.mesh.position.set(data.x, data.y, data.z);
-                    player.mesh.rotation.y = data.ry;
-                }
-                
-                // Update UI
-                if (playerId !== gameState.playerId) {
-                    document.getElementById('health2').textContent = data.health || player.health;
-                    document.getElementById('contraband2').textContent = data.contraband || player.contraband;
-                    document.getElementById('rep2').textContent = data.reputation || player.reputation;
-                }
+            // Check for Three.js
+            if (typeof THREE === 'undefined') {
+                showError("Three.js failed to load. Please check your internet connection.");
+                return;
             }
-        }
+            
+            // Initialize UI
+            updateConnectionStatus('ready', 'Ready to play');
+            
+            // Show controls for mobile
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                document.getElementById('mobileControls').style.display = 'flex';
+            }
+            
+            console.log('Game initialized successfully');
+            gameState.gameLoaded = true;
+        });
 
         // ============================================================================
-        // NETWORKING (WebRTC)
+        // NETWORKING (WebRTC - Fixed Version)
         // ============================================================================
         function hostGame() {
+            if (!gameState.gameLoaded) {
+                showMessage("Game still loading...");
+                return;
+            }
+            
+            disableButtons(true);
+            updateConnectionStatus('connecting', 'Creating room...');
+            
             gameState.isHost = true;
-            gameState.playerId = 'player1_' + Math.random().toString(36).substr(2, 9);
+            gameState.playerId = 'host_' + generateRandomId();
+            gameState.roomCode = generateRoomCode();
             
-            document.getElementById('connectionStatus').textContent = 'Status: Creating room...';
-            
-            // Create peer connection
+            // Create peer connection with proper configuration
             gameState.peer = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' }
+                ],
+                iceCandidatePoolSize: 10
             });
             
-            // Set up data channel
-            const dataChannel = gameState.peer.createDataChannel('game');
-            setupDataChannel(dataChannel);
+            // Create data channel with reliable connection
+            gameState.dataChannel = gameState.peer.createDataChannel('game', {
+                ordered: true,
+                maxRetransmits: 10
+            });
             
-            // Create offer
+            setupDataChannel(gameState.dataChannel);
+            
+            // Handle ICE candidates
+            gameState.peer.onicecandidate = (event) => {
+                if (event.candidate) {
+                    // Store candidates for joining player
+                    const candidates = JSON.parse(localStorage.getItem('iceCandidates') || '[]');
+                    candidates.push(event.candidate);
+                    localStorage.setItem('iceCandidates', JSON.stringify(candidates));
+                }
+            };
+            
+            // Handle connection state
+            gameState.peer.onconnectionstatechange = () => {
+                console.log('Connection state:', gameState.peer.connectionState);
+                if (gameState.peer.connectionState === 'connected') {
+                    updateConnectionStatus('connected', 'Player connected!');
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('connectionCount').textContent = 'Player connected!';
+                }
+            };
+            
+            // Create and store offer
             gameState.peer.createOffer()
                 .then(offer => gameState.peer.setLocalDescription(offer))
                 .then(() => {
-                    const roomCode = generateRoomCode();
-                    document.getElementById('displayCode').textContent = roomCode;
-                    document.getElementById('roomInfo').style.display = 'block';
-                    
-                    // In a real implementation, you'd send this offer to a signaling server
-                    // For simplicity, we'll store it in localStorage
+                    // Store offer in localStorage
                     localStorage.setItem('hostOffer', JSON.stringify({
                         sdp: gameState.peer.localDescription,
-                        roomCode: roomCode
+                        roomCode: gameState.roomCode,
+                        playerId: gameState.playerId,
+                        timestamp: Date.now()
                     }));
                     
-                    document.getElementById('connectionStatus').textContent = 'Status: Waiting for player...';
+                    // Clear any old data
+                    localStorage.setItem('iceCandidates', '[]');
+                    localStorage.setItem('playerAnswer', '');
+                    
+                    // Show room info
+                    document.getElementById('roomInfo').style.display = 'block';
+                    document.getElementById('displayCode').textContent = gameState.roomCode;
+                    updateConnectionStatus('connecting', 'Waiting for player...');
+                    
+                    console.log('Host created room:', gameState.roomCode);
                 })
-                .catch(console.error);
+                .catch(error => {
+                    console.error('Error creating offer:', error);
+                    updateConnectionStatus('disconnected', 'Failed to create room');
+                    showMessage("Failed to create room. Please try again.");
+                    disableButtons(false);
+                });
             
-            // Listen for ICE candidates
-            gameState.peer.onicecandidate = event => {
-                if (event.candidate) {
-                    // Send candidate to other player
-                }
-            };
+            // Start checking for connection
+            checkForConnection();
         }
 
         function joinGame() {
             document.getElementById('joinSection').style.display = 'block';
+            document.getElementById('hostBtn').disabled = true;
+            document.getElementById('joinBtn').disabled = true;
+        }
+
+        function cancelJoin() {
+            document.getElementById('joinSection').style.display = 'none';
+            disableButtons(false);
         }
 
         function connectToHost() {
-            const roomCode = document.getElementById('roomCode').value;
-            if (!roomCode) return;
+            const roomCodeInput = document.getElementById('roomCode');
+            const roomCode = roomCodeInput.value.trim().toUpperCase();
             
-            gameState.playerId = 'player2_' + Math.random().toString(36).substr(2, 9);
-            
-            // Get host offer from localStorage (simulated signaling)
-            const hostData = localStorage.getItem('hostOffer');
-            if (!hostData) {
-                alert('Room not found!');
+            if (!roomCode || roomCode.length !== 6) {
+                showMessage("Please enter a valid 6-digit code");
+                roomCodeInput.focus();
                 return;
             }
             
-            const { sdp, roomCode: storedCode } = JSON.parse(hostData);
-            if (roomCode !== storedCode) {
-                alert('Invalid room code!');
+            disableButtons(true);
+            updateConnectionStatus('connecting', 'Connecting to host...');
+            
+            gameState.isHost = false;
+            gameState.playerId = 'joiner_' + generateRandomId();
+            gameState.roomCode = roomCode;
+            
+            // Get host offer from localStorage
+            const hostData = localStorage.getItem('hostOffer');
+            if (!hostData) {
+                showMessage("Room not found. Make sure host created a room.");
+                disableButtons(false);
+                return;
+            }
+            
+            let hostOffer;
+            try {
+                hostOffer = JSON.parse(hostData);
+                
+                // Check if offer is expired (older than 2 minutes)
+                if (Date.now() - hostOffer.timestamp > 120000) {
+                    showMessage("Room expired. Ask host to create new room.");
+                    disableButtons(false);
+                    return;
+                }
+                
+                if (hostOffer.roomCode !== roomCode) {
+                    showMessage("Invalid room code.");
+                    disableButtons(false);
+                    return;
+                }
+            } catch (e) {
+                showMessage("Error reading room data.");
+                disableButtons(false);
                 return;
             }
             
             // Create peer connection
             gameState.peer = new RTCPeerConnection({
-                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' }
+                ],
+                iceCandidatePoolSize: 10
             });
             
             // Set up data channel listener
-            gameState.peer.ondatachannel = event => {
-                setupDataChannel(event.channel);
+            gameState.peer.ondatachannel = (event) => {
+                gameState.dataChannel = event.channel;
+                setupDataChannel(gameState.dataChannel);
+            };
+            
+            // Handle ICE candidates
+            gameState.peer.onicecandidate = (event) => {
+                if (event.candidate) {
+                    // Send candidate to host
+                    const candidateData = {
+                        type: 'iceCandidate',
+                        candidate: event.candidate,
+                        roomCode: roomCode
+                    };
+                    localStorage.setItem('playerIceCandidate', JSON.stringify(candidateData));
+                }
             };
             
             // Set remote description
-            gameState.peer.setRemoteDescription(new RTCSessionDescription(sdp))
+            gameState.peer.setRemoteDescription(new RTCSessionDescription(hostOffer.sdp))
                 .then(() => gameState.peer.createAnswer())
                 .then(answer => gameState.peer.setLocalDescription(answer))
                 .then(() => {
-                    // Send answer back to host (simulated)
+                    // Store answer for host
                     localStorage.setItem('playerAnswer', JSON.stringify({
                         sdp: gameState.peer.localDescription,
-                        roomCode: roomCode
+                        roomCode: roomCode,
+                        playerId: gameState.playerId,
+                        timestamp: Date.now()
                     }));
                     
-                    document.getElementById('connectionStatus').textContent = 'Status: Connecting...';
+                    // Add any stored ICE candidates from host
+                    const iceCandidates = JSON.parse(localStorage.getItem('iceCandidates') || '[]');
+                    iceCandidates.forEach(candidate => {
+                        gameState.peer.addIceCandidate(new RTCIceCandidate(candidate));
+                    });
                     
-                    // Notify host
-                    setTimeout(() => {
-                        startGame();
-                    }, 1000);
+                    console.log('Joiner connected to room:', roomCode);
+                    showMessage("Connected! Waiting for host to start game...");
                 })
-                .catch(console.error);
+                .catch(error => {
+                    console.error('Error connecting:', error);
+                    updateConnectionStatus('disconnected', 'Connection failed');
+                    showMessage("Failed to connect. Check room code and try again.");
+                    disableButtons(false);
+                });
         }
 
         function setupDataChannel(channel) {
-            gameState.connection = channel;
-            
             channel.onopen = () => {
                 console.log('Data channel opened');
-                document.getElementById('connectionStatus').textContent = 'Status: Connected';
-                startGame();
+                gameState.connectionEstablished = true;
+                updateConnectionStatus('connected', 'Connected to partner');
+                
+                if (gameState.isHost) {
+                    document.getElementById('startBtn').disabled = false;
+                } else {
+                    showMessage("Connected! Waiting for host to start...");
+                }
+                
+                // Send initial player info
+                sendNetworkMessage('playerJoin', {
+                    playerId: gameState.playerId,
+                    name: `Player ${gameState.isHost ? '1' : '2'}`,
+                    isHost: gameState.isHost
+                });
             };
             
-            channel.onmessage = event => {
-                const data = JSON.parse(event.data);
-                handleNetworkMessage(data);
+            channel.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleNetworkMessage(data);
+                } catch (e) {
+                    console.error('Error parsing network message:', e);
+                }
             };
             
             channel.onclose = () => {
                 console.log('Data channel closed');
-                document.getElementById('connectionStatus').textContent = 'Status: Disconnected';
+                gameState.connectionEstablished = false;
+                updateConnectionStatus('disconnected', 'Disconnected from partner');
+                
+                if (gameState.gameStarted) {
+                    showMessage("Partner disconnected!");
+                }
+            };
+            
+            channel.onerror = (error) => {
+                console.error('Data channel error:', error);
             };
         }
 
+        function checkForConnection() {
+            if (!gameState.isHost || !gameState.peer || gameState.connectionEstablished) return;
+            
+            // Check for player answer
+            try {
+                const playerAnswer = localStorage.getItem('playerAnswer');
+                if (playerAnswer) {
+                    const answer = JSON.parse(playerAnswer);
+                    if (answer.roomCode === gameState.roomCode) {
+                        gameState.peer.setRemoteDescription(new RTCSessionDescription(answer.sdp))
+                            .then(() => {
+                                // Add ICE candidates from joiner
+                                const candidateData = localStorage.getItem('playerIceCandidate');
+                                if (candidateData) {
+                                    const candidate = JSON.parse(candidateData);
+                                    if (candidate.roomCode === gameState.roomCode) {
+                                        gameState.peer.addIceCandidate(new RTCIceCandidate(candidate.candidate));
+                                    }
+                                }
+                                localStorage.removeItem('playerAnswer');
+                                localStorage.removeItem('playerIceCandidate');
+                            })
+                            .catch(console.error);
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking connection:', e);
+            }
+            
+            setTimeout(checkForConnection, 1000);
+        }
+
         function sendNetworkMessage(type, data) {
-            if (gameState.connection && gameState.connection.readyState === 'open') {
+            if (gameState.dataChannel && gameState.dataChannel.readyState === 'open') {
                 const message = {
                     type: type,
                     sender: gameState.playerId,
                     data: data,
                     timestamp: Date.now()
                 };
-                gameState.connection.send(JSON.stringify(message));
+                gameState.dataChannel.send(JSON.stringify(message));
             }
         }
 
         function handleNetworkMessage(message) {
             switch (message.type) {
+                case 'playerJoin':
+                    handlePlayerJoin(message);
+                    break;
                 case 'playerUpdate':
                     updatePlayer(message.sender, message.data);
+                    break;
+                case 'gameStart':
+                    startGameFromNetwork(message.data);
                     break;
                 case 'itemCollected':
                     collectItemRemote(message.data);
@@ -856,214 +1149,739 @@
                     handleEscapeAttempt(message.data);
                     break;
                 case 'chat':
-                    displayChatMessage(message.sender, message.data);
+                    displayChatMessage(message.sender, message.data, false);
+                    break;
+                case 'gameOver':
+                    handleGameOver(message.data);
                     break;
             }
         }
 
-        function generateRoomCode() {
-            return Math.random().toString(36).substr(2, 6).toUpperCase();
+        function handlePlayerJoin(message) {
+            const { playerId, name, isHost } = message.data;
+            
+            // Don't add yourself
+            if (playerId === gameState.playerId) return;
+            
+            // Add player to game state
+            if (!gameState.players[playerId]) {
+                gameState.players[playerId] = {
+                    id: playerId,
+                    name: name,
+                    position: { x: 10, y: 1, z: 0 },
+                    health: 100,
+                    contraband: 0,
+                    reputation: 0,
+                    inventory: []
+                };
+                
+                // Update UI
+                document.getElementById('playerName2').textContent = name;
+                updateConnectionStatus('connected', `Connected to ${name}`);
+                
+                // If we're host and game hasn't started, enable start button
+                if (gameState.isHost && !gameState.gameStarted) {
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('connectionCount').textContent = `${name} connected!`;
+                }
+            }
         }
 
         // ============================================================================
-        // GAME LOGIC
+        // GAME START
         // ============================================================================
         function startGame() {
-            document.getElementById('lobbyScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'flex';
-            
-            initThreeJS();
-            generatePrison();
-            createPlayer(gameState.playerId, true);
-            
-            if (gameState.isHost) {
-                // Host creates other player
-                const otherPlayerId = 'player2_' + Math.random().toString(36).substr(2, 9);
-                createPlayer(otherPlayerId, false);
+            if (!gameState.isHost || !gameState.connectionEstablished) {
+                showMessage("Wait for player to connect first");
+                return;
             }
             
+            setLoadingText("Generating prison...");
+            showLoadingScreen(true);
+            
+            // Initialize Three.js
+            initThreeJS();
+            
+            // Generate prison
+            generatePrison();
+            
+            // Create local player
+            createPlayer(gameState.playerId, true);
+            
+            // Notify other player to start
+            sendNetworkMessage('gameStart', {
+                prisonSeed: Date.now(),
+                playerPositions: {
+                    [gameState.playerId]: { x: -10, y: 1, z: 0 },
+                    [Object.keys(gameState.players)[0]]: { x: 10, y: 1, z: 0 }
+                }
+            });
+            
+            // Start game locally
+            setTimeout(() => {
+                startGameLocal();
+            }, 1000);
+        }
+
+        function startGameFromNetwork(data) {
+            setLoadingText("Joining prison...");
+            showLoadingScreen(true);
+            
+            // Initialize Three.js
+            initThreeJS();
+            
+            // Generate prison with same seed
+            generatePrison(data.prisonSeed);
+            
+            // Create local player at assigned position
+            const myPosition = data.playerPositions[gameState.playerId];
+            createPlayer(gameState.playerId, true);
+            if (playerMesh && myPosition) {
+                playerMesh.position.set(myPosition.x, myPosition.y, myPosition.z);
+            }
+            
+            // Create other players
+            Object.keys(data.playerPositions).forEach(playerId => {
+                if (playerId !== gameState.playerId) {
+                    const pos = data.playerPositions[playerId];
+                    createPlayer(playerId, false);
+                    if (otherPlayerMesh && pos) {
+                        otherPlayerMesh.position.set(pos.x, pos.y, pos.z);
+                    }
+                }
+            });
+            
+            // Start game
+            setTimeout(() => {
+                startGameLocal();
+            }, 1000);
+        }
+
+        function startGameLocal() {
             gameState.gameStarted = true;
+            showLoadingScreen(false);
+            document.getElementById('lobbyScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'flex';
             
             // Show objective
             document.getElementById('objective').style.display = 'block';
             document.getElementById('objectiveText').textContent = 
-                gameState.isHost ? 
-                "Wait for your partner to connect, then explore the prison together!" :
-                "Connected! Work with your partner to find escape items.";
+                "ESCAPE THE PRISON WITH YOUR PARTNER!";
+            document.getElementById('objectiveSubtext').textContent = 
+                "Collect items, avoid guards, and choose an escape method when ready.";
             
             // Start game loop
             animate();
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            console.log('Game started!');
         }
 
+        // ============================================================================
+        // THREE.JS INITIALIZATION
+        // ============================================================================
+        function initThreeJS() {
+            console.log('Initializing Three.js...');
+            
+            // Check if Three.js is loaded
+            if (typeof THREE === 'undefined') {
+                throw new Error('Three.js not loaded');
+            }
+            
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x112233);
+            scene.fog = new THREE.Fog(0x112233, 20, 100);
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 20, 30);
+            
+            // Renderer
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                throw new Error('Canvas element not found');
+            }
+            
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas,
+                antialias: true,
+                alpha: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 100, 50);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 500;
+            directionalLight.shadow.camera.left = -100;
+            directionalLight.shadow.camera.right = 100;
+            directionalLight.shadow.camera.top = 100;
+            directionalLight.shadow.camera.bottom = -100;
+            scene.add(directionalLight);
+            
+            // Add simple ground
+            const groundGeometry = new THREE.PlaneGeometry(200, 200);
+            const groundMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x228822,
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.5;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            console.log('Three.js initialized successfully');
+        }
+
+        // ============================================================================
+        // PRISON GENERATION
+        // ============================================================================
+        function generatePrison(seed = Date.now()) {
+            console.log('Generating prison with seed:', seed);
+            
+            // Clear existing objects
+            wallMeshes.forEach(mesh => scene.remove(mesh));
+            itemMeshes.forEach(mesh => scene.remove(mesh));
+            botMeshes.forEach(mesh => scene.remove(mesh));
+            
+            wallMeshes = [];
+            itemMeshes = [];
+            botMeshes = [];
+            gameState.items = [];
+            gameState.bots = [];
+            
+            // Use seed for reproducibility
+            const rng = new Math.seedrandom(seed);
+            
+            // Generate walls
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x555555,
+                roughness: 0.7,
+                metalness: 0.3
+            });
+            
+            // Outer walls
+            const wallHeight = 8;
+            const wallThickness = 2;
+            const halfSize = CONFIG.PRISON_SIZE / 2;
+            
+            const walls = [
+                // North wall
+                { pos: [0, wallHeight/2, -halfSize], size: [CONFIG.PRISON_SIZE, wallHeight, wallThickness] },
+                // South wall
+                { pos: [0, wallHeight/2, halfSize], size: [CONFIG.PRISON_SIZE, wallHeight, wallThickness] },
+                // East wall
+                { pos: [halfSize, wallHeight/2, 0], size: [wallThickness, wallHeight, CONFIG.PRISON_SIZE] },
+                // West wall
+                { pos: [-halfSize, wallHeight/2, 0], size: [wallThickness, wallHeight, CONFIG.PRISON_SIZE] }
+            ];
+            
+            walls.forEach(wall => {
+                const geometry = new THREE.BoxGeometry(...wall.size);
+                const mesh = new THREE.Mesh(geometry, wallMaterial);
+                mesh.position.set(...wall.pos);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+                wallMeshes.push(mesh);
+            });
+            
+            // Generate cell blocks
+            const cellMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x333333,
+                roughness: 0.6
+            });
+            
+            for (let i = 0; i < CONFIG.CELL_COUNT; i++) {
+                const row = Math.floor(i / 5);
+                const col = i % 5;
+                const x = (col - 2) * 15;
+                const z = (row - 2) * 15;
+                
+                const cellGeometry = new THREE.BoxGeometry(8, 4, 6);
+                const cell = new THREE.Mesh(cellGeometry, cellMaterial);
+                cell.position.set(x, 2, z);
+                cell.castShadow = true;
+                scene.add(cell);
+                wallMeshes.push(cell);
+            }
+            
+            // Generate items
+            generateItems(rng);
+            
+            // Generate bots
+            generateBots(rng);
+            
+            console.log('Prison generated with', gameState.items.length, 'items and', gameState.bots.length, 'bots');
+        }
+
+        function generateItems(rng) {
+            CONFIG.ITEM_TYPES.forEach((itemType, index) => {
+                const x = (rng() * 80) - 40;
+                const z = (rng() * 80) - 40;
+                
+                let geometry;
+                switch(itemType.id) {
+                    case 'shovel':
+                        geometry = new THREE.BoxGeometry(0.3, 2, 0.1);
+                        break;
+                    case 'uniform':
+                        geometry = new THREE.BoxGeometry(1, 1.5, 0.3);
+                        break;
+                    case 'crowbar':
+                        geometry = new THREE.BoxGeometry(0.2, 1.5, 0.2);
+                        break;
+                    default:
+                        geometry = new THREE.BoxGeometry(0.5, 0.1, 0.8);
+                }
+                
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: itemType.color,
+                    roughness: 0.5,
+                    metalness: 0.5
+                });
+                
+                const item = new THREE.Mesh(geometry, material);
+                item.position.set(x, 1, z);
+                item.rotation.y = rng() * Math.PI * 2;
+                item.castShadow = true;
+                item.userData = {
+                    type: itemType.id,
+                    collected: false,
+                    index: index
+                };
+                
+                scene.add(item);
+                itemMeshes.push(item);
+                
+                gameState.items.push({
+                    type: itemType.id,
+                    position: { x, y: 1, z },
+                    collected: false
+                });
+            });
+        }
+
+        function generateBots(rng) {
+            // Guard bots
+            for (let i = 0; i < CONFIG.GUARD_COUNT; i++) {
+                const x = (rng() * 60) - 30;
+                const z = (rng() * 60) - 30;
+                
+                const geometry = new THREE.CylinderGeometry(0.6, 0.6, 2, 8);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: 0x0000ff,
+                    roughness: 0.3
+                });
+                
+                const bot = new THREE.Mesh(geometry, material);
+                bot.position.set(x, 1, z);
+                bot.castShadow = true;
+                scene.add(bot);
+                botMeshes.push(bot);
+                
+                // Generate patrol path
+                const patrolPath = [];
+                for (let j = 0; j < 4; j++) {
+                    patrolPath.push({
+                        x: x + (rng() * 20) - 10,
+                        z: z + (rng() * 20) - 10
+                    });
+                }
+                
+                gameState.bots.push({
+                    type: 'guard',
+                    position: { x, y: 1, z },
+                    patrolPath,
+                    patrolIndex: 0,
+                    alertLevel: 0,
+                    personality: rng() > 0.5 ? 'strict' : 'lazy',
+                    speed: 0.03 + rng() * 0.02
+                });
+            }
+            
+            // Inmate bots
+            for (let i = 0; i < CONFIG.INMATE_BOT_COUNT; i++) {
+                const x = (rng() * 60) - 30;
+                const z = (rng() * 60) - 30;
+                
+                const geometry = new THREE.BoxGeometry(1, 2, 1);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: 0x00aa00,
+                    roughness: 0.7
+                });
+                
+                const bot = new THREE.Mesh(geometry, material);
+                bot.position.set(x, 1, z);
+                bot.castShadow = true;
+                scene.add(bot);
+                botMeshes.push(bot);
+                
+                gameState.bots.push({
+                    type: 'inmate',
+                    position: { x, y: 1, z },
+                    personality: ['lazy', 'violent', 'helpful'][Math.floor(rng() * 3)],
+                    speed: 0.01 + rng() * 0.02,
+                    activity: 'wandering',
+                    lastActivityChange: 0
+                });
+            }
+        }
+
+        // ============================================================================
+        // PLAYER MANAGEMENT
+        // ============================================================================
+        function createPlayer(playerId, isLocal) {
+            const geometry = new THREE.BoxGeometry(1, 2, 1);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: isLocal ? 0xff0000 : 0x00ff00,
+                roughness: 0.5,
+                metalness: 0.5
+            });
+            
+            const player = new THREE.Mesh(geometry, material);
+            player.castShadow = true;
+            
+            if (isLocal) {
+                playerMesh = player;
+                player.position.set(-10, 1, 0);
+            } else {
+                otherPlayerMesh = player;
+                player.position.set(10, 1, 0);
+            }
+            
+            scene.add(player);
+            
+            // Initialize player state
+            if (!gameState.players[playerId]) {
+                gameState.players[playerId] = {
+                    id: playerId,
+                    name: isLocal ? 'You' : 'Partner',
+                    position: player.position,
+                    health: 100,
+                    contraband: 0,
+                    reputation: 0,
+                    inventory: [],
+                    isLocal: isLocal,
+                    mesh: player
+                };
+            } else {
+                gameState.players[playerId].mesh = player;
+            }
+            
+            return player;
+        }
+
+        function updatePlayer(playerId, data) {
+            if (!gameState.players[playerId]) return;
+            
+            const player = gameState.players[playerId];
+            
+            // Update position if player exists in scene
+            if (player.mesh && !player.isLocal) {
+                if (data.x !== undefined) player.mesh.position.x = data.x;
+                if (data.y !== undefined) player.mesh.position.y = data.y;
+                if (data.z !== undefined) player.mesh.position.z = data.z;
+                if (data.ry !== undefined) player.mesh.rotation.y = data.ry;
+            }
+            
+            // Update stats
+            if (data.health !== undefined) player.health = data.health;
+            if (data.contraband !== undefined) player.contraband = data.contraband;
+            if (data.reputation !== undefined) player.reputation = data.reputation;
+            if (data.inventory !== undefined) player.inventory = data.inventory;
+            
+            // Update UI for other player
+            if (playerId !== gameState.playerId) {
+                updatePlayerUI(2, player);
+            }
+        }
+
+        // ============================================================================
+        // GAME LOOP
+        // ============================================================================
         function animate() {
             if (!gameState.gameStarted) return;
             
             requestAnimationFrame(animate);
             
-            // Update time of day
-            gameState.timeOfDay = (gameState.timeOfDay + 0.0001) % 1;
-            gameState.isNight = gameState.timeOfDay < 0.25 || gameState.timeOfDay > 0.75;
+            const deltaTime = clock.getDelta();
+            gameState.lastUpdate += deltaTime;
             
-            // Update local player
-            if (playerMesh) {
+            // Update at 60fps for network
+            if (gameState.lastUpdate >= 1/60) {
+                gameState.lastUpdate = 0;
+                
+                // Update local player
                 updateLocalPlayer();
-                controls.update();
+                
+                // Update bots
+                updateBots(deltaTime);
+                
+                // Check collisions
+                checkCollisions();
+                
+                // Update camera
+                updateCamera();
+                
+                // Update time of day
+                updateTimeOfDay(deltaTime);
             }
-            
-            // Update bots
-            updateBots();
-            
-            // Check for item collisions
-            checkItemCollisions();
-            
-            // Check for guard detection
-            checkGuardDetection();
             
             renderer.render(scene, camera);
         }
 
-        // ============================================================================
-        // INPUT HANDLING
-        // ============================================================================
-        const keys = {};
-        const mouse = { x: 0, y: 0 };
-
-        window.addEventListener('keydown', event => {
-            keys[event.key.toLowerCase()] = true;
-            
-            // Handle special keys
-            switch(event.key.toLowerCase()) {
-                case 'e':
-                    attemptInteraction();
-                    break;
-                case 'f':
-                    attemptFight();
-                    break;
-                case 'c':
-                    toggleChat();
-                    break;
-                case 'm':
-                    toggleEscapeMenu();
-                    break;
-                case 'tab':
-                    toggleInventory();
-                    event.preventDefault();
-                    break;
-                case 'enter':
-                    if (document.getElementById('chat').style.display === 'block') {
-                        sendChatMessage();
-                    }
-                    break;
-            }
-        });
-
-        window.addEventListener('keyup', event => {
-            keys[event.key.toLowerCase()] = false;
-        });
-
-        window.addEventListener('mousemove', event => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        });
-
         function updateLocalPlayer() {
-            if (!playerMesh) return;
+            if (!playerMesh || !gameState.players[gameState.playerId]) return;
             
-            const speed = 0.2;
-            const rotationSpeed = 0.05;
+            const player = gameState.players[gameState.playerId];
+            const speed = isRunning ? moveSpeed * 1.5 : moveSpeed;
             
             // Movement
-            if (keys['w']) playerMesh.position.z -= speed;
-            if (keys['s']) playerMesh.position.z += speed;
-            if (keys['a']) playerMesh.position.x -= speed;
-            if (keys['d']) playerMesh.position.x += speed;
-            if (keys[' ']) { // Space for jump
-                playerMesh.position.y = Math.sin(Date.now() * 0.01) * 0.5 + 1.5;
+            if (keys['w'] || keys['arrowup']) playerMesh.position.z -= speed;
+            if (keys['s'] || keys['arrowdown']) playerMesh.position.z += speed;
+            if (keys['a'] || keys['arrowleft']) playerMesh.position.x -= speed;
+            if (keys['d'] || keys['arrowright']) playerMesh.position.x += speed;
+            
+            // Jump
+            if (keys[' '] && playerMesh.position.y <= 1.1) {
+                playerMesh.position.y += 0.2;
             }
             
-            // Rotation based on mouse
-            playerMesh.rotation.y = mouse.x * Math.PI;
+            // Gravity
+            if (playerMesh.position.y > 1) {
+                playerMesh.position.y -= 0.05;
+            }
+            
+            // Rotation based on movement
+            if (keys['a'] || keys['d']) {
+                playerMesh.rotation.y += (keys['a'] ? 0.05 : -0.05);
+            }
             
             // Boundary check
-            playerMesh.position.x = Math.max(-45, Math.min(45, playerMesh.position.x));
-            playerMesh.position.z = Math.max(-45, Math.min(45, playerMesh.position.z));
+            const halfSize = CONFIG.PRISON_SIZE / 2 - 5;
+            playerMesh.position.x = Math.max(-halfSize, Math.min(halfSize, playerMesh.position.x));
+            playerMesh.position.z = Math.max(-halfSize, Math.min(halfSize, playerMesh.position.z));
+            
+            // Update player state
+            player.position = playerMesh.position;
             
             // Send update to other player
-            sendNetworkMessage('playerUpdate', {
-                x: playerMesh.position.x,
-                y: playerMesh.position.y,
-                z: playerMesh.position.z,
-                ry: playerMesh.rotation.y,
-                health: gameState.players[gameState.playerId].health,
-                contraband: gameState.players[gameState.playerId].contraband,
-                reputation: gameState.players[gameState.playerId].reputation
-            });
+            if (gameState.connectionEstablished) {
+                sendNetworkMessage('playerUpdate', {
+                    x: playerMesh.position.x,
+                    y: playerMesh.position.y,
+                    z: playerMesh.position.z,
+                    ry: playerMesh.rotation.y,
+                    health: player.health,
+                    contraband: player.contraband,
+                    reputation: player.reputation,
+                    inventory: player.inventory
+                });
+            }
             
             // Update UI
-            document.getElementById('health1').textContent = gameState.players[gameState.playerId].health;
-            document.getElementById('contraband1').textContent = gameState.players[gameState.playerId].contraband;
-            document.getElementById('rep1').textContent = gameState.players[gameState.playerId].reputation;
+            updatePlayerUI(1, player);
         }
 
-        // ============================================================================
-        // GAME MECHANICS
-        // ============================================================================
-        function attemptInteraction() {
-            // Check for nearby items
+        function updateBots(deltaTime) {
+            gameState.bots.forEach((bot, index) => {
+                if (!botMeshes[index]) return;
+                
+                const mesh = botMeshes[index];
+                
+                if (bot.type === 'guard') {
+                    // Patrol logic
+                    if (bot.patrolPath && bot.patrolPath.length > 0) {
+                        const target = bot.patrolPath[bot.patrolIndex];
+                        const dx = target.x - bot.position.x;
+                        const dz = target.z - bot.position.z;
+                        const distance = Math.sqrt(dx * dx + dz * dz);
+                        
+                        if (distance < 1) {
+                            bot.patrolIndex = (bot.patrolIndex + 1) % bot.patrolPath.length;
+                        } else {
+                            bot.position.x += (dx / distance) * bot.speed;
+                            bot.position.z += (dz / distance) * bot.speed;
+                        }
+                    }
+                    
+                    // Alert level decay
+                    if (bot.alertLevel > 0) {
+                        bot.alertLevel -= deltaTime * 5;
+                        if (bot.alertLevel < 0) bot.alertLevel = 0;
+                    }
+                    
+                    // Check for player detection
+                    checkGuardDetection(bot, index);
+                } else if (bot.type === 'inmate') {
+                    // Random wandering
+                    if (Math.random() < 0.01) {
+                        bot.position.x += (Math.random() - 0.5) * 2;
+                        bot.position.z += (Math.random() - 0.5) * 2;
+                        
+                        // Keep in bounds
+                        const halfSize = CONFIG.PRISON_SIZE / 2 - 10;
+                        bot.position.x = Math.max(-halfSize, Math.min(halfSize, bot.position.x));
+                        bot.position.z = Math.max(-halfSize, Math.min(halfSize, bot.position.z));
+                    }
+                }
+                
+                // Update mesh position
+                mesh.position.set(bot.position.x, bot.position.y, bot.position.z);
+                
+                // Face movement direction
+                if (bot.targetDirection) {
+                    mesh.lookAt(
+                        bot.position.x + bot.targetDirection.x,
+                        bot.position.y,
+                        bot.position.z + bot.targetDirection.z
+                    );
+                }
+            });
+        }
+
+        function checkGuardDetection(bot, index) {
+            if (!playerMesh || bot.alertLevel > 50) return;
+            
+            const dx = playerMesh.position.x - bot.position.x;
+            const dz = playerMesh.position.z - bot.position.z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+            
+            // Detection based on distance and line of sight
+            if (distance < 15) {
+                const detectionChance = 0.01 * (1 - distance/15);
+                if (Math.random() < detectionChance) {
+                    bot.alertLevel += 20;
+                    showMessage("Guard spotted you!", 'warning');
+                    
+                    // Alert other guards
+                    if (bot.alertLevel > 30) {
+                        gameState.bots.forEach((otherBot, otherIndex) => {
+                            if (otherBot.type === 'guard' && otherIndex !== index) {
+                                otherBot.alertLevel += 10;
+                            }
+                        });
+                    }
+                    
+                    sendNetworkMessage('botUpdate', { index, alertLevel: bot.alertLevel });
+                }
+            }
+            
+            // Chase player if alerted
+            if (bot.alertLevel > 30 && distance < 20) {
+                bot.targetDirection = { x: dx, z: dz };
+                const chaseSpeed = bot.speed * (1 + bot.alertLevel / 100);
+                bot.position.x += (dx / distance) * chaseSpeed;
+                bot.position.z += (dz / distance) * chaseSpeed;
+                
+                // Catch player
+                if (distance < 2) {
+                    sendToSolitary("Caught by guard!");
+                }
+            }
+        }
+
+        function checkCollisions() {
+            if (!playerMesh) return;
+            
+            const player = gameState.players[gameState.playerId];
+            
+            // Check item collisions
             itemMeshes.forEach((item, index) => {
-                if (!item.userData.collected && playerMesh) {
+                if (!item.userData.collected) {
                     const distance = playerMesh.position.distanceTo(item.position);
-                    if (distance < 3) {
+                    if (distance < 1.5) {
                         collectItem(item.userData.type, index);
                     }
                 }
             });
             
-            // Check for bots to interact with
-            gameState.bots.forEach((bot, index) => {
-                if (playerMesh && bot.position) {
-                    const dx = playerMesh.position.x - bot.position.x;
-                    const dz = playerMesh.position.z - bot.position.z;
-                    const distance = Math.sqrt(dx * dx + dz * dz);
-                    
-                    if (distance < 3) {
-                        if (bot.type === 'guard') {
-                            // Bribe guard with donut
-                            const player = gameState.players[gameState.playerId];
-                            if (player.inventory.includes('donut')) {
-                                player.reputation += 10;
-                                player.inventory = player.inventory.filter(i => i !== 'donut');
-                                updateInventoryUI();
-                                showMessage('Guard bribed with donut! Reputation +10');
-                            }
-                        } else if (bot.type === 'inmate') {
-                            // Trade with inmate
-                            tradeWithInmate(bot.personality);
-                        }
-                    }
+            // Check wall collisions (simple)
+            const halfSize = CONFIG.PRISON_SIZE / 2 - 1;
+            if (Math.abs(playerMesh.position.x) > halfSize || 
+                Math.abs(playerMesh.position.z) > halfSize) {
+                // Push player back
+                playerMesh.position.x = Math.max(-halfSize, Math.min(halfSize, playerMesh.position.x));
+                playerMesh.position.z = Math.max(-halfSize, Math.min(halfSize, playerMesh.position.z));
+            }
+        }
+
+        function updateCamera() {
+            if (!playerMesh) return;
+            
+            // Third-person camera
+            const cameraDistance = 15;
+            const cameraHeight = 8;
+            
+            camera.position.x = playerMesh.position.x;
+            camera.position.z = playerMesh.position.z + cameraDistance;
+            camera.position.y = playerMesh.position.y + cameraHeight;
+            
+            camera.lookAt(
+                playerMesh.position.x,
+                playerMesh.position.y + 2,
+                playerMesh.position.z
+            );
+        }
+
+        function updateTimeOfDay(deltaTime) {
+            gameState.timeOfDay += deltaTime / CONFIG.DAY_CYCLE;
+            if (gameState.timeOfDay >= 1) gameState.timeOfDay = 0;
+            
+            gameState.isNight = gameState.timeOfDay < 0.25 || gameState.timeOfDay > 0.75;
+            
+            // Update lighting based on time
+            const intensity = Math.sin(gameState.timeOfDay * Math.PI) * 0.5 + 0.5;
+            scene.children.forEach(child => {
+                if (child.isLight) {
+                    child.intensity = intensity;
                 }
             });
         }
 
+        // ============================================================================
+        // GAME MECHANICS
+        // ============================================================================
         function collectItem(type, index) {
             const player = gameState.players[gameState.playerId];
-            player.inventory.push(type);
-            player.contraband++;
             
-            // Mark item as collected
-            itemMeshes[index].visible = false;
-            itemMeshes[index].userData.collected = true;
-            gameState.items[index].collected = true;
-            
-            // Notify other player
-            sendNetworkMessage('itemCollected', { index: index, type: type });
-            
-            // Update UI
-            updateInventoryUI();
-            showMessage(`Collected: ${type.toUpperCase()}`);
-            
-            // Check for escape possibilities
-            checkEscapeReadiness();
+            if (!player.inventory.includes(type)) {
+                player.inventory.push(type);
+                player.contraband++;
+                
+                // Mark item as collected
+                itemMeshes[index].visible = false;
+                itemMeshes[index].userData.collected = true;
+                gameState.items[index].collected = true;
+                
+                // Notify other player
+                sendNetworkMessage('itemCollected', { index, type });
+                
+                // Update UI
+                updateInventoryUI();
+                updateEscapeOptions();
+                
+                showMessage(`Collected: ${getItemName(type)}!`, 'success');
+                
+                // Play sound (if we had audio)
+                // playSound('collect');
+            }
         }
 
         function collectItemRemote(data) {
@@ -1072,159 +1890,85 @@
                 itemMeshes[index].visible = false;
                 itemMeshes[index].userData.collected = true;
             }
-            showMessage(`Partner collected: ${type.toUpperCase()}`);
+            showMessage(`Partner collected: ${getItemName(type)}`, 'info');
         }
 
-        function attemptFight() {
-            // Check for nearby guard to fight
-            gameState.bots.forEach((bot, index) => {
-                if (bot.type === 'guard' && playerMesh) {
-                    const dx = playerMesh.position.x - bot.position.x;
-                    const dz = playerMesh.position.z - bot.position.z;
-                    const distance = Math.sqrt(dx * dx + dz * dz);
-                    
-                    if (distance < 4) {
-                        // Fight logic
-                        const player = gameState.players[gameState.playerId];
-                        const success = Math.random() > 0.5;
-                        
-                        if (success) {
-                            showMessage('Guard knocked out! (Temporarily)');
-                            bot.alertLevel = 100; // High alert
-                            player.reputation += 5;
-                        } else {
-                            showMessage('Fight failed! Health -20');
-                            player.health -= 20;
-                            if (player.health <= 0) {
-                                sendToSolitary('Lost a fight with a guard');
-                            }
-                        }
-                        
-                        sendNetworkMessage('botUpdate', { index: index, alertLevel: bot.alertLevel });
-                    }
-                }
-            });
+        function getItemName(type) {
+            const item = CONFIG.ITEM_TYPES.find(i => i.id === type);
+            return item ? item.name : type;
         }
 
-        function tradeWithInmate(personality) {
+        function updateInventoryUI() {
             const player = gameState.players[gameState.playerId];
-            const tradeMessages = {
-                lazy: "Zzz... come back later...",
-                violent: "What you lookin' at?!",
-                helpful: "Need something? I might know where to find it..."
-            };
+            const inventoryDiv = document.getElementById('inventoryItems');
+            const countSpan = document.getElementById('inventoryCount');
             
-            showMessage(`Inmate: "${tradeMessages[personality]}"`);
+            inventoryDiv.innerHTML = '';
+            countSpan.textContent = `(${player.inventory.length})`;
             
-            if (personality === 'helpful' && player.contraband > 0) {
-                // Helpful inmate gives tip
-                const tips = [
-                    "Check behind the cafeteria for loose bricks.",
-                    "Night guards are lazier than day guards.",
-                    "The warden's office always has spare uniforms."
-                ];
-                showMessage(`Tip: ${tips[Math.floor(Math.random() * tips.length)]}`);
-                player.reputation += 5;
-            }
-        }
-
-        // ============================================================================
-        // BOT AI
-        // ============================================================================
-        function updateBots() {
-            gameState.bots.forEach((bot, index) => {
-                if (!botMeshes[index]) return;
+            player.inventory.forEach((itemId, index) => {
+                const itemType = CONFIG.ITEM_TYPES.find(i => i.id === itemId);
+                if (!itemType) return;
                 
-                if (bot.type === 'guard') {
-                    updateGuardBot(bot, index);
-                } else if (bot.type === 'inmate') {
-                    updateInmateBot(bot, index);
-                }
-                
-                // Update mesh position
-                botMeshes[index].position.set(bot.position.x, bot.position.y, bot.position.z);
+                const div = document.createElement('div');
+                div.className = 'inventory-item';
+                div.innerHTML = `
+                    <div class="inventory-icon" style="background: ${itemType.color}">${itemType.icon}</div>
+                    <span>${itemType.name}</span>
+                `;
+                inventoryDiv.appendChild(div);
             });
+            
+            // Update escape progress
+            const progress = calculateEscapeProgress();
+            document.getElementById('escapeProgress').style.width = `${progress}%`;
         }
 
-        function updateGuardBot(bot, index) {
-            // Patrol movement
-            if (bot.patrolPath && bot.patrolPath.length > 0) {
-                const target = bot.patrolPath[bot.patrolIndex];
-                const dx = target.x - bot.position.x;
-                const dz = target.z - bot.position.z;
-                const distance = Math.sqrt(dx * dx + dz * dz);
+        function calculateEscapeProgress() {
+            const player = gameState.players[gameState.playerId];
+            let progress = 0;
+            
+            // Base progress from items
+            progress += player.inventory.length * 10;
+            
+            // Bonus for reputation
+            progress += Math.min(player.reputation, 50) / 2;
+            
+            // Penalty for being wanted
+            if (gameState.bots.some(b => b.type === 'guard' && b.alertLevel > 30)) {
+                progress -= 20;
+            }
+            
+            return Math.max(0, Math.min(100, progress));
+        }
+
+        function updateEscapeOptions() {
+            const player = gameState.players[gameState.playerId];
+            
+            Object.keys(CONFIG.ESCAPE_REQUIREMENTS).forEach(method => {
+                const option = document.getElementById('escape' + method.charAt(0).toUpperCase() + method.slice(1));
+                if (!option) return;
                 
-                if (distance < 2) {
-                    bot.patrolIndex = (bot.patrolIndex + 1) % bot.patrolPath.length;
+                const requirements = CONFIG.ESCAPE_REQUIREMENTS[method];
+                let canEscape = true;
+                
+                requirements.forEach(req => {
+                    if (req.includes('reputation')) {
+                        const needed = parseInt(req.split('_')[1]);
+                        if (player.reputation < needed) canEscape = false;
+                    } else if (req === 'clean_record') {
+                        if (player.contraband > 0) canEscape = false;
+                    } else {
+                        if (!player.inventory.includes(req)) canEscape = false;
+                    }
+                });
+                
+                if (canEscape) {
+                    option.classList.add('ready');
+                    option.classList.remove('disabled');
                 } else {
-                    const speed = 0.05;
-                    bot.position.x += (dx / distance) * speed;
-                    bot.position.z += (dz / distance) * speed;
-                }
-            }
-            
-            // Decrease alert level over time
-            if (bot.alertLevel > 0) {
-                bot.alertLevel -= 0.1;
-            }
-        }
-
-        function updateInmateBot(bot, index) {
-            // Simple random wandering
-            if (Math.random() < 0.02) {
-                bot.position.x += (Math.random() - 0.5) * 2;
-                bot.position.z += (Math.random() - 0.5) * 2;
-                
-                // Keep in bounds
-                bot.position.x = Math.max(-45, Math.min(45, bot.position.x));
-                bot.position.z = Math.max(-45, Math.min(45, bot.position.z));
-            }
-        }
-
-        function checkGuardDetection() {
-            const player = gameState.players[gameState.playerId];
-            if (!playerMesh) return;
-            
-            gameState.bots.forEach((bot, index) => {
-                if (bot.type === 'guard') {
-                    const dx = playerMesh.position.x - bot.position.x;
-                    const dz = playerMesh.position.z - bot.position.z;
-                    const distance = Math.sqrt(dx * dx + dz * dz);
-                    
-                    // Check line of sight
-                    if (distance < 10) {
-                        const alertChance = 0.01 * (1 - distance/10);
-                        if (Math.random() < alertChance) {
-                            bot.alertLevel += 20;
-                            showMessage('Guard spotted you!');
-                            
-                            if (bot.alertLevel > 50) {
-                                // Guard chases player
-                                const chaseSpeed = 0.1;
-                                const chaseX = (dx / distance) * chaseSpeed;
-                                const chaseZ = (dz / distance) * chaseSpeed;
-                                
-                                // Move guard toward player
-                                bot.position.x += chaseX;
-                                bot.position.z += chaseZ;
-                                
-                                if (distance < 2) {
-                                    sendToSolitary('Caught by guard');
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function checkItemCollisions() {
-            itemMeshes.forEach((item, index) => {
-                if (!item.userData.collected && playerMesh) {
-                    const distance = playerMesh.position.distanceTo(item.position);
-                    if (distance < 1.5) {
-                        collectItem(item.userData.type, index);
-                    }
+                    option.classList.remove('ready');
+                    option.classList.add('disabled');
                 }
             });
         }
@@ -1232,72 +1976,36 @@
         // ============================================================================
         // ESCAPE MECHANICS
         // ============================================================================
-        function checkEscapeReadiness() {
-            const player = gameState.players[gameState.playerId];
-            
-            // Check if player has items for any escape method
-            for (const [method, requirements] of Object.entries(CONFIG.ESCAPE_REQUIREMENTS)) {
-                let hasRequirements = true;
-                
-                requirements.forEach(req => {
-                    if (req.includes('reputation')) {
-                        const repNeeded = parseInt(req.split('_')[1]);
-                        if (player.reputation < repNeeded) hasRequirements = false;
-                    } else if (req === 'clean_record') {
-                        if (player.contraband > 0) hasRequirements = false;
-                    } else {
-                        if (!player.inventory.includes(req)) hasRequirements = false;
-                    }
-                });
-                
-                if (hasRequirements) {
-                    showMessage(`Ready for ${method} escape! Press M to choose escape method.`);
-                    return;
-                }
-            }
-        }
-
         function toggleEscapeMenu() {
             const menu = document.getElementById('escapeMenu');
             menu.style.display = menu.style.display === 'grid' ? 'none' : 'grid';
+            
+            if (menu.style.display === 'grid') {
+                updateEscapeOptions();
+            }
         }
 
         function startEscape(method) {
-            document.getElementById('escapeMenu').style.display = 'none';
-            
-            const player = gameState.players[gameState.playerId];
-            const requirements = CONFIG.ESCAPE_REQUIREMENTS[method];
-            let canEscape = true;
-            
-            // Check requirements
-            requirements.forEach(req => {
-                if (req.includes('reputation')) {
-                    const repNeeded = parseInt(req.split('_')[1]);
-                    if (player.reputation < repNeeded) canEscape = false;
-                } else if (req === 'clean_record') {
-                    if (player.contraband > 0) canEscape = false;
-                } else {
-                    if (!player.inventory.includes(req)) canEscape = false;
-                }
-            });
-            
-            if (!canEscape) {
-                showMessage(`Missing requirements for ${method} escape!`);
+            const option = document.getElementById('escape' + method.charAt(0).toUpperCase() + method.slice(1));
+            if (option.classList.contains('disabled')) {
+                showMessage("You don't meet the requirements for this escape method!", 'warning');
                 return;
             }
             
-            // Start escape minigame
-            showMessage(`Starting ${method} escape... Coordinate with partner!`);
+            toggleEscapeMenu();
+            showMessage(`Starting ${method} escape... Coordinate with partner!`, 'info');
+            
             gameState.escapeInProgress = true;
             
             sendNetworkMessage('escapeAttempt', {
                 method: method,
-                playerId: gameState.playerId
+                playerId: gameState.playerId,
+                timestamp: Date.now()
             });
             
-            // Simple escape success calculation
+            // Start escape minigame
             setTimeout(() => {
-                const success = Math.random() > 0.4; // 60% success rate
+                const success = attemptEscape(method);
                 
                 if (success) {
                     escapeSuccess(method);
@@ -1307,127 +2015,65 @@
             }, 3000);
         }
 
-        function escapeSuccess(method) {
-            showMessage(`ESCAPE SUCCESSFUL via ${method.toUpperCase()}!`);
-            const funnyMessages = [
-                "You're free! Don't forget to write!",
-                "The guards are still looking for you... in the wrong direction!",
-                "Freedom never tasted so sweet!",
-                "You made it! Now what's for dinner?"
-            ];
+        function attemptEscape(method) {
+            const player = gameState.players[gameState.playerId];
+            let successChance = 0.5;
             
-            alert(`🎉 CONGRATULATIONS! 🎉\nYou escaped via ${method}!\n${funnyMessages[Math.floor(Math.random() * funnyMessages.length)]}\n\nRefresh to play again.`);
+            // Base chances
+            switch(method) {
+                case 'tunnel': successChance = 0.6; break;
+                case 'disguise': successChance = 0.7; break;
+                case 'riot': successChance = 0.5 + (player.reputation / 100); break;
+                case 'parole': successChance = 0.8 - (player.contraband * 0.1); break;
+            }
+            
+            // Partner bonus
+            if (Object.keys(gameState.players).length > 1) {
+                successChance += 0.2;
+            }
+            
+            // Night bonus
+            if (gameState.isNight) {
+                successChance += 0.1;
+            }
+            
+            return Math.random() < Math.min(0.95, successChance);
+        }
+
+        function escapeSuccess(method) {
+            const funnyMessages = {
+                tunnel: ["You emerged covered in dirt but FREE!", "The tunnel was surprisingly cozy!"],
+                disguise: ["The guards even saluted you on the way out!", "That uniform was a perfect fit!"],
+                riot: ["Chaos was the perfect cover!", "You led the riot to freedom!"],
+                parole: ["Paperwork saved the day!", "You're officially a free citizen!"]
+            };
+            
+            const message = funnyMessages[method][Math.floor(Math.random() * funnyMessages[method].length)];
+            
+            alert(`🎉 ESCAPE SUCCESSFUL! 🎉\n\nYou escaped via ${method.toUpperCase()}!\n${message}\n\nRefresh to play again.`);
+            
+            sendNetworkMessage('gameOver', { success: true, method: method });
         }
 
         function escapeFailure(method) {
             const failureReasons = {
                 tunnel: "The tunnel collapsed!",
-                disguise: "The uniform didn't fit!",
-                riot: "Nobody showed up to the riot!",
-                parole: "Paperwork got rejected!"
+                disguise: "The ID card was expired!",
+                riot: "Nobody showed up to your riot!",
+                parole: "The warden denied your parole!"
             };
             
             sendToSolitary(`${failureReasons[method]} ${method} escape failed.`);
+            sendNetworkMessage('gameOver', { success: false, method: method });
         }
 
         function handleEscapeAttempt(data) {
             const { method, playerId } = data;
-            showMessage(`Partner attempting ${method} escape...`);
+            showMessage(`Partner attempting ${method} escape...`, 'info');
             
             if (gameState.escapeInProgress) {
-                // Both players attempting escape together increases chance
-                showMessage("Coordinated escape attempt in progress!");
+                showMessage("Coordinating escape attempts!", 'success');
             }
-        }
-
-        // ============================================================================
-        // UI FUNCTIONS
-        // ============================================================================
-        function showMessage(text) {
-            // Create temporary message display
-            const messageDiv = document.createElement('div');
-            messageDiv.style.position = 'absolute';
-            messageDiv.style.top = '50%';
-            messageDiv.style.left = '50%';
-            messageDiv.style.transform = 'translate(-50%, -50%)';
-            messageDiv.style.background = 'rgba(0,0,0,0.8)';
-            messageDiv.style.color = '#fff';
-            messageDiv.style.padding = '10px 20px';
-            messageDiv.style.borderRadius = '5px';
-            messageDiv.style.zIndex = '1000';
-            messageDiv.textContent = text;
-            
-            document.getElementById('gameContainer').appendChild(messageDiv);
-            
-            setTimeout(() => {
-                document.getElementById('gameContainer').removeChild(messageDiv);
-            }, 2000);
-        }
-
-        function updateInventoryUI() {
-            const player = gameState.players[gameState.playerId];
-            const inventoryDiv = document.getElementById('inventoryItems');
-            inventoryDiv.innerHTML = '';
-            
-            player.inventory.forEach(item => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'inventory-item';
-                itemDiv.innerHTML = `
-                    <div class="inventory-icon" style="background: ${getItemColor(item)}"></div>
-                    <span>${item.toUpperCase()}</span>
-                `;
-                inventoryDiv.appendChild(itemDiv);
-            });
-        }
-
-        function getItemColor(item) {
-            const colors = {
-                shovel: '#8B4513',
-                uniform: '#0000ff',
-                idcard: '#ffff00',
-                cigarettes: '#f5f5f5',
-                donut: '#ff69b4',
-                key: '#ffd700'
-            };
-            return colors[item] || '#ffffff';
-        }
-
-        function toggleInventory() {
-            const inventory = document.getElementById('inventory');
-            inventory.style.display = inventory.style.display === 'none' ? 'block' : 'none';
-        }
-
-        function toggleChat() {
-            const chat = document.getElementById('chat');
-            if (chat.style.display === 'block') {
-                chat.style.display = 'none';
-            } else {
-                chat.style.display = 'block';
-                document.getElementById('chatInput').focus();
-            }
-        }
-
-        function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            
-            if (message) {
-                displayChatMessage('You', message);
-                sendNetworkMessage('chat', message);
-                input.value = '';
-            }
-        }
-
-        function displayChatMessage(sender, message) {
-            const chatMessages = document.getElementById('chatMessages');
-            const messageDiv = document.createElement('div');
-            messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function hideObjective() {
-            document.getElementById('objective').style.display = 'none';
         }
 
         // ============================================================================
@@ -1447,14 +2093,33 @@
                 "Solitary: where dreams go to nap.",
                 "You had time to think about your life choices... still a bad idea!",
                 "The warden sends his regards... and a bill for damages.",
-                "Even the cockroaches are judging you right now."
+                "Even the cockroaches are judging you right now.",
+                "The only escape now is through boredom!",
+                "Welcome to your new 'quiet time' vacation!"
             ];
             
-            document.getElementById('funnyMessage').textContent = 
-                funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+            const funnyMessage = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+            document.getElementById('funnyMessage').textContent = funnyMessage;
+            
+            // Show hint for next attempt
+            const hints = Object.values(CONFIG.ESCAPE_HINTS);
+            document.getElementById('escapeHint').textContent = `💡 Tip: ${hints[Math.floor(Math.random() * hints.length)]}`;
             
             // Animate solitary scene
             animateSolitaryScene();
+            
+            // Notify partner
+            if (gameState.connectionEstablished) {
+                sendNetworkMessage('gameOver', { success: false, reason: reason });
+            }
+        }
+
+        function handleGameOver(data) {
+            if (data.success) {
+                showMessage(`Partner escaped via ${data.method}!`, 'success');
+            } else {
+                showMessage(`Partner got caught: ${data.reason || 'Escape failed'}`, 'warning');
+            }
         }
 
         function animateSolitaryScene() {
@@ -1462,88 +2127,439 @@
             animationDiv.innerHTML = '';
             
             // Create cell bars
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 8; i++) {
                 const bar = document.createElement('div');
                 bar.className = 'inmate-cell';
-                bar.style.left = (i * 30) + 'px';
-                bar.style.top = '50px';
+                bar.style.left = (i * 40 + 20) + 'px';
                 animationDiv.appendChild(bar);
             }
             
-            // Create guard patrol
+            // Create inmate (player)
+            const inmate = document.createElement('div');
+            inmate.className = 'inmate';
+            inmate.style.left = '200px';
+            animationDiv.appendChild(inmate);
+            
+            // Create guard
             const guard = document.createElement('div');
             guard.className = 'guard-bot';
-            guard.style.bottom = '20px';
+            guard.style.left = '0px';
             animationDiv.appendChild(guard);
             
-            // Animate guard
+            // Animate guard patrol
             let direction = 1;
             setInterval(() => {
+                if (!document.getElementById('solitaryScreen').style.display === 'flex') return;
+                
                 const currentLeft = parseInt(guard.style.left) || 0;
-                if (currentLeft > 250) direction = -1;
+                if (currentLeft > 300) direction = -1;
                 if (currentLeft < 0) direction = 1;
+                
                 guard.style.left = (currentLeft + direction * 50) + 'px';
-            }, 2000);
+                
+                // Make inmate occasionally move
+                if (Math.random() < 0.1) {
+                    inmate.style.left = (190 + Math.random() * 20) + 'px';
+                }
+            }, 1000);
+        }
+
+        // ============================================================================
+        // UI FUNCTIONS
+        // ============================================================================
+        function updateConnectionStatus(status, message) {
+            const element = document.getElementById('connectionStatus');
+            element.textContent = `Status: ${message}`;
+            element.className = `status-${status}`;
+        }
+
+        function updatePlayerUI(playerNum, player) {
+            const num = playerNum === 1 ? '1' : '2';
+            document.getElementById(`health${num}`).textContent = player.health;
+            document.getElementById(`healthBar${num}`).style.width = `${player.health}%`;
+            document.getElementById(`contraband${num}`).textContent = player.contraband;
+            document.getElementById(`rep${num}`).textContent = player.reputation;
+            
+            if (player.position) {
+                document.getElementById(`pos${num}`).textContent = 
+                    `${Math.round(player.position.x)},${Math.round(player.position.z)}`;
+            }
+        }
+
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('messageDisplay');
+            messageDiv.textContent = text;
+            messageDiv.style.display = 'block';
+            
+            // Color based on type
+            const colors = {
+                info: '#00ccff',
+                success: '#00ff00',
+                warning: '#ffcc00',
+                error: '#ff3300'
+            };
+            messageDiv.style.borderColor = colors[type] || colors.info;
+            messageDiv.style.color = colors[type] || colors.info;
+            
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function showError(message) {
+            alert(`ERROR: ${message}`);
+            console.error(message);
+        }
+
+        function setLoadingText(text) {
+            const element = document.getElementById('loadingText');
+            if (element) element.textContent = text;
+        }
+
+        function showLoadingScreen(show) {
+            document.getElementById('loadingScreen').style.display = show ? 'flex' : 'none';
+        }
+
+        function hideObjective() {
+            document.getElementById('objective').style.display = 'none';
+        }
+
+        function showTutorial() {
+            document.getElementById('tutorialSection').style.display = 'block';
+        }
+
+        function hideTutorial() {
+            document.getElementById('tutorialSection').style.display = 'none';
+        }
+
+        function cancelHost() {
+            if (gameState.peer) {
+                gameState.peer.close();
+            }
+            localStorage.removeItem('hostOffer');
+            localStorage.removeItem('iceCandidates');
+            document.getElementById('roomInfo').style.display = 'none';
+            disableButtons(false);
+            updateConnectionStatus('disconnected', 'Disconnected');
+        }
+
+        function returnToLobby() {
+            if (gameState.peer) {
+                gameState.peer.close();
+            }
+            gameState.gameStarted = false;
+            document.getElementById('solitaryScreen').style.display = 'none';
+            document.getElementById('lobbyScreen').style.display = 'flex';
+            disableButtons(false);
+            updateConnectionStatus('disconnected', 'Ready to play');
         }
 
         function retryGame() {
-            // Reset game state
-            gameState.gameStarted = false;
-            gameState.escapeInProgress = false;
-            gameState.timeOfDay = 0;
-            
-            // Clear scene
+            // Clean up Three.js
             if (scene) {
-                while(scene.children.length > 0) { 
-                    scene.remove(scene.children[0]); 
+                while(scene.children.length > 0) {
+                    scene.remove(scene.children[0]);
                 }
             }
             
-            // Return to lobby
-            document.getElementById('solitaryScreen').style.display = 'none';
-            document.getElementById('lobbyScreen').style.display = 'flex';
+            if (renderer) {
+                renderer.dispose();
+            }
             
-            // Change room code if host
-            if (gameState.isHost) {
-                const newCode = generateRoomCode();
-                document.getElementById('displayCode').textContent = newCode;
+            // Reset game state but keep connection
+            gameState.gameStarted = false;
+            gameState.escapeInProgress = false;
+            gameState.timeOfDay = 0.5;
+            
+            playerMesh = null;
+            otherPlayerMesh = null;
+            botMeshes = [];
+            itemMeshes = [];
+            wallMeshes = [];
+            
+            // Return to game screen
+            document.getElementById('solitaryScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'flex';
+            
+            // Reinitialize game
+            initThreeJS();
+            generatePrison(Date.now() + Math.random() * 1000);
+            createPlayer(gameState.playerId, true);
+            
+            // Reset player stats but keep connection
+            const player = gameState.players[gameState.playerId];
+            player.health = 100;
+            player.contraband = 0;
+            player.reputation = 0;
+            player.inventory = [];
+            
+            // Start game
+            gameState.gameStarted = true;
+            animate();
+            
+            showMessage("New attempt! Good luck!", 'success');
+        }
+
+        // ============================================================================
+        // INPUT HANDLING
+        // ============================================================================
+        function setupEventListeners() {
+            // Keyboard
+            window.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                keys[key] = true;
                 
-                // Update stored offer
-                const oldData = localStorage.getItem('hostOffer');
-                if (oldData) {
-                    const data = JSON.parse(oldData);
-                    data.roomCode = newCode;
-                    localStorage.setItem('hostOffer', JSON.stringify(data));
+                // Toggle running
+                if (key === 'shift') isRunning = true;
+                
+                // Handle special keys
+                switch(key) {
+                    case 'e':
+                        if (!gameState.escapeInProgress) attemptInteraction();
+                        break;
+                    case 'f':
+                        if (!gameState.escapeInProgress) attemptFight();
+                        break;
+                    case 'tab':
+                        toggleInventory();
+                        e.preventDefault();
+                        break;
+                    case 'c':
+                        toggleChat();
+                        e.preventDefault();
+                        break;
+                    case 'm':
+                        if (!gameState.escapeInProgress) toggleEscapeMenu();
+                        e.preventDefault();
+                        break;
+                    case 'enter':
+                        if (document.getElementById('chat').style.display === 'block') {
+                            sendChatMessage();
+                            e.preventDefault();
+                        }
+                        break;
+                    case 'escape':
+                        if (document.getElementById('chat').style.display === 'block') {
+                            toggleChat();
+                        } else if (document.getElementById('escapeMenu').style.display === 'grid') {
+                            toggleEscapeMenu();
+                        } else if (document.getElementById('inventory').style.display === 'block') {
+                            toggleInventory();
+                        }
+                        e.preventDefault();
+                        break;
                 }
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                keys[key] = false;
+                
+                if (key === 'shift') isRunning = false;
+            });
+            
+            // Mouse
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+            
+            // Window resize
+            window.addEventListener('resize', () => {
+                if (camera && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            });
+            
+            // Prevent context menu
+            window.addEventListener('contextmenu', (e) => e.preventDefault());
+        }
+
+        function mobileKeyDown(key) {
+            keys[key] = true;
+            if (key === 'e') attemptInteraction();
+            if (key === ' ') playerMesh.position.y += 0.2;
+        }
+
+        function mobileKeyUp(key) {
+            keys[key] = false;
+        }
+
+        // ============================================================================
+        // INTERACTION FUNCTIONS
+        // ============================================================================
+        function attemptInteraction() {
+            // Check for nearby items
+            itemMeshes.forEach((item, index) => {
+                if (!item.userData.collected && playerMesh) {
+                    const distance = playerMesh.position.distanceTo(item.position);
+                    if (distance < 2) {
+                        collectItem(item.userData.type, index);
+                    }
+                }
+            });
+            
+            // Check for bots to interact with
+            gameState.bots.forEach((bot, index) => {
+                if (playerMesh && bot.position) {
+                    const dx = playerMesh.position.x - bot.position.x;
+                    const dz = playerMesh.position.z - bot.position.z;
+                    const distance = Math.sqrt(dx * dx + dz * dz);
+                    
+                    if (distance < 3) {
+                        if (bot.type === 'guard') {
+                            const player = gameState.players[gameState.playerId];
+                            if (player.inventory.includes('donut')) {
+                                player.reputation += 10;
+                                player.inventory = player.inventory.filter(i => i !== 'donut');
+                                updateInventoryUI();
+                                showMessage('Guard bribed with donut! Reputation +10', 'success');
+                            }
+                        } else if (bot.type === 'inmate') {
+                            tradeWithInmate(bot.personality);
+                        }
+                    }
+                }
+            });
+        }
+
+        function attemptFight() {
+            const player = gameState.players[gameState.playerId];
+            
+            gameState.bots.forEach((bot, index) => {
+                if (bot.type === 'guard' && playerMesh) {
+                    const dx = playerMesh.position.x - bot.position.x;
+                    const dz = playerMesh.position.z - bot.position.z;
+                    const distance = Math.sqrt(dx * dx + dz * dz);
+                    
+                    if (distance < 3) {
+                        const success = Math.random() > 0.4;
+                        
+                        if (success) {
+                            showMessage('Guard knocked out! (Temporarily)', 'success');
+                            bot.alertLevel = 100;
+                            player.reputation += 5;
+                        } else {
+                            showMessage('Fight failed! Health -20', 'warning');
+                            player.health -= 20;
+                            if (player.health <= 0) {
+                                sendToSolitary('Lost a fight with a guard');
+                            }
+                        }
+                        
+                        sendNetworkMessage('botUpdate', { index, alertLevel: bot.alertLevel });
+                    }
+                }
+            });
+        }
+
+        function tradeWithInmate(personality) {
+            const player = gameState.players[gameState.playerId];
+            const messages = {
+                lazy: "Zzz... come back later...",
+                violent: "What you lookin' at?! Got a problem?!",
+                helpful: "Need something? I might know where to find useful items..."
+            };
+            
+            showMessage(`Inmate: "${messages[personality]}"`, 'info');
+            
+            if (personality === 'helpful' && player.contraband > 0) {
+                const tips = [
+                    "Check behind the cafeteria for loose bricks.",
+                    "Night guards are lazier than day guards.",
+                    "The warden's office always has spare uniforms.",
+                    "Some guards can be bribed with sweets.",
+                    "The western wall is weakest near the old generator."
+                ];
+                showMessage(`💡 Tip: ${tips[Math.floor(Math.random() * tips.length)]}`, 'success');
+                player.reputation += 5;
+                updatePlayerUI(1, player);
             }
         }
 
         // ============================================================================
-        // WINDOW RESIZE HANDLER
+        // CHAT SYSTEM
         // ============================================================================
-        window.addEventListener('resize', () => {
-            if (camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+        function toggleChat() {
+            const chat = document.getElementById('chat');
+            if (chat.style.display === 'block') {
+                chat.style.display = 'none';
+            } else {
+                chat.style.display = 'flex';
+                document.getElementById('chatInput').focus();
             }
-        });
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message && gameState.connectionEstablished) {
+                displayChatMessage('You', message, true);
+                sendNetworkMessage('chat', message);
+                input.value = '';
+            }
+        }
+
+        function displayChatMessage(sender, message, isLocal) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${isLocal ? 'you' : 'partner'}`;
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${message}`;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
 
         // ============================================================================
-        // INITIALIZATION
+        // UTILITY FUNCTIONS
         // ============================================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('Cell Block Zero loaded');
-            document.getElementById('connectionStatus').textContent = 'Status: Ready';
-        });
+        function generateRandomId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        function disableButtons(disabled) {
+            document.getElementById('hostBtn').disabled = disabled;
+            document.getElementById('joinBtn').disabled = disabled;
+            document.getElementById('tutorialBtn').disabled = disabled;
+        }
 
         // ============================================================================
         // ERROR HANDLING
         // ============================================================================
-        window.addEventListener('error', function(event) {
-            console.error('Game error:', event.error);
-            showMessage('Game error occurred. Check console.');
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            showMessage(`Error: ${event.message}`, 'error');
         });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Unhandled promise rejection:', event.reason);
+            showMessage('Network error occurred', 'error');
+        });
+
+        // ============================================================================
+        // CLEANUP ON EXIT
+        // ============================================================================
+        window.addEventListener('beforeunload', () => {
+            if (gameState.peer) {
+                gameState.peer.close();
+            }
+            if (renderer) {
+                renderer.dispose();
+            }
+        });
+
+        console.log('Cell Block Zero - Game code loaded successfully');
     </script>
 </body>
 </html>
