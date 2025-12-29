@@ -3,2859 +3,1477 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CYBER RUNNER 2077 | WebGL Parkour FPS</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>Quantum Link | Cooperative 3D Puzzle</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
-        
+
         body {
-            font-family: 'Rajdhani', 'Arial Narrow', sans-serif;
-            background: #000;
-            color: #0ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c2e 0%, #1a1a3e 100%);
+            color: #e0e0ff;
             overflow: hidden;
             height: 100vh;
             user-select: none;
         }
-        
-        #gameContainer {
-            position: fixed;
-            top: 0;
-            left: 0;
+
+        #game-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+
+        #game-canvas {
+            display: block;
             width: 100%;
             height: 100%;
-            z-index: 1;
+            outline: none;
         }
-        
-        #uiOverlay {
-            position: fixed;
+
+        #ui-overlay {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 2;
+            z-index: 10;
         }
-        
-        /* Loading Screen */
-        #loadingScreen {
-            position: fixed;
+
+        .ui-panel {
+            position: absolute;
+            background: rgba(10, 10, 40, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 2px solid rgba(100, 150, 255, 0.3);
+            padding: 20px;
+            pointer-events: all;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        #main-menu {
+            width: 500px;
+            max-width: 90vw;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        #game-hud {
+            width: 300px;
+            top: 20px;
+            left: 20px;
+            padding: 15px;
+        }
+
+        #player2-hud {
+            width: 300px;
+            top: 20px;
+            right: 20px;
+            padding: 15px;
+            text-align: right;
+        }
+
+        #instructions {
+            width: 400px;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #6ee7ff, #5a8cff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(106, 231, 255, 0.3);
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #a0c8ff;
+            border-bottom: 1px solid rgba(100, 150, 255, 0.3);
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #88ccff;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            color: #b0d0ff;
+            line-height: 1.5;
+        }
+
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3a6fff, #5a8cff);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(58, 111, 255, 0.3);
+        }
+
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(58, 111, 255, 0.5);
+            background: linear-gradient(135deg, #4a7fff, #6a9cff);
+        }
+
+        .button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(58, 111, 255, 0.3);
+        }
+
+        .button.secondary {
+            background: linear-gradient(135deg, #6c63ff, #8a84ff);
+        }
+
+        .button.secondary:hover {
+            background: linear-gradient(135deg, #7c73ff, #9a94ff);
+        }
+
+        .player-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .player-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .player1 .player-icon {
+            background: linear-gradient(135deg, #ff5a5a, #ff7a7a);
+            color: white;
+        }
+
+        .player2 .player-icon {
+            background: linear-gradient(135deg, #5a8cff, #7aacff);
+            color: white;
+        }
+
+        .player-info {
+            flex-grow: 1;
+        }
+
+        .player-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .player-ability {
+            font-size: 0.9rem;
+            color: #a0c8ff;
+            margin-top: 3px;
+        }
+
+        .puzzle-info {
+            background: rgba(20, 30, 60, 0.7);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            border-left: 4px solid #5a8cff;
+        }
+
+        .ability-icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background: rgba(100, 150, 255, 0.2);
+            border-radius: 4px;
+            text-align: center;
+            line-height: 24px;
+            margin-right: 8px;
+        }
+
+        .controls-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+
+        .controls-list li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .key {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            padding: 3px 8px;
+            margin-right: 10px;
+            min-width: 30px;
+            text-align: center;
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .connected {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+
+        .disconnected {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+
+        .loading-screen {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #000;
+            background: #0c0c2e;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 100;
-            transition: opacity 1s;
         }
-        
-        .cyberpunk-logo {
-            font-size: 4rem;
-            background: linear-gradient(45deg, #ff00ff, #00ffff, #ff00ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px #ff00ff;
-            margin-bottom: 30px;
-            animation: glitch 3s infinite;
-        }
-        
-        .loading-bar-container {
-            width: 300px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-        
+
         .loading-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #ff00ff, #00ffff);
-            border-radius: 2px;
-            transition: width 0.3s;
-        }
-        
-        .loading-text {
-            color: #0ff;
-            font-size: 1.2rem;
+            width: 300px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
             margin-top: 20px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-        }
-        
-        /* Settings Panel */
-        #settingsPanel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-            pointer-events: all;
-        }
-        
-        .settings-title {
-            font-size: 3rem;
-            background: linear-gradient(45deg, #ff00ff, #00ffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 40px;
-            text-transform: uppercase;
-        }
-        
-        .settings-container {
-            width: 800px;
-            max-width: 90%;
-            background: rgba(0, 20, 40, 0.8);
-            border: 2px solid #00ffff;
-            border-radius: 10px;
-            padding: 30px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-        }
-        
-        .settings-section {
-            margin-bottom: 25px;
-        }
-        
-        .section-title {
-            color: #ff00ff;
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #00ffff;
-            padding-bottom: 5px;
-            text-transform: uppercase;
-        }
-        
-        .control-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 5px;
-            transition: background 0.3s;
-        }
-        
-        .control-item:hover {
-            background: rgba(0, 255, 255, 0.1);
-        }
-        
-        .control-label {
-            color: #0ff;
-            font-size: 0.9rem;
-        }
-        
-        .control-key {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid #00ffff;
-            color: #ff00ff;
-            padding: 5px 15px;
-            border-radius: 4px;
-            min-width: 80px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-        }
-        
-        .control-key:hover {
-            background: rgba(0, 255, 255, 0.2);
-            transform: scale(1.05);
-        }
-        
-        .control-key.editing {
-            animation: pulse 1s infinite;
-            background: rgba(255, 0, 255, 0.3);
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 30px;
-            grid-column: 1 / -1;
-            justify-content: center;
-        }
-        
-        .settings-button {
-            background: linear-gradient(45deg, #ff00ff, #00ffff);
-            border: none;
-            color: #000;
-            padding: 15px 30px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            border-radius: 5px;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: transform 0.3s;
-        }
-        
-        .settings-button:hover {
-            transform: scale(1.05);
-        }
-        
-        .settings-button.reset {
-            background: linear-gradient(45deg, #ff3300, #ff9900);
-        }
-        
-        /* Main HUD */
-        .hud {
-            padding: 20px;
-        }
-        
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        
-        .mission-info {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px 25px;
-            border-left: 3px solid #ff00ff;
-            max-width: 400px;
-        }
-        
-        .mission-title {
-            color: #ff00ff;
-            font-size: 1.2rem;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .mission-objective {
-            color: #0ff;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-        
-        .stats-container {
-            display: flex;
-            gap: 30px;
-        }
-        
-        .stat-box {
-            text-align: center;
-            min-width: 100px;
-        }
-        
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #ff00ff;
-            text-shadow: 0 0 10px #ff00ff;
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            color: #0ff;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            opacity: 0.7;
-        }
-        
-        /* Health and Energy Bars */
-        .bars-container {
-            position: fixed;
-            bottom: 30px;
-            left: 30px;
-            width: 300px;
-        }
-        
-        .bar {
-            margin-bottom: 15px;
-        }
-        
-        .bar-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-        
-        .bar-name {
-            color: #0ff;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-size: 0.9rem;
-        }
-        
-        .bar-value {
-            color: #ff00ff;
-            font-weight: bold;
-        }
-        
-        .bar-track {
-            height: 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .bar-fill {
-            height: 100%;
-            border-radius: 6px;
-            transition: width 0.3s;
-            position: relative;
-        }
-        
-        .health-bar .bar-fill {
-            background: linear-gradient(90deg, #ff0000, #ff3300);
-            box-shadow: 0 0 10px #ff3300;
-        }
-        
-        .energy-bar .bar-fill {
-            background: linear-gradient(90deg, #00ffff, #0088ff);
-            box-shadow: 0 0 10px #00ffff;
-        }
-        
-        /* Weapons */
-        .weapon-hud {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            text-align: right;
-        }
-        
-        .weapon-name {
-            color: #ff00ff;
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .ammo-count {
-            color: #0ff;
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-            text-shadow: 0 0 10px #00ffff;
-        }
-        
-        .ammo-type {
-            color: rgba(0, 255, 255, 0.5);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        /* Crosshair */
-        .crosshair {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 20px;
-            height: 20px;
-            pointer-events: none;
-        }
-        
-        .crosshair-inner {
-            width: 100%;
-            height: 100%;
-            position: relative;
-        }
-        
-        .crosshair-dot {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 4px;
-            height: 4px;
-            background: #00ffff;
-            border-radius: 50%;
-            box-shadow: 0 0 10px #00ffff;
-        }
-        
-        .crosshair-line {
-            position: absolute;
-            background: #00ffff;
-            box-shadow: 0 0 5px #00ffff;
-        }
-        
-        .crosshair-line.top {
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 8px;
-        }
-        
-        .crosshair-line.bottom {
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 8px;
-        }
-        
-        .crosshair-line.left {
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 8px;
-            height: 2px;
-        }
-        
-        .crosshair-line.right {
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 8px;
-            height: 2px;
-        }
-        
-        /* Abilities HUD */
-        .abilities-hud {
-            position: fixed;
-            bottom: 150px;
-            right: 30px;
-            display: flex;
-            gap: 15px;
-        }
-        
-        .ability-slot {
-            width: 60px;
-            height: 60px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #00ffff;
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
             overflow: hidden;
         }
-        
-        .ability-icon {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #3a6fff, #5a8cff);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s ease;
         }
-        
-        .ability-key {
+
+        #connection-status {
             position: absolute;
-            bottom: 5px;
-            font-size: 0.8rem;
-            color: #ff00ff;
-        }
-        
-        .ability-cooldown {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(255, 0, 255, 0.5);
-            transition: height 0.1s;
-        }
-        
-        /* Minimap */
-        .minimap-container {
-            position: fixed;
-            top: 30px;
-            right: 30px;
-            width: 200px;
-            height: 200px;
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid #ff00ff;
-            border-radius: 10px;
-            overflow: hidden;
-            padding: 10px;
-        }
-        
-        .minimap-title {
-            color: #ff00ff;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .minimap {
-            width: 100%;
-            height: calc(100% - 30px);
-            background: rgba(0, 20, 40, 0.9);
-            position: relative;
-        }
-        
-        /* Controls Help */
-        .controls-help {
-            position: fixed;
-            bottom: 30px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #00ffff;
-            border-radius: 5px;
             padding: 10px 20px;
-            color: #0ff;
-            font-size: 0.8rem;
-            display: none;
-        }
-        
-        .controls-help.show {
-            display: block;
-        }
-        
-        /* Messages */
-        .message-container {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            text-align: center;
-            width: 80%;
-        }
-        
-        .message {
-            background: rgba(0, 0, 0, 0.8);
-            border: 2px solid #ff00ff;
-            padding: 20px 40px;
-            margin-bottom: 10px;
-            color: #0ff;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s;
-        }
-        
-        .message.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        /* Pause Menu */
-        #pauseMenu {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 50;
-            pointer-events: all;
-        }
-        
-        .pause-title {
-            font-size: 4rem;
-            background: linear-gradient(45deg, #ff00ff, #00ffff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 50px;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-        }
-        
-        .pause-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 300px;
-        }
-        
-        .pause-button {
-            background: rgba(255, 255, 255, 0.1);
-            border: 2px solid #00ffff;
-            color: #0ff;
-            padding: 20px;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-align: center;
-        }
-        
-        .pause-button:hover {
-            background: rgba(0, 255, 255, 0.2);
-            border-color: #ff00ff;
-            transform: scale(1.05);
-        }
-        
-        /* Grid Overlay */
-        .grid-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 50px 50px;
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        /* Animations */
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            2% { transform: translate(-2px, 2px); }
-            4% { transform: translate(-2px, -2px); }
-            6% { transform: translate(2px, 2px); }
-            8% { transform: translate(2px, -2px); }
-            10% { transform: translate(0); }
-            100% { transform: translate(0); }
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.5; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.05); }
-            100% { opacity: 0.5; transform: scale(1); }
-        }
-        
-        /* Key Display */
-        .key-display {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid #00ffff;
-            padding: 2px 8px;
-            margin: 0 3px;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
+            border-radius: 8px;
             font-weight: bold;
+            z-index: 11;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+
+        @media (max-width: 768px) {
+            #game-hud, #player2-hud {
+                width: 250px;
+                padding: 10px;
+            }
+            
+            #instructions {
+                width: 90%;
+                font-size: 0.9rem;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loadingScreen">
-        <div class="cyberpunk-logo">CYBER RUNNER 2077</div>
-        <div class="loading-bar-container">
-            <div class="loading-bar" id="loadingBar"></div>
-        </div>
-        <div class="loading-text" id="loadingText">INITIALIZING NEURAL LINK...</div>
-    </div>
-
-    <!-- Settings Panel -->
-    <div id="settingsPanel">
-        <div class="settings-title">CONTROL CONFIGURATION</div>
-        <div class="settings-container">
-            <div class="settings-section">
-                <div class="section-title">MOVEMENT</div>
-                <div class="control-item">
-                    <span class="control-label">Move Forward</span>
-                    <div class="control-key" data-action="forward">W</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Move Backward</span>
-                    <div class="control-key" data-action="backward">S</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Move Left</span>
-                    <div class="control-key" data-action="left">A</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Move Right</span>
-                    <div class="control-key" data-action="right">D</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Jump</span>
-                    <div class="control-key" data-action="jump">Space</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Sprint</span>
-                    <div class="control-key" data-action="sprint">Shift</div>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <div class="section-title">COMBAT</div>
-                <div class="control-item">
-                    <span class="control-label">Shoot</span>
-                    <div class="control-key" data-action="shoot">Mouse Left</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Aim Down Sights</span>
-                    <div class="control-key" data-action="aim">Mouse Right</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Reload</span>
-                    <div class="control-key" data-action="reload">R</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Weapon 1</span>
-                    <div class="control-key" data-action="weapon1">1</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Weapon 2</span>
-                    <div class="control-key" data-action="weapon2">2</div>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <div class="section-title">ABILITIES</div>
-                <div class="control-item">
-                    <span class="control-label">Cyber Dash</span>
-                    <div class="control-key" data-action="ability1">Q</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Neural Scan</span>
-                    <div class="control-key" data-action="ability2">E</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Time Dilation</span>
-                    <div class="control-key" data-action="ability3">F</div>
-                </div>
-            </div>
-            
-            <div class="settings-section">
-                <div class="section-title">GAME CONTROLS</div>
-                <div class="control-item">
-                    <span class="control-label">Pause Game</span>
-                    <div class="control-key" data-action="pause">Escape</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Show Controls</span>
-                    <div class="control-key" data-action="help">H</div>
-                </div>
-                <div class="control-item">
-                    <span class="control-label">Settings</span>
-                    <div class="control-key" data-action="settings">F1</div>
-                </div>
-            </div>
-            
-            <div class="button-group">
-                <button class="settings-button" id="saveSettings">SAVE SETTINGS</button>
-                <button class="settings-button reset" id="resetSettings">RESET TO DEFAULT</button>
-                <button class="settings-button" id="closeSettings">CLOSE</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Game Canvas -->
-    <canvas id="gameContainer"></canvas>
-
-    <!-- UI Overlay -->
-    <div id="uiOverlay">
-        <!-- Grid Overlay -->
-        <div class="grid-overlay"></div>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
         
-        <!-- HUD -->
-        <div class="hud">
-            <div class="top-bar">
-                <div class="mission-info">
-                    <div class="mission-title" id="missionTitle">INFILTRATE MEGACORP TOWER</div>
-                    <div class="mission-objective" id="missionObjective">Upload virus to central server • Eliminate security</div>
+        <div id="ui-overlay">
+            <!-- Loading Screen -->
+            <div id="loading-screen" class="loading-screen">
+                <h1>QUANTUM LINK</h1>
+                <div class="subtitle">Loading cooperative puzzle experience...</div>
+                <div class="loading-bar">
+                    <div id="loading-progress" class="loading-progress"></div>
                 </div>
-                <div class="stats-container">
-                    <div class="stat-box">
-                        <div class="stat-value" id="scoreValue">0</div>
-                        <div class="stat-label">CREDITS</div>
+            </div>
+            
+            <!-- Main Menu -->
+            <div id="main-menu" class="ui-panel">
+                <h1>QUANTUM LINK</h1>
+                <div class="subtitle">A cooperative 3D puzzle adventure for 2 players</div>
+                
+                <div style="margin: 30px 0;">
+                    <div class="player-indicator player1">
+                        <div class="player-icon">P1</div>
+                        <div class="player-info">
+                            <div class="player-name">Player 1: The Manipulator</div>
+                            <div class="player-ability">Ability: Move and rotate objects</div>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="killCount">0</div>
-                        <div class="stat-label">ELIMINATIONS</div>
+                    
+                    <div class="player-indicator player2">
+                        <div class="player-icon">P2</div>
+                        <div class="player-info">
+                            <div class="player-name">Player 2: The Activator</div>
+                            <div class="player-ability">Ability: Activate switches and energy fields</div>
+                        </div>
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="timeValue">00:00</div>
-                        <div class="stat-label">MISSION TIME</div>
+                </div>
+                
+                <div class="puzzle-info">
+                    <p><i class="fas fa-puzzle-piece ability-icon"></i> Work together to solve interconnected puzzles</p>
+                    <p><i class="fas fa-users ability-icon"></i> Communicate and coordinate your unique abilities</p>
+                    <p><i class="fas fa-bolt ability-icon"></i> Combine powers to overcome obstacles</p>
+                </div>
+                
+                <div style="margin-top: 30px;">
+                    <button id="start-host-btn" class="button">
+                        <i class="fas fa-network-wired"></i> Host Game
+                    </button>
+                    <button id="start-join-btn" class="button secondary">
+                        <i class="fas fa-plug"></i> Join Game
+                    </button>
+                    <button id="how-to-play-btn" class="button secondary">
+                        <i class="fas fa-question-circle"></i> How to Play
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Game HUD - Player 1 -->
+            <div id="game-hud" class="ui-panel hidden">
+                <div class="player-indicator player1">
+                    <div class="player-icon">P1</div>
+                    <div class="player-info">
+                        <div class="player-name">MANIPULATOR</div>
+                        <div class="player-ability">Move & Rotate Objects</div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Health and Energy Bars -->
-        <div class="bars-container">
-            <div class="bar health-bar">
-                <div class="bar-label">
-                    <div class="bar-name">NEURAL INTEGRITY</div>
-                    <div class="bar-value" id="healthValue">100%</div>
+                
+                <div style="margin-top: 15px;">
+                    <h3>Current Objective</h3>
+                    <div id="p1-objective">Align the energy conduits to power the gateway.</div>
                 </div>
-                <div class="bar-track">
-                    <div class="bar-fill" id="healthBar" style="width: 100%"></div>
+                
+                <div style="margin-top: 15px;">
+                    <h3>Controls</h3>
+                    <ul class="controls-list">
+                        <li><span class="key">WASD</span> Move</li>
+                        <li><span class="key">Mouse</span> Look Around</li>
+                        <li><span class="key">E</span> Grab Object</li>
+                        <li><span class="key">R</span> Rotate Object</li>
+                        <li><span class="key">Shift</span> Sprint</li>
+                    </ul>
                 </div>
-            </div>
-            <div class="bar energy-bar">
-                <div class="bar-label">
-                    <div class="bar-name">CYBERNETIC ENERGY</div>
-                    <div class="bar-value" id="energyValue">100%</div>
-                </div>
-                <div class="bar-track">
-                    <div class="bar-fill" id="energyBar" style="width: 100%"></div>
+                
+                <div style="margin-top: 15px;">
+                    <div id="p1-status" class="status connected">Connected</div>
                 </div>
             </div>
-        </div>
-
-        <!-- Weapon HUD -->
-        <div class="weapon-hud">
-            <div class="weapon-name" id="weaponName">PLASMA RIFLE</div>
-            <div class="ammo-count" id="ammoCount">∞/∞</div>
-            <div class="ammo-type" id="ammoType">ENERGY CELLS</div>
-        </div>
-
-        <!-- Abilities -->
-        <div class="abilities-hud">
-            <div class="ability-slot" id="ability1">
-                <div class="ability-icon">⚡</div>
-                <div class="ability-key" id="ability1Key">Q</div>
-                <div class="ability-cooldown" id="ability1Cooldown"></div>
+            
+            <!-- Game HUD - Player 2 -->
+            <div id="player2-hud" class="ui-panel hidden">
+                <div class="player-indicator player2">
+                    <div class="player-icon">P2</div>
+                    <div class="player-info">
+                        <div class="player-name">ACTIVATOR</div>
+                        <div class="player-ability">Activate Energy Fields</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <h3>Current Objective</h3>
+                    <div id="p2-objective">Activate the switches to redirect the energy flow.</div>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <h3>Controls</h3>
+                    <ul class="controls-list">
+                        <li><span class="key">↑↓←→</span> Move</li>
+                        <li><span class="key">Mouse</span> Look Around</li>
+                        <li><span class="key">Enter</span> Activate Switch</li>
+                        <li><span class="key">Space</span> Jump</li>
+                        <li><span class="key">Ctrl</span> Crouch</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-top: 15px;">
+                    <div id="p2-status" class="status connected">Connected</div>
+                </div>
             </div>
-            <div class="ability-slot" id="ability2">
-                <div class="ability-icon">👁️</div>
-                <div class="ability-key" id="ability2Key">E</div>
-                <div class="ability-cooldown" id="ability2Cooldown"></div>
-            </div>
-            <div class="ability-slot" id="ability3">
-                <div class="ability-icon">🌀</div>
-                <div class="ability-key" id="ability3Key">F</div>
-                <div class="ability-cooldown" id="ability3Cooldown"></div>
-            </div>
-        </div>
-
-        <!-- Minimap -->
-        <div class="minimap-container">
-            <div class="minimap-title">TACTICAL DISPLAY</div>
-            <div class="minimap" id="minimap"></div>
-        </div>
-
-        <!-- Crosshair -->
-        <div class="crosshair">
-            <div class="crosshair-inner">
-                <div class="crosshair-dot"></div>
-                <div class="crosshair-line top"></div>
-                <div class="crosshair-line bottom"></div>
-                <div class="crosshair-line left"></div>
-                <div class="crosshair-line right"></div>
+            
+            <!-- Instructions Panel -->
+            <div id="instructions" class="ui-panel hidden">
+                <h3><i class="fas fa-lightbulb"></i> Current Puzzle</h3>
+                <div id="puzzle-instruction">Both players must work together. The Manipulator moves the energy blocks into position while the Activator powers the transfer conduits. Communication is key!</div>
             </div>
         </div>
-
-        <!-- Controls Help -->
-        <div class="controls-help" id="controlsHelp">
-            Press <span class="key-display">H</span> to hide controls • Press <span class="key-display">F1</span> to configure
-        </div>
-
-        <!-- Messages -->
-        <div class="message-container" id="messageContainer"></div>
+        
+        <div id="connection-status" class="hidden"></div>
     </div>
 
-    <!-- Pause Menu -->
-    <div id="pauseMenu">
-        <div class="pause-title">PAUSED</div>
-        <div class="pause-menu">
-            <div class="pause-button" id="resumeButton">RESUME MISSION</div>
-            <div class="pause-button" id="settingsButton">CONTROLS CONFIG</div>
-            <div class="pause-button" id="restartButton">RESTART LEVEL</div>
-            <div class="pause-button" id="quitButton">DISCONNECT</div>
-        </div>
-    </div>
-
+    <!-- Three.js and other libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+    
     <script>
-        // ================================
-        // GAME CONFIGURATION
-        // ================================
-        const CONFIG = {
-            // Graphics
-            FOG_DENSITY: 0.002,
-            FOG_COLOR: 0x000022,
+        // ============================================
+        // GAME STATE & CONFIGURATION
+        // ============================================
+        const GameConfig = {
+            VERSION: "1.0.0",
+            DEBUG_MODE: false,
             
-            // Player
-            PLAYER_SPEED: 5,
+            // Graphics settings
+            SHADOW_MAP_SIZE: 2048,
+            FOG_COLOR: 0x0a0a1a,
+            FOG_NEAR: 10,
+            FOG_FAR: 100,
+            
+            // Player settings
+            PLAYER_HEIGHT: 1.8,
+            PLAYER_RADIUS: 0.5,
+            PLAYER_SPEED: 5.0,
             PLAYER_JUMP_FORCE: 8,
-            PLAYER_SPRINT_MULTIPLIER: 1.8,
-            PLAYER_HEALTH: 100,
-            PLAYER_ENERGY: 100,
-            PLAYER_ENERGY_REGEN: 0.5,
+            GRAVITY: 20,
             
-            // Gameplay
-            GRAVITY: -20,
-            ENEMY_COUNT: 15,
-            OBJECTIVE_DISTANCE: 200,
-            TIME_LIMIT: 600,
+            // Network settings
+            LOCAL_NETWORK_CHECK_INTERVAL: 2000,
+            DATA_SYNC_INTERVAL: 100,
             
-            // Weapons
-            WEAPONS: {
-                plasma: {
-                    name: 'PLASMA RIFLE',
-                    damage: 25,
-                    fireRate: 10,
-                    energyCost: 5,
-                    accuracy: 0.95,
-                    ammoType: 'ENERGY CELLS'
-                },
-                railgun: {
-                    name: 'RAILGUN',
-                    damage: 75,
-                    fireRate: 2,
-                    energyCost: 20,
-                    accuracy: 1.0,
-                    ammoType: 'KINETIC ROUNDS'
-                }
-            },
-            
-            // Abilities
-            ABILITIES: {
-                dash: {
-                    name: 'CYBER DASH',
-                    cooldown: 3,
-                    energyCost: 15,
-                    duration: 0.3,
-                    speedMultiplier: 5
-                },
-                scan: {
-                    name: 'NEURAL SCAN',
-                    cooldown: 8,
-                    energyCost: 10,
-                    duration: 5,
-                    revealRadius: 50
-                },
-                timeWarp: {
-                    name: 'TIME DILATION',
-                    cooldown: 15,
-                    energyCost: 30,
-                    duration: 4,
-                    slowFactor: 0.3
-                }
-            }
+            // Puzzle settings
+            PUZZLE_COUNT: 3,
+            OBJECT_HIGHLIGHT_COLOR: 0x44ff44
         };
 
-        // ================================
-        // CUSTOM CONTROLS SYSTEM
-        // ================================
-        const DEFAULT_CONTROLS = {
-            forward: 'KeyW',
-            backward: 'KeyS',
-            left: 'KeyA',
-            right: 'KeyD',
-            jump: 'Space',
-            sprint: 'ShiftLeft',
-            shoot: 'Mouse0',
-            aim: 'Mouse2',
-            reload: 'KeyR',
-            weapon1: 'Digit1',
-            weapon2: 'Digit2',
-            ability1: 'KeyQ',
-            ability2: 'KeyE',
-            ability3: 'KeyF',
-            pause: 'Escape',
-            help: 'KeyH',
-            settings: 'F1'
-        };
-
-        let userControls = JSON.parse(localStorage.getItem('cyberrunner_controls')) || {...DEFAULT_CONTROLS};
-        let editingControl = null;
-        let keyBindings = {};
-
-        function initializeControls() {
-            // Convert control mapping to key bindings
-            keyBindings = {};
-            for (const [action, key] of Object.entries(userControls)) {
-                keyBindings[key] = action;
-            }
+        // Global state object
+        const GameState = {
+            // Game phase
+            phase: 'loading', // loading, menu, playing, completed
             
-            // Update UI display
-            updateControlDisplay();
-        }
-
-        function updateControlDisplay() {
-            // Update control key displays
-            for (const [action, key] of Object.entries(userControls)) {
-                const element = document.querySelector(`.control-key[data-action="${action}"]`);
-                if (element) {
-                    element.textContent = formatKeyName(key);
-                }
-            }
+            // Player information
+            playerId: null,
+            playerRole: null, // 'manipulator' or 'activator'
+            players: {},
             
-            // Update ability key displays
-            document.getElementById('ability1Key').textContent = formatKeyName(userControls.ability1);
-            document.getElementById('ability2Key').textContent = formatKeyName(userControls.ability2);
-            document.getElementById('ability3Key').textContent = formatKeyName(userControls.ability3);
-        }
-
-        function formatKeyName(keyCode) {
-            const keyMap = {
-                'KeyW': 'W',
-                'KeyA': 'A',
-                'KeyS': 'S',
-                'KeyD': 'D',
-                'KeyQ': 'Q',
-                'KeyE': 'E',
-                'KeyR': 'R',
-                'KeyF': 'F',
-                'KeyH': 'H',
-                'Space': 'Space',
-                'ShiftLeft': 'Shift',
-                'ShiftRight': 'Shift',
-                'Digit1': '1',
-                'Digit2': '2',
-                'Escape': 'Esc',
-                'F1': 'F1',
-                'Mouse0': 'Mouse L',
-                'Mouse2': 'Mouse R'
-            };
+            // Network state
+            connectionType: null, // 'host' or 'client'
+            peerConnection: null,
+            dataChannel: null,
+            isConnected: false,
             
-            return keyMap[keyCode] || keyCode.replace('Key', '').replace('Digit', '').replace('Arrow', '');
-        }
-
-        function saveControls() {
-            localStorage.setItem('cyberrunner_controls', JSON.stringify(userControls));
-            initializeControls();
-            showMessage('CONTROLS SAVED', 'Custom controls have been saved');
-        }
-
-        function resetControls() {
-            userControls = {...DEFAULT_CONTROLS};
-            updateControlDisplay();
-            showMessage('CONTROLS RESET', 'Default controls restored');
-        }
-
-        function setupControlListeners() {
-            // Control key click listeners
-            document.querySelectorAll('.control-key').forEach(element => {
-                element.addEventListener('click', () => {
-                    if (editingControl) {
-                        editingControl.classList.remove('editing');
-                    }
-                    
-                    editingControl = element;
-                    editingControl.classList.add('editing');
-                    editingControl.textContent = 'Press any key...';
-                });
-            });
-            
-            // Global key listener for control editing
-            document.addEventListener('keydown', (e) => {
-                if (editingControl) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const action = editingControl.dataset.action;
-                    const keyCode = e.code;
-                    
-                    // Don't allow duplicate key bindings
-                    for (const [existingAction, existingKey] of Object.entries(userControls)) {
-                        if (existingKey === keyCode && existingAction !== action) {
-                            showMessage('KEY ALREADY BOUND', `This key is already bound to ${existingAction}`);
-                            return;
-                        }
-                    }
-                    
-                    userControls[action] = keyCode;
-                    editingControl.classList.remove('editing');
-                    editingControl.textContent = formatKeyName(keyCode);
-                    editingControl = null;
-                }
-            });
-            
-            // Mouse button binding
-            document.addEventListener('mousedown', (e) => {
-                if (editingControl) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const action = editingControl.dataset.action;
-                    const mouseCode = `Mouse${e.button}`;
-                    
-                    // Don't allow duplicate key bindings
-                    for (const [existingAction, existingKey] of Object.entries(userControls)) {
-                        if (existingKey === mouseCode && existingAction !== action) {
-                            showMessage('BUTTON ALREADY BOUND', `This button is already bound to ${existingAction}`);
-                            return;
-                        }
-                    }
-                    
-                    userControls[action] = mouseCode;
-                    editingControl.classList.remove('editing');
-                    editingControl.textContent = formatKeyName(mouseCode);
-                    editingControl = null;
-                }
-            });
-            
-            // Settings buttons
-            document.getElementById('saveSettings').addEventListener('click', saveControls);
-            document.getElementById('resetSettings').addEventListener('click', resetControls);
-            document.getElementById('closeSettings').addEventListener('click', () => {
-                document.getElementById('settingsPanel').style.display = 'none';
-                if (game.state === 'paused') {
-                    document.getElementById('pauseMenu').style.display = 'flex';
-                }
-            });
-        }
-
-        // ================================
-        // GAME STATE
-        // ================================
-        let game = {
-            // Core
+            // Game objects
             scene: null,
             camera: null,
             renderer: null,
+            controls: null,
+            objects: {},
+            puzzles: [],
+            activePuzzle: 0,
+            
+            // Input state
+            keysPressed: {},
+            mouseMovement: { x: 0, y: 0 },
+            
+            // Physics
             clock: null,
+            deltaTime: 0,
             
-            // World Seed (for procedural generation)
-            worldSeed: Date.now(),
-            
-            // Player
-            player: {
-                mesh: null,
-                position: new THREE.Vector3(0, 20, 0), // FIXED: Spawn higher
-                velocity: new THREE.Vector3(0, 0, 0),
-                rotation: new THREE.Euler(0, 0, 0),
-                health: CONFIG.PLAYER_HEALTH,
-                energy: CONFIG.PLAYER_ENERGY,
-                score: 0,
-                kills: 0,
-                weapon: 'plasma',
-                abilities: {
-                    dash: { active: false, cooldown: 0 },
-                    scan: { active: false, cooldown: 0 },
-                    timeWarp: { active: false, cooldown: 0 }
+            // UI elements
+            uiElements: {}
+        };
+
+        // ============================================
+        // ERROR HANDLING & DEBUG UTILITIES
+        // ============================================
+        class GameError extends Error {
+            constructor(message, context = {}) {
+                super(message);
+                this.name = "GameError";
+                this.context = context;
+                this.timestamp = new Date().toISOString();
+                
+                // Log to console in debug mode
+                if (GameConfig.DEBUG_MODE) {
+                    console.error(`[GameError ${this.timestamp}] ${message}`, context);
+                }
+            }
+        }
+
+        const Debug = {
+            log: function(message, data = null) {
+                if (GameConfig.DEBUG_MODE) {
+                    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+                    console.log(`[${timestamp}] ${message}`, data || '');
                 }
             },
             
-            // World
-            world: {
-                platforms: [],
-                enemies: [],
-                pickups: [],
-                buildings: [],
-                lights: [],
-                particles: [],
-                spawnPlatform: null,
-                objectivePlatform: null
+            warn: function(message, data = null) {
+                const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+                console.warn(`[${timestamp}] ${message}`, data || '');
             },
             
-            // Game State
-            state: 'loading',
-            timeElapsed: 0,
-            objectiveComplete: false,
-            gameOver: false,
-            
-            // Input
-            keys: {},
-            mouse: { x: 0, y: 0, buttons: {} },
-            
-            // UI
-            ui: {
-                controlsVisible: true,
-                lastMessageTime: 0
+            error: function(message, data = null) {
+                const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+                console.error(`[${timestamp}] ${message}`, data || '');
             }
         };
 
-        // ================================
-        // PROCEDURAL GENERATION UTILITIES
-        // ================================
-        class ProceduralGenerator {
-            constructor(seed) {
-                this.seed = seed;
-                this.random = this.seededRandom.bind(this);
-            }
+        // ============================================
+        // INITIALIZATION & LOADING
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            Debug.log('DOM loaded, initializing game...');
             
-            seededRandom() {
-                this.seed = (this.seed * 9301 + 49297) % 233280;
-                return this.seed / 233280;
+            try {
+                initializeGame();
+            } catch (error) {
+                handleCriticalError(error);
             }
+        });
+
+        function initializeGame() {
+            Debug.log('Starting game initialization...');
             
-            randomInt(min, max) {
-                return Math.floor(this.random() * (max - min + 1)) + min;
-            }
+            // Initialize UI references
+            initializeUIReferences();
             
-            randomFloat(min, max) {
-                return this.random() * (max - min) + min;
-            }
+            // Set up loading simulation
+            simulateLoading();
             
-            randomChoice(array) {
-                return array[Math.floor(this.random() * array.length)];
-            }
+            // Set up event listeners
+            setupEventListeners();
             
-            // Perlin-like noise function (simplified)
-            noise(x, y) {
-                const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-                return n - Math.floor(n);
-            }
+            // Initialize Three.js after a short delay
+            setTimeout(initializeThreeJS, 100);
         }
 
-        let generator = null;
+        function initializeUIReferences() {
+            // Store references to all UI elements
+            GameState.uiElements = {
+                loadingScreen: document.getElementById('loading-screen'),
+                loadingProgress: document.getElementById('loading-progress'),
+                mainMenu: document.getElementById('main-menu'),
+                gameHUD: document.getElementById('game-hud'),
+                player2HUD: document.getElementById('player2-hud'),
+                instructions: document.getElementById('instructions'),
+                connectionStatus: document.getElementById('connection-status'),
+                
+                // Buttons
+                startHostBtn: document.getElementById('start-host-btn'),
+                startJoinBtn: document.getElementById('start-join-btn'),
+                howToPlayBtn: document.getElementById('how-to-play-btn'),
+                
+                // Text elements
+                p1Objective: document.getElementById('p1-objective'),
+                p2Objective: document.getElementById('p2-objective'),
+                puzzleInstruction: document.getElementById('puzzle-instruction'),
+                p1Status: document.getElementById('p1-status'),
+                p2Status: document.getElementById('p2-status')
+            };
+            
+            Debug.log('UI references initialized');
+        }
 
-        // ================================
-        // INITIALIZATION
-        // ================================
-        async function init() {
+        function simulateLoading() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15 + 5;
+                if (progress > 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    
+                    // Hide loading screen after a short delay
+                    setTimeout(() => {
+                        GameState.uiElements.loadingScreen.classList.add('hidden');
+                        GameState.uiElements.mainMenu.classList.remove('hidden');
+                        GameState.phase = 'menu';
+                        Debug.log('Loading complete, showing main menu');
+                    }, 500);
+                }
+                GameState.uiElements.loadingProgress.style.width = `${progress}%`;
+            }, 200);
+        }
+
+        function setupEventListeners() {
+            Debug.log('Setting up event listeners...');
+            
+            // Button event listeners
+            GameState.uiElements.startHostBtn.addEventListener('click', startHostGame);
+            GameState.uiElements.startJoinBtn.addEventListener('click', startJoinGame);
+            GameState.uiElements.howToPlayBtn.addEventListener('click', showHowToPlay);
+            
+            // Global keyboard events
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+            
+            // Prevent context menu on right click
+            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            
+            Debug.log('Event listeners set up');
+        }
+
+        // ============================================
+        // THREE.JS INITIALIZATION
+        // ============================================
+        function initializeThreeJS() {
+            Debug.log('Initializing Three.js...');
+            
             try {
-                // Generate new seed for this session
-                game.worldSeed = Date.now() + Math.random() * 1000;
-                generator = new ProceduralGenerator(game.worldSeed);
+                // Create scene
+                GameState.scene = new THREE.Scene();
+                GameState.scene.background = new THREE.Color(0x0c0c2e);
+                GameState.scene.fog = new THREE.Fog(GameConfig.FOG_COLOR, GameConfig.FOG_NEAR, GameConfig.FOG_FAR);
                 
-                // Initialize controls
-                initializeControls();
-                setupControlListeners();
+                // Create camera
+                GameState.camera = new THREE.PerspectiveCamera(
+                    75, 
+                    window.innerWidth / window.innerHeight, 
+                    0.1, 
+                    1000
+                );
+                GameState.camera.position.set(0, 5, 10);
                 
-                // Initialize Three.js
-                initThreeJS();
+                // Create renderer
+                GameState.renderer = new THREE.WebGLRenderer({
+                    canvas: document.getElementById('game-canvas'),
+                    antialias: true,
+                    alpha: false
+                });
+                GameState.renderer.setSize(window.innerWidth, window.innerHeight);
+                GameState.renderer.setPixelRatio(window.devicePixelRatio);
+                GameState.renderer.shadowMap.enabled = true;
+                GameState.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 
-                // Create game world (completely random each time)
-                await createWorld();
-                
-                // Set up player
-                createPlayer();
-                
-                // Set up enemies
-                createEnemies();
-                
-                // Set up pickups
-                createPickups();
-                
-                // Set up lighting
+                // Add lights
                 setupLighting();
                 
-                // Set up event listeners
-                setupEventListeners();
+                // Create game world
+                createGameWorld();
                 
-                // Hide loading screen
-                setTimeout(() => {
-                    document.getElementById('loadingScreen').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('loadingScreen').style.display = 'none';
-                        game.state = 'playing';
-                        showMessage('INFILTRATION PROTOCOL ACTIVE', 'Get to the upload point');
-                        
-                        // Show controls help
-                        document.getElementById('controlsHelp').classList.add('show');
-                        setTimeout(() => {
-                            document.getElementById('controlsHelp').classList.remove('show');
-                        }, 5000);
-                    }, 1000);
-                }, 500);
+                // Set up clock for delta time
+                GameState.clock = new THREE.Clock();
                 
-                // Start game loop
-                game.clock = new THREE.Clock();
+                // Start animation loop
                 animate();
                 
+                // Handle window resize
+                window.addEventListener('resize', handleResize);
+                
+                Debug.log('Three.js initialization complete');
             } catch (error) {
-                console.error('Failed to initialize game:', error);
-                showMessage('SYSTEM ERROR', 'Failed to initialize neural interface');
+                throw new GameError('Failed to initialize Three.js', { error: error.message });
             }
-        }
-
-        function initThreeJS() {
-            // Scene
-            game.scene = new THREE.Scene();
-            game.scene.fog = new THREE.Fog(CONFIG.FOG_COLOR, 10, 1000);
-            
-            // Camera
-            game.camera = new THREE.PerspectiveCamera(
-                75,
-                window.innerWidth / window.innerHeight,
-                0.1,
-                2000
-            );
-            game.camera.position.set(0, 10, 20);
-            
-            // Renderer
-            game.renderer = new THREE.WebGLRenderer({
-                canvas: document.getElementById('gameContainer'),
-                antialias: true,
-                alpha: true
-            });
-            game.renderer.setSize(window.innerWidth, window.innerHeight);
-            game.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            game.renderer.shadowMap.enabled = true;
-            game.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        }
-
-        async function createWorld() {
-            // Clear any existing world
-            game.world.platforms = [];
-            game.world.enemies = [];
-            game.world.pickups = [];
-            game.world.buildings = [];
-            game.world.lights = [];
-            game.world.particles = [];
-            
-            // Skybox
-            const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
-            const skyMaterial = new THREE.MeshBasicMaterial({
-                color: 0x000033,
-                side: THREE.BackSide
-            });
-            const skybox = new THREE.Mesh(skyGeometry, skyMaterial);
-            game.scene.add(skybox);
-            
-            // Ground
-            const groundGeometry = new THREE.PlaneGeometry(500, 500);
-            const groundMaterial = new THREE.MeshStandardMaterial({
-                color: 0x111122,
-                roughness: 0.8,
-                metalness: 0.2
-            });
-            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
-            ground.rotation.x = -Math.PI / 2;
-            ground.receiveShadow = true;
-            ground.position.y = -5;
-            game.scene.add(ground);
-            
-            // Create completely random cyberpunk cityscape
-            createCityscape();
-            
-            // Create random parkour course with spawn platform
-            createParkourCourse();
-            
-            // Add decorative particles
-            createParticles();
-        }
-
-        function createCityscape() {
-            // Generate random number of buildings
-            const buildingCount = generator.randomInt(15, 25);
-            
-            for (let i = 0; i < buildingCount; i++) {
-                // Random building parameters
-                const width = generator.randomFloat(10, 30);
-                const depth = generator.randomFloat(10, 30);
-                const height = generator.randomFloat(30, 200);
-                
-                // Choose random building color
-                const buildingColors = [
-                    new THREE.Color(0x222233),
-                    new THREE.Color(0x333344),
-                    new THREE.Color(0x223355),
-                    new THREE.Color(0x334466)
-                ];
-                const color = generator.randomChoice(buildingColors);
-                
-                const geometry = new THREE.BoxGeometry(width, height, depth);
-                const material = new THREE.MeshStandardMaterial({
-                    color: color,
-                    roughness: 0.3,
-                    metalness: 0.7
-                });
-                const building = new THREE.Mesh(geometry, material);
-                
-                // Position buildings in a ring around the play area
-                const angle = (i / buildingCount) * Math.PI * 2;
-                const radius = 150 + generator.randomFloat(0, 150);
-                building.position.x = Math.cos(angle) * radius;
-                building.position.z = Math.sin(angle) * radius;
-                building.position.y = height / 2 - 5;
-                
-                building.castShadow = true;
-                building.receiveShadow = true;
-                
-                game.scene.add(building);
-                game.world.buildings.push(building);
-                
-                // Add windows to some buildings
-                if (generator.random() > 0.3) {
-                    addWindows(building, width, height, depth);
-                }
-                
-                // Add lights to some buildings
-                if (generator.random() > 0.7) {
-                    addBuildingLights(building, width, height, depth);
-                }
-            }
-        }
-
-        function addWindows(building, width, height, depth) {
-            const windowRows = Math.floor(height / 15);
-            const windowCols = Math.floor((width + depth) * 2 / 10);
-            
-            for (let row = 0; row < windowRows; row++) {
-                for (let col = 0; col < windowCols; col++) {
-                    if (generator.random() > 0.7) {
-                        const windowGeometry = new THREE.PlaneGeometry(2, 4);
-                        const windowMaterial = new THREE.MeshBasicMaterial({
-                            color: generator.random() > 0.5 ? 0x00aaff : 0xffaa00,
-                            side: THREE.DoubleSide
-                        });
-                        const window = new THREE.Mesh(windowGeometry, windowMaterial);
-                        
-                        // Randomly place windows on different faces
-                        const face = generator.randomInt(0, 3);
-                        const windowY = (row / windowRows) * height - height/2 + 8;
-                        
-                        switch(face) {
-                            case 0: // Front
-                                window.position.set(generator.randomFloat(-width/2 + 2, width/2 - 2), 
-                                                   windowY, 
-                                                   depth/2 + 0.1);
-                                break;
-                            case 1: // Back
-                                window.position.set(generator.randomFloat(-width/2 + 2, width/2 - 2), 
-                                                   windowY, 
-                                                   -depth/2 - 0.1);
-                                window.rotation.y = Math.PI;
-                                break;
-                            case 2: // Left
-                                window.position.set(-width/2 - 0.1, 
-                                                   windowY, 
-                                                   generator.randomFloat(-depth/2 + 2, depth/2 - 2));
-                                window.rotation.y = Math.PI / 2;
-                                break;
-                            case 3: // Right
-                                window.position.set(width/2 + 0.1, 
-                                                   windowY, 
-                                                   generator.randomFloat(-depth/2 + 2, depth/2 - 2));
-                                window.rotation.y = -Math.PI / 2;
-                                break;
-                        }
-                        
-                        building.add(window);
-                    }
-                }
-            }
-        }
-
-        function addBuildingLights(building, width, height, depth) {
-            const lightCount = generator.randomInt(1, 3);
-            
-            for (let i = 0; i < lightCount; i++) {
-                const lightColor = generator.random() > 0.5 ? 0xff00ff : 0x00ffff;
-                const light = new THREE.PointLight(lightColor, 0.5, 50);
-                
-                light.position.set(
-                    generator.randomFloat(-width/2, width/2),
-                    generator.randomFloat(height/2, height - 10),
-                    generator.randomFloat(-depth/2, depth/2)
-                );
-                
-                building.add(light);
-                game.world.lights.push(light);
-            }
-        }
-
-        function createParkourCourse() {
-            // Define platform types with their properties
-            const platformTypes = [
-                { type: 'spawn', size: [20, 2, 20], color: 0x00ff00 },
-                { type: 'normal', size: [15, 2, 15], color: 0x00aaff },
-                { type: 'small', size: [8, 2, 8], color: 0xff00aa },
-                { type: 'long', size: [30, 2, 10], color: 0xaa00ff },
-                { type: 'bridge', size: [40, 0.5, 6], color: 0x00ffaa }
-            ];
-            
-            // Create path for platforms
-            const platformCount = generator.randomInt(25, 35);
-            const platformPositions = [];
-            
-            // Start position (spawn platform)
-            const spawnPosition = new THREE.Vector3(0, 10, 0);
-            
-            // Create spawn platform (larger and green)
-            const spawnPlatform = createPlatform(
-                spawnPosition, 
-                [20, 2, 20], 
-                0x00ff00, 
-                true
-            );
-            game.world.spawnPlatform = spawnPlatform;
-            game.scene.add(spawnPlatform);
-            game.world.platforms.push(spawnPlatform);
-            platformPositions.push(spawnPosition.clone());
-            
-            // Set player spawn position ON TOP of platform (FIXED)
-            game.player.position.copy(spawnPosition);
-            game.player.position.y += 3; // Spawn on top of platform
-            
-            // Generate path for other platforms
-            let lastPosition = spawnPosition.clone();
-            
-            for (let i = 0; i < platformCount; i++) {
-                // Choose random platform type (but not spawn for others)
-                const platformType = generator.randomChoice(platformTypes.filter(p => p.type !== 'spawn'));
-                
-                // Calculate next position
-                const direction = new THREE.Vector3(
-                    generator.randomFloat(-0.8, 0.8),
-                    generator.randomFloat(-0.3, 0.5),
-                    generator.randomFloat(-1.5, -0.5) // Generally move toward objective
-                ).normalize();
-                
-                const distance = generator.randomFloat(10, 25);
-                const nextPosition = lastPosition.clone().add(direction.multiplyScalar(distance));
-                
-                // Ensure minimum height
-                nextPosition.y = Math.max(5, nextPosition.y);
-                
-                // Create platform
-                const platform = createPlatform(
-                    nextPosition,
-                    platformType.size,
-                    platformType.color,
-                    false
-                );
-                
-                game.scene.add(platform);
-                game.world.platforms.push(platform);
-                platformPositions.push(nextPosition.clone());
-                
-                // Add obstacles to some platforms
-                if (generator.random() > 0.6 && i > 0) {
-                    addObstacles(nextPosition, platformType.size);
-                }
-                
-                lastPosition = nextPosition;
-            }
-            
-            // Create objective platform (last platform)
-            const objectivePosition = lastPosition.clone();
-            objectivePosition.z -= generator.randomFloat(20, 40); // Move further for objective
-            
-            const objectivePlatform = createPlatform(
-                objectivePosition,
-                [25, 3, 25],
-                0xff0000,
-                true
-            );
-            game.world.objectivePlatform = objectivePlatform;
-            game.scene.add(objectivePlatform);
-            game.world.platforms.push(objectivePlatform);
-            
-            // Add objective tower on objective platform
-            createObjectiveTower(objectivePosition);
-            
-            // Connect some platforms with bridges
-            createBridges(platformPositions);
-            
-            // Add floating platforms between main ones
-            createFloatingPlatforms(platformPositions);
-        }
-
-        function createPlatform(position, size, color, isSpecial) {
-            const geometry = new THREE.BoxGeometry(...size);
-            const material = new THREE.MeshStandardMaterial({
-                color: color,
-                roughness: 0.4,
-                metalness: 0.6
-            });
-            const platform = new THREE.Mesh(geometry, material);
-            platform.position.copy(position);
-            platform.castShadow = true;
-            platform.receiveShadow = true;
-            
-            // Add glow effect for special platforms
-            if (isSpecial) {
-                const edges = new THREE.EdgesGeometry(geometry);
-                const lineMaterial = new THREE.LineBasicMaterial({ 
-                    color: 0xffffff,
-                    linewidth: 2
-                });
-                const line = new THREE.LineSegments(edges, lineMaterial);
-                platform.add(line);
-                
-                // Add pulsing light
-                const light = new THREE.PointLight(color, 0.8, 30);
-                light.position.set(0, 10, 0);
-                platform.add(light);
-                game.world.lights.push(light);
-            }
-            
-            return platform;
-        }
-
-        function addObstacles(position, platformSize) {
-            const obstacleType = generator.randomInt(0, 2);
-            const count = generator.randomInt(2, 5);
-            
-            for (let i = 0; i < count; i++) {
-                let obstacle;
-                
-                switch(obstacleType) {
-                    case 0: // Laser pillars
-                        const pillarGeometry = new THREE.CylinderGeometry(0.3, 0.3, 10, 8);
-                        const pillarMaterial = new THREE.MeshBasicMaterial({
-                            color: 0xff0000
-                        });
-                        obstacle = new THREE.Mesh(pillarGeometry, pillarMaterial);
-                        
-                        obstacle.position.copy(position);
-                        obstacle.position.x += generator.randomFloat(-platformSize[0]/2 + 2, platformSize[0]/2 - 2);
-                        obstacle.position.z += generator.randomFloat(-platformSize[2]/2 + 2, platformSize[2]/2 - 2);
-                        obstacle.position.y += 5;
-                        break;
-                        
-                    case 1: // Energy barriers
-                        const barrierGeometry = new THREE.PlaneGeometry(6, 8);
-                        const barrierMaterial = new THREE.MeshBasicMaterial({
-                            color: 0x00ffff,
-                            transparent: true,
-                            opacity: 0.5,
-                            side: THREE.DoubleSide
-                        });
-                        obstacle = new THREE.Mesh(barrierGeometry, barrierMaterial);
-                        
-                        obstacle.position.copy(position);
-                        obstacle.position.x += generator.randomFloat(-platformSize[0]/2 + 3, platformSize[0]/2 - 3);
-                        obstacle.position.z += generator.randomFloat(-platformSize[2]/2 + 3, platformSize[2]/2 - 3);
-                        obstacle.position.y += 4;
-                        obstacle.rotation.y = generator.randomFloat(0, Math.PI * 2);
-                        break;
-                        
-                    case 2: // Spike traps
-                        const spikeGeometry = new THREE.ConeGeometry(0.8, 2, 4);
-                        const spikeMaterial = new THREE.MeshStandardMaterial({
-                            color: 0xff5500
-                        });
-                        obstacle = new THREE.Mesh(spikeGeometry, spikeMaterial);
-                        
-                        obstacle.position.copy(position);
-                        obstacle.position.x += generator.randomFloat(-platformSize[0]/2 + 1, platformSize[0]/2 - 1);
-                        obstacle.position.z += generator.randomFloat(-platformSize[2]/2 + 1, platformSize[2]/2 - 1);
-                        obstacle.position.y += 1;
-                        break;
-                }
-                
-                game.scene.add(obstacle);
-                game.world.platforms.push(obstacle);
-            }
-        }
-
-        function createObjectiveTower(position) {
-            const towerHeight = generator.randomFloat(50, 100);
-            const towerGeometry = new THREE.CylinderGeometry(5, 8, towerHeight, 8);
-            const towerMaterial = new THREE.MeshStandardMaterial({
-                color: 0xaa00ff,
-                roughness: 0.2,
-                metalness: 0.8
-            });
-            const tower = new THREE.Mesh(towerGeometry, towerMaterial);
-            
-            tower.position.copy(position);
-            tower.position.y += towerHeight / 2;
-            tower.castShadow = true;
-            
-            game.scene.add(tower);
-            
-            // Add glowing light to tower
-            const towerLight = new THREE.PointLight(0xff00ff, 2, 100);
-            towerLight.position.copy(position);
-            towerLight.position.y += towerHeight;
-            game.scene.add(towerLight);
-            game.world.lights.push(towerLight);
-            
-            // Add rotating rings around tower
-            for (let i = 0; i < 3; i++) {
-                const ringGeometry = new THREE.TorusGeometry(10 + i * 3, 0.5, 8, 24);
-                const ringMaterial = new THREE.MeshBasicMaterial({
-                    color: 0x00ffff
-                });
-                const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-                
-                ring.position.copy(position);
-                ring.position.y += 15 + i * 25;
-                ring.rotation.x = Math.PI / 2;
-                
-                ring.userData = {
-                    rotationSpeed: generator.randomFloat(0.5, 1.5),
-                    timeOffset: i * Math.PI / 3
-                };
-                
-                game.scene.add(ring);
-                game.world.platforms.push(ring);
-            }
-        }
-
-        function createBridges(platformPositions) {
-            // Connect some platforms with bridges
-            for (let i = 0; i < platformPositions.length - 1; i++) {
-                if (generator.random() > 0.7) {
-                    const start = platformPositions[i];
-                    const end = platformPositions[i + 1];
-                    
-                    // Calculate bridge parameters
-                    const distance = start.distanceTo(end);
-                    const direction = new THREE.Vector3().subVectors(end, start).normalize();
-                    
-                    // Create bridge
-                    const bridgeGeometry = new THREE.BoxGeometry(distance, 0.5, 3);
-                    const bridgeMaterial = new THREE.MeshStandardMaterial({
-                        color: 0xffff00,
-                        roughness: 0.5,
-                        metalness: 0.5
-                    });
-                    const bridge = new THREE.Mesh(bridgeGeometry, bridgeMaterial);
-                    
-                    // Position bridge between platforms
-                    bridge.position.copy(start).add(direction.multiplyScalar(distance / 2));
-                    bridge.position.y += 5; // Raise bridge above platforms
-                    
-                    // Rotate bridge to face end platform
-                    bridge.lookAt(end);
-                    bridge.rotateX(Math.PI / 2);
-                    
-                    bridge.castShadow = true;
-                    bridge.receiveShadow = true;
-                    
-                    game.scene.add(bridge);
-                    game.world.platforms.push(bridge);
-                }
-            }
-        }
-
-        function createFloatingPlatforms(platformPositions) {
-            const floatingCount = generator.randomInt(10, 20);
-            
-            for (let i = 0; i < floatingCount; i++) {
-                // Choose a random position between existing platforms
-                const startIdx = generator.randomInt(0, platformPositions.length - 2);
-                const start = platformPositions[startIdx];
-                const end = platformPositions[startIdx + 1];
-                
-                // Random position between platforms
-                const t = generator.random();
-                const position = new THREE.Vector3().lerpVectors(start, end, t);
-                
-                // Add vertical offset
-                position.y += generator.randomFloat(5, 25);
-                
-                // Random size and color
-                const size = generator.randomFloat(3, 8);
-                const colors = [0xff00ff, 0x00ffff, 0xffff00, 0xff8800];
-                const color = generator.randomChoice(colors);
-                
-                // Create floating platform
-                const geometry = new THREE.BoxGeometry(size, 0.5, size);
-                const material = new THREE.MeshStandardMaterial({
-                    color: color,
-                    roughness: 0.4,
-                    metalness: 0.6
-                });
-                const platform = new THREE.Mesh(geometry, material);
-                
-                platform.position.copy(position);
-                platform.castShadow = true;
-                platform.receiveShadow = true;
-                
-                // Add floating animation data
-                platform.userData = {
-                    floatHeight: position.y,
-                    floatSpeed: generator.randomFloat(0.5, 2),
-                    floatOffset: generator.random() * Math.PI * 2
-                };
-                
-                game.scene.add(platform);
-                game.world.platforms.push(platform);
-            }
-        }
-
-        function createParticles() {
-            const particleCount = generator.randomInt(50, 150);
-            
-            for (let i = 0; i < particleCount; i++) {
-                const size = generator.randomFloat(0.1, 0.5);
-                const geometry = new THREE.SphereGeometry(size);
-                const color = generator.random() > 0.5 ? 0x00ffff : 0xff00ff;
-                const material = new THREE.MeshBasicMaterial({
-                    color: color,
-                    transparent: true,
-                    opacity: generator.randomFloat(0.3, 0.7)
-                });
-                const particle = new THREE.Mesh(geometry, material);
-                
-                particle.position.set(
-                    generator.randomFloat(-200, 200),
-                    generator.randomFloat(20, 100),
-                    generator.randomFloat(-200, 200)
-                );
-                
-                particle.userData = {
-                    speed: generator.randomFloat(0.1, 0.5),
-                    amplitude: generator.randomFloat(2, 10),
-                    offset: generator.random() * Math.PI * 2,
-                    rotationSpeed: generator.randomFloat(0.01, 0.05)
-                };
-                
-                game.scene.add(particle);
-                game.world.particles.push(particle);
-            }
-        }
-
-        function createPlayer() {
-            // Create player using simple geometry (FIXED: No CapsuleGeometry)
-            const geometry = new THREE.BoxGeometry(1, 2, 1);
-            const material = new THREE.MeshStandardMaterial({
-                color: 0x00aaff,
-                roughness: 0.3,
-                metalness: 0.7
-            });
-            game.player.mesh = new THREE.Mesh(geometry, material);
-            game.player.mesh.position.copy(game.player.position);
-            game.player.mesh.castShadow = true;
-            game.scene.add(game.player.mesh);
-            
-            // Create player weapon (FIXED: No emissive property)
-            createWeapon();
-        }
-
-        function createWeapon() {
-            const weaponGroup = new THREE.Group();
-            
-            // Weapon body
-            const bodyGeometry = new THREE.BoxGeometry(2, 0.6, 0.6);
-            const bodyMaterial = new THREE.MeshStandardMaterial({
-                color: 0x222233,
-                roughness: 0.2,
-                metalness: 0.8
-            });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            weaponGroup.add(body);
-            
-            // Weapon barrel
-            const barrelGeometry = new THREE.CylinderGeometry(0.15, 0.15, 1.5, 8);
-            const barrelMaterial = new THREE.MeshStandardMaterial({
-                color: 0x888899,
-                roughness: 0.1,
-                metalness: 0.9
-            });
-            const barrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
-            barrel.position.z = -0.8;
-            weaponGroup.add(barrel);
-            
-            // Energy core
-            const coreGeometry = new THREE.SphereGeometry(0.2);
-            const coreMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00ffff
-            });
-            const core = new THREE.Mesh(coreGeometry, coreMaterial);
-            core.position.z = 0.3;
-            weaponGroup.add(core);
-            
-            weaponGroup.position.set(0.5, -0.3, -1);
-            game.player.mesh.add(weaponGroup);
-        }
-
-        function createEnemies() {
-            const enemyCount = generator.randomInt(10, 20);
-            
-            for (let i = 0; i < enemyCount; i++) {
-                // Choose random platform for enemy (not spawn platform)
-                const availablePlatforms = game.world.platforms.filter(p => p !== game.world.spawnPlatform);
-                if (availablePlatforms.length === 0) continue;
-                
-                const platform = generator.randomChoice(availablePlatforms);
-                const enemy = createDrone();
-                
-                // Position enemy on platform
-                enemy.position.copy(platform.position);
-                enemy.position.y += 3;
-                enemy.position.x += generator.randomFloat(-5, 5);
-                enemy.position.z += generator.randomFloat(-5, 5);
-                
-                game.scene.add(enemy);
-                game.world.enemies.push({
-                    mesh: enemy,
-                    health: 100,
-                    type: 'drone',
-                    lastShot: 0,
-                    target: null,
-                    state: 'patrol',
-                    patrolPoint: enemy.position.clone(),
-                    patrolRadius: generator.randomFloat(5, 15)
-                });
-            }
-        }
-
-        function createDrone() {
-            const group = new THREE.Group();
-            
-            // Drone body
-            const bodyGeometry = new THREE.SphereGeometry(1, 8, 6);
-            const bodyMaterial = new THREE.MeshStandardMaterial({
-                color: 0xff3300,
-                roughness: 0.5,
-                metalness: 0.5
-            });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            group.add(body);
-            
-            // Drone wings
-            const wingGeometry = new THREE.BoxGeometry(3, 0.1, 0.8);
-            const wingMaterial = new THREE.MeshStandardMaterial({
-                color: 0x444444
-            });
-            
-            for (let i = 0; i < 4; i++) {
-                const wing = new THREE.Mesh(wingGeometry, wingMaterial);
-                wing.rotation.y = (i / 4) * Math.PI * 2;
-                group.add(wing);
-            }
-            
-            // Red eye (FIXED: No emissive property)
-            const eyeGeometry = new THREE.SphereGeometry(0.3);
-            const eyeMaterial = new THREE.MeshBasicMaterial({
-                color: 0xff0000
-            });
-            const eye = new THREE.Mesh(eyeGeometry, eyeMaterial);
-            eye.position.z = 1;
-            group.add(eye);
-            
-            return group;
-        }
-
-        function createPickups() {
-            const pickupTypes = ['health', 'energy', 'ammo', 'score'];
-            const pickupCount = generator.randomInt(15, 25);
-            
-            for (let i = 0; i < pickupCount; i++) {
-                const type = generator.randomChoice(pickupTypes);
-                const pickup = createPickup(type);
-                
-                // Position pickup on random platform
-                const platform = generator.randomChoice(game.world.platforms);
-                pickup.position.copy(platform.position);
-                pickup.position.y += 2;
-                pickup.position.x += generator.randomFloat(-platform.geometry.parameters.width/2 + 1, 
-                                                           platform.geometry.parameters.width/2 - 1);
-                pickup.position.z += generator.randomFloat(-platform.geometry.parameters.depth/2 + 1, 
-                                                           platform.geometry.parameters.depth/2 - 1);
-                
-                game.scene.add(pickup);
-                game.world.pickups.push({
-                    mesh: pickup,
-                    type: type,
-                    value: type === 'score' ? 100 : 25,
-                    collected: false,
-                    floatHeight: pickup.position.y,
-                    rotationSpeed: generator.randomFloat(0.02, 0.05)
-                });
-            }
-        }
-
-        function createPickup(type) {
-            const group = new THREE.Group();
-            let color, shape;
-            
-            switch(type) {
-                case 'health':
-                    color = 0xff0000;
-                    shape = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-                    break;
-                case 'energy':
-                    color = 0x00ffff;
-                    shape = new THREE.SphereGeometry(0.6);
-                    break;
-                case 'ammo':
-                    color = 0xffff00;
-                    shape = new THREE.CylinderGeometry(0.4, 0.4, 1, 6);
-                    break;
-                case 'score':
-                    color = 0x00ff00;
-                    shape = new THREE.OctahedronGeometry(0.7);
-                    break;
-            }
-            
-            const material = new THREE.MeshStandardMaterial({
-                color: color,
-                roughness: 0.2,
-                metalness: 0.8
-            });
-            const crystal = new THREE.Mesh(shape, material);
-            group.add(crystal);
-            
-            return group;
         }
 
         function setupLighting() {
             // Ambient light
-            const ambientLight = new THREE.AmbientLight(0x222233, 0.3);
-            game.scene.add(ambientLight);
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            GameState.scene.add(ambientLight);
             
-            // Main directional light
-            const directionalLight = new THREE.DirectionalLight(0x4466ff, 0.5);
-            directionalLight.position.set(50, 100, 50);
+            // Directional light (sun)
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 20, 5);
             directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = 2048;
-            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.mapSize.width = GameConfig.SHADOW_MAP_SIZE;
+            directionalLight.shadow.mapSize.height = GameConfig.SHADOW_MAP_SIZE;
             directionalLight.shadow.camera.near = 0.5;
-            directionalLight.shadow.camera.far = 500;
-            directionalLight.shadow.camera.left = -100;
-            directionalLight.shadow.camera.right = 100;
-            directionalLight.shadow.camera.top = 100;
-            directionalLight.shadow.camera.bottom = -100;
-            game.scene.add(directionalLight);
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -20;
+            directionalLight.shadow.camera.right = 20;
+            directionalLight.shadow.camera.top = 20;
+            directionalLight.shadow.camera.bottom = -20;
+            GameState.scene.add(directionalLight);
             
-            // Add some random point lights for atmosphere
-            const lightCount = generator.randomInt(5, 10);
-            for (let i = 0; i < lightCount; i++) {
-                const color = generator.random() > 0.5 ? 0xff00ff : 0x00ffff;
-                const intensity = generator.randomFloat(0.3, 1);
-                const distance = generator.randomFloat(20, 60);
-                
-                const light = new THREE.PointLight(color, intensity, distance);
-                light.position.set(
-                    generator.randomFloat(-150, 150),
-                    generator.randomFloat(10, 50),
-                    generator.randomFloat(-150, 150)
-                );
-                game.scene.add(light);
-                game.world.lights.push(light);
-            }
+            // Point light for player
+            const pointLight = new THREE.PointLight(0x4488ff, 1, 10);
+            pointLight.position.set(0, 2, 0);
+            GameState.objects.playerLight = pointLight;
+            GameState.scene.add(pointLight);
         }
 
-        function setupEventListeners() {
-            // Keyboard events using custom controls
-            document.addEventListener('keydown', (e) => {
-                const action = keyBindings[e.code];
-                if (action) {
-                    game.keys[action] = true;
-                    
-                    // Handle special actions
-                    switch(action) {
-                        case 'pause':
-                            togglePause();
-                            break;
-                        case 'help':
-                            toggleControlsHelp();
-                            break;
-                        case 'settings':
-                            openSettings();
-                            break;
-                        case 'weapon1':
-                            switchWeapon('plasma');
-                            break;
-                        case 'weapon2':
-                            switchWeapon('railgun');
-                            break;
-                        case 'reload':
-                            reloadWeapon();
-                            break;
-                        case 'ability1':
-                            activateAbility('dash');
-                            break;
-                        case 'ability2':
-                            activateAbility('scan');
-                            break;
-                        case 'ability3':
-                            activateAbility('timeWarp');
-                            break;
-                    }
-                }
-                
-                // Prevent default for game keys
-                if (action && game.state === 'playing') {
-                    e.preventDefault();
-                }
-            });
+        function createGameWorld() {
+            Debug.log('Creating game world...');
             
-            document.addEventListener('keyup', (e) => {
-                const action = keyBindings[e.code];
-                if (action) {
-                    game.keys[action] = false;
-                }
+            // Create floor
+            const floorGeometry = new THREE.PlaneGeometry(50, 50);
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1a3e,
+                roughness: 0.8,
+                metalness: 0.2
             });
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            GameState.scene.add(floor);
+            GameState.objects.floor = floor;
             
-            // Mouse events
-            document.addEventListener('mousedown', (e) => {
-                const mouseCode = `Mouse${e.button}`;
-                const action = keyBindings[mouseCode];
-                
-                if (action) {
-                    game.mouse.buttons[action] = true;
-                    
-                    if (action === 'shoot' && game.state === 'playing') {
-                        shoot();
-                    }
-                }
-                
-                if (game.state === 'playing') {
-                    e.preventDefault();
-                }
-            });
+            // Create walls
+            createWalls();
             
-            document.addEventListener('mouseup', (e) => {
-                const mouseCode = `Mouse${e.button}`;
-                const action = keyBindings[mouseCode];
-                
-                if (action) {
-                    game.mouse.buttons[action] = false;
-                }
-            });
+            // Create first puzzle
+            createPuzzleOne();
             
-            document.addEventListener('mousemove', (e) => {
-                game.mouse.x = e.clientX;
-                game.mouse.y = e.clientY;
-                
-                if (document.pointerLockElement === document.getElementById('gameContainer')) {
-                    updatePlayerRotation(e.movementX, e.movementY);
-                }
-            });
-            
-            // Pointer lock
-            document.getElementById('gameContainer').addEventListener('click', () => {
-                if (game.state === 'playing') {
-                    document.getElementById('gameContainer').requestPointerLock();
-                }
-            });
-            
-            // Window resize
-            window.addEventListener('resize', () => {
-                game.camera.aspect = window.innerWidth / window.innerHeight;
-                game.camera.updateProjectionMatrix();
-                game.renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-            
-            // Pause menu buttons
-            document.getElementById('resumeButton').addEventListener('click', () => {
-                togglePause();
-            });
-            
-            document.getElementById('settingsButton').addEventListener('click', () => {
-                document.getElementById('pauseMenu').style.display = 'none';
-                document.getElementById('settingsPanel').style.display = 'flex';
-            });
-            
-            document.getElementById('restartButton').addEventListener('click', () => {
-                // Generate new world on restart
-                game.worldSeed = Date.now() + Math.random() * 1000;
-                location.reload();
-            });
-            
-            document.getElementById('quitButton').addEventListener('click', () => {
-                if (confirm('Are you sure you want to quit?')) {
-                    window.close();
-                }
-            });
+            Debug.log('Game world created');
         }
 
-        // ================================
-        // GAME LOGIC
-        // ================================
-        function updatePlayerRotation(deltaX, deltaY) {
-            const sensitivity = 0.002;
+        function createWalls() {
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x252550,
+                roughness: 0.7,
+                metalness: 0.1
+            });
             
-            // Update player rotation
-            game.player.rotation.y -= deltaX * sensitivity;
-            game.player.rotation.x -= deltaY * sensitivity;
+            // Back wall
+            const backWall = new THREE.Mesh(
+                new THREE.BoxGeometry(50, 10, 1),
+                wallMaterial
+            );
+            backWall.position.set(0, 5, -25);
+            backWall.receiveShadow = true;
+            backWall.castShadow = true;
+            GameState.scene.add(backWall);
             
-            // Clamp vertical rotation
-            game.player.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, game.player.rotation.x));
+            // Front wall
+            const frontWall = new THREE.Mesh(
+                new THREE.BoxGeometry(50, 10, 1),
+                wallMaterial
+            );
+            frontWall.position.set(0, 5, 25);
+            frontWall.receiveShadow = true;
+            frontWall.castShadow = true;
+            GameState.scene.add(frontWall);
             
-            // Apply rotation to mesh
-            game.player.mesh.rotation.y = game.player.rotation.y;
+            // Left wall
+            const leftWall = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 10, 50),
+                wallMaterial
+            );
+            leftWall.position.set(-25, 5, 0);
+            leftWall.receiveShadow = true;
+            leftWall.castShadow = true;
+            GameState.scene.add(leftWall);
+            
+            // Right wall
+            const rightWall = new THREE.Mesh(
+                new THREE.BoxGeometry(1, 10, 50),
+                wallMaterial
+            );
+            rightWall.position.set(25, 5, 0);
+            rightWall.receiveShadow = true;
+            rightWall.castShadow = true;
+            GameState.scene.add(rightWall);
         }
 
-        function updatePlayer(deltaTime) {
-            // Calculate movement direction using custom controls
-            const moveDirection = new THREE.Vector3(0, 0, 0);
+        function createPuzzleOne() {
+            Debug.log('Creating Puzzle 1: Energy Conduit Alignment');
             
-            if (game.keys.forward) moveDirection.z -= 1;
-            if (game.keys.backward) moveDirection.z += 1;
-            if (game.keys.left) moveDirection.x -= 1;
-            if (game.keys.right) moveDirection.x += 1;
+            const puzzle = {
+                id: 1,
+                name: "Energy Conduit Alignment",
+                description: "Align the energy conduits to create a power pathway",
+                objectives: {
+                    manipulator: "Move the energy blocks into the correct positions",
+                    activator: "Activate the switches to power the conduits"
+                },
+                completed: false,
+                objects: {}
+            };
             
-            // Normalize movement
-            if (moveDirection.length() > 0) {
-                moveDirection.normalize();
-                
-                // Apply rotation to movement direction
-                const yaw = game.player.rotation.y;
-                const cosYaw = Math.cos(yaw);
-                const sinYaw = Math.sin(yaw);
-                
-                const rotatedX = moveDirection.x * cosYaw - moveDirection.z * sinYaw;
-                const rotatedZ = moveDirection.x * sinYaw + moveDirection.z * cosYaw;
-                
-                moveDirection.x = rotatedX;
-                moveDirection.z = rotatedZ;
-                
-                // Calculate speed
-                let speed = CONFIG.PLAYER_SPEED;
-                if (game.keys.sprint) {
-                    speed *= CONFIG.PLAYER_SPRINT_MULTIPLIER;
-                }
-                
-                if (game.player.abilities.dash.active) {
-                    speed *= CONFIG.ABILITIES.dash.speedMultiplier;
-                }
-                
-                // Apply movement
-                game.player.velocity.x = moveDirection.x * speed;
-                game.player.velocity.z = moveDirection.z * speed;
-            } else {
-                // Slow down when not moving
-                game.player.velocity.x *= 0.9;
-                game.player.velocity.z *= 0.9;
+            // Create energy blocks (movable by manipulator)
+            const blockMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x3366ff,
+                emissive: 0x112266,
+                emissiveIntensity: 0.3,
+                roughness: 0.3,
+                metalness: 0.7
+            });
+            
+            const blockGeometry = new THREE.BoxGeometry(2, 1, 2);
+            
+            for (let i = 0; i < 3; i++) {
+                const block = new THREE.Mesh(blockGeometry, blockMaterial);
+                block.position.set(-10 + i * 10, 0.5, -15);
+                block.castShadow = true;
+                block.receiveShadow = true;
+                block.userData = {
+                    type: 'energyBlock',
+                    id: i,
+                    movable: true,
+                    inPosition: false,
+                    correctPosition: new THREE.Vector3(-10 + i * 10, 0.5, 5)
+                };
+                GameState.scene.add(block);
+                puzzle.objects[`block_${i}`] = block;
             }
             
-            // Jump using custom control
-            if (game.keys.jump && Math.abs(game.player.velocity.y) < 0.1) {
-                game.player.velocity.y = CONFIG.PLAYER_JUMP_FORCE;
-            }
-            
-            // Apply gravity
-            game.player.velocity.y += CONFIG.GRAVITY * deltaTime;
-            
-            // Apply velocity
-            game.player.position.x += game.player.velocity.x * deltaTime;
-            game.player.position.y += game.player.velocity.y * deltaTime;
-            game.player.position.z += game.player.velocity.z * deltaTime;
-            
-            // Simple ground collision check
-            let isOnGround = false;
-            for (const platform of game.world.platforms) {
-                const platformTop = platform.position.y + platform.geometry.parameters.height / 2;
-                const distanceToPlatform = Math.abs(game.player.position.y - platformTop);
-                
-                if (distanceToPlatform < 0.5 && 
-                    Math.abs(game.player.position.x - platform.position.x) < platform.geometry.parameters.width / 2 &&
-                    Math.abs(game.player.position.z - platform.position.z) < platform.geometry.parameters.depth / 2) {
-                    
-                    isOnGround = true;
-                    game.player.position.y = platformTop + 0.5;
-                    game.player.velocity.y = 0;
-                    break;
-                }
-            }
-            
-            // If not on any platform, check ground
-            if (!isOnGround && game.player.position.y < 1) {
-                game.player.position.y = 1;
-                game.player.velocity.y = 0;
-            }
-            
-            // Update player mesh position
-            game.player.mesh.position.copy(game.player.position);
-            
-            // Update camera position (first-person)
-            const cameraOffset = new THREE.Vector3(0, 1, 0);
-            cameraOffset.applyEuler(game.player.rotation);
-            game.camera.position.copy(game.player.position).add(cameraOffset);
-            game.camera.rotation.copy(game.player.rotation);
-            
-            // Regenerate energy
-            if (game.player.energy < CONFIG.PLAYER_ENERGY) {
-                game.player.energy += CONFIG.PLAYER_ENERGY_REGEN * deltaTime;
-                game.player.energy = Math.min(game.player.energy, CONFIG.PLAYER_ENERGY);
-                updateEnergyBar();
-            }
-            
-            // Update ability cooldowns
-            updateAbilities(deltaTime);
-        }
-
-        function updateAbilities(deltaTime) {
-            // Update ability cooldowns
-            for (const [abilityName, abilityData] of Object.entries(game.player.abilities)) {
-                if (abilityData.cooldown > 0) {
-                    abilityData.cooldown -= deltaTime;
-                    if (abilityData.cooldown < 0) abilityData.cooldown = 0;
-                    
-                    // Update UI
-                    const abilityConfig = CONFIG.ABILITIES[abilityName];
-                    const cooldownPercent = abilityData.cooldown / abilityConfig.cooldown;
-                    updateAbilityCooldown(abilityName, cooldownPercent);
-                }
-                
-                // Deactivate timed abilities
-                if (abilityData.active && abilityData.duration) {
-                    abilityData.duration -= deltaTime;
-                    if (abilityData.duration <= 0) {
-                        abilityData.active = false;
-                        abilityData.duration = 0;
-                        showMessage(`${abilityName.toUpperCase()} DEACTIVATED`, 'Ability duration ended');
-                    }
-                }
-            }
-        }
-
-        function activateAbility(abilityName) {
-            const ability = game.player.abilities[abilityName];
-            const abilityConfig = CONFIG.ABILITIES[abilityName];
-            
-            // Check if ability is on cooldown
-            if (ability.cooldown > 0) {
-                showMessage('ABILITY ON COOLDOWN', `${Math.ceil(ability.cooldown)}s remaining`);
-                return;
-            }
-            
-            // Check if player has enough energy
-            if (game.player.energy < abilityConfig.energyCost) {
-                showMessage('INSUFFICIENT ENERGY', `Need ${abilityConfig.energyCost} energy`);
-                return;
-            }
-            
-            // Activate ability
-            ability.active = true;
-            ability.cooldown = abilityConfig.cooldown;
-            ability.duration = abilityConfig.duration || 0;
-            game.player.energy -= abilityConfig.energyCost;
-            
-            // Ability-specific effects
-            switch(abilityName) {
-                case 'dash':
-                    showMessage('CYBER DASH ACTIVATED', 'Movement speed boosted');
-                    break;
-                case 'scan':
-                    showMessage('NEURAL SCAN ACTIVE', 'Enemies revealed');
-                    // Visual effect would go here
-                    break;
-                case 'timeWarp':
-                    showMessage('TIME DILATION', 'Slow motion activated');
-                    break;
-            }
-            
-            updateEnergyBar();
-        }
-
-        function shoot() {
-            const weapon = CONFIG.WEAPONS[game.player.weapon];
-            
-            // Check if player has enough energy
-            if (game.player.energy < weapon.energyCost) {
-                showMessage('INSUFFICIENT ENERGY', 'Cannot fire weapon');
-                return;
-            }
-            
-            // Consume energy
-            game.player.energy -= weapon.energyCost;
-            updateEnergyBar();
-            
-            // Create bullet/projectile
-            const bulletDirection = new THREE.Vector3(0, 0, -1);
-            bulletDirection.applyEuler(game.player.rotation);
-            
-            // Add some random spread based on accuracy
-            const spread = (1 - weapon.accuracy) * 0.1;
-            bulletDirection.x += (Math.random() - 0.5) * spread;
-            bulletDirection.y += (Math.random() - 0.5) * spread;
-            bulletDirection.normalize();
-            
-            // Visual effect for shooting
-            createMuzzleFlash();
-            
-            // Check for hits
-            checkHit(bulletDirection, weapon.damage);
-            
-            // Recoil effect
-            game.player.rotation.x += (Math.random() - 0.5) * 0.02;
-            game.player.rotation.y += (Math.random() - 0.5) * 0.02;
-        }
-
-        function createMuzzleFlash() {
-            // Create a simple muzzle flash
-            const flashGeometry = new THREE.SphereGeometry(0.3);
-            const flashMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffff00,
+            // Create target positions
+            const targetMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x44aa44,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.3,
+                emissive: 0x224422,
+                emissiveIntensity: 0.2
             });
-            const flash = new THREE.Mesh(flashGeometry, flashMaterial);
             
-            // Position at weapon barrel
-            flash.position.set(0.5, -0.2, -1.5);
-            flash.position.applyEuler(game.player.rotation);
-            flash.position.add(game.player.position);
+            for (let i = 0; i < 3; i++) {
+                const target = new THREE.Mesh(
+                    new THREE.BoxGeometry(2.2, 0.2, 2.2),
+                    targetMaterial
+                );
+                target.position.set(-10 + i * 10, 0.1, 5);
+                target.userData = { type: 'target', id: i };
+                GameState.scene.add(target);
+                puzzle.objects[`target_${i}`] = target;
+            }
             
-            game.scene.add(flash);
+            // Create activation switches (activatable by activator)
+            const switchMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xff3366,
+                emissive: 0x662233,
+                emissiveIntensity: 0.2
+            });
             
-            // Remove after short time
-            setTimeout(() => {
-                game.scene.remove(flash);
-                flash.geometry.dispose();
-                flash.material.dispose();
-            }, 50);
-        }
-
-        function checkHit(direction, damage) {
-            const rayOrigin = game.player.position.clone();
-            rayOrigin.y += 1; // Shoot from eye level
-            
-            // Create raycaster
-            const raycaster = new THREE.Raycaster(rayOrigin, direction, 0, 100);
-            
-            // Check for enemy hits
-            for (const enemy of game.world.enemies) {
-                const intersects = raycaster.intersectObject(enemy.mesh, true);
+            for (let i = 0; i < 2; i++) {
+                const switchObj = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16),
+                    switchMaterial
+                );
+                switchObj.position.set(15, 0.15, -5 + i * 10);
+                switchObj.rotation.x = Math.PI / 2;
+                switchObj.castShadow = true;
+                switchObj.userData = {
+                    type: 'switch',
+                    id: i,
+                    activated: false,
+                    activatable: true
+                };
+                GameState.scene.add(switchObj);
+                puzzle.objects[`switch_${i}`] = switchObj;
                 
-                if (intersects.length > 0) {
-                    // Hit an enemy
-                    enemy.health -= damage;
-                    
-                    // Visual hit effect
-                    createHitEffect(intersects[0].point);
-                    
-                    if (enemy.health <= 0) {
-                        enemyKilled(enemy);
-                    } else {
-                        showMessage('HIT CONFIRMED', `${damage} damage dealt`);
-                    }
-                    
-                    return;
-                }
+                // Add switch base
+                const base = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.7, 0.7, 0.1, 16),
+                    new THREE.MeshStandardMaterial({ color: 0x333333 })
+                );
+                base.position.set(15, 0.05, -5 + i * 10);
+                GameState.scene.add(base);
             }
             
-            // Check for objective hits
-            if (game.world.objectivePlatform) {
-                const intersects = raycaster.intersectObject(game.world.objectivePlatform, true);
-                if (intersects.length > 0 && !game.objectiveComplete) {
-                    checkObjective();
-                }
-            }
-        }
-
-        function createHitEffect(position) {
-            // Create hit effect particle
-            const geometry = new THREE.SphereGeometry(0.5);
-            const material = new THREE.MeshBasicMaterial({
-                color: 0xff0000,
+            // Create energy conduit
+            const conduitGeometry = new THREE.CylinderGeometry(0.2, 0.2, 20, 8);
+            const conduitMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x44aaff,
+                emissive: 0x224477,
+                emissiveIntensity: 0.1
+            });
+            
+            const conduit = new THREE.Mesh(conduitGeometry, conduitMaterial);
+            conduit.position.set(0, 10, -5);
+            conduit.rotation.z = Math.PI / 2;
+            conduit.userData = { type: 'conduit', powered: false };
+            GameState.scene.add(conduit);
+            puzzle.objects.conduit = conduit;
+            
+            // Create goal gateway
+            const gateGeometry = new THREE.RingGeometry(2, 2.5, 32);
+            const gateMaterial = new THREE.MeshStandardMaterial({
+                color: 0x8844ff,
+                emissive: 0x442277,
+                emissiveIntensity: 0.1,
+                side: THREE.DoubleSide,
                 transparent: true,
                 opacity: 0.7
             });
-            const particle = new THREE.Mesh(geometry, material);
-            particle.position.copy(position);
             
-            game.scene.add(particle);
+            const gate = new THREE.Mesh(gateGeometry, gateMaterial);
+            gate.position.set(0, 5, 15);
+            gate.rotation.x = Math.PI / 2;
+            gate.userData = { type: 'gate', activated: false };
+            GameState.scene.add(gate);
+            puzzle.objects.gate = gate;
             
-            // Animate and remove
-            let scale = 1;
-            const animateHit = () => {
-                scale += 0.1;
-                particle.scale.setScalar(scale);
-                particle.material.opacity -= 0.05;
-                
-                if (particle.material.opacity > 0) {
-                    requestAnimationFrame(animateHit);
-                } else {
-                    game.scene.remove(particle);
-                    particle.geometry.dispose();
-                    particle.material.dispose();
-                }
-            };
-            animateHit();
+            GameState.puzzles.push(puzzle);
+            GameState.activePuzzle = 0;
+            
+            // Update UI with puzzle objectives
+            updatePuzzleObjectives();
         }
 
-        function enemyKilled(enemy) {
-            // Remove enemy from scene
-            game.scene.remove(enemy.mesh);
+        function updatePuzzleObjectives() {
+            if (GameState.puzzles.length === 0) return;
             
-            // Update player stats
-            game.player.kills++;
-            game.player.score += 100;
+            const puzzle = GameState.puzzles[GameState.activePuzzle];
             
-            // Update UI
-            updateKillCount();
-            updateScore();
-            
-            // Show message
-            showMessage('ELIMINATION CONFIRMED', '+100 credits');
-            
-            // Remove from enemies array
-            const index = game.world.enemies.indexOf(enemy);
-            if (index > -1) {
-                game.world.enemies.splice(index, 1);
+            if (GameState.uiElements.p1Objective) {
+                GameState.uiElements.p1Objective.textContent = puzzle.objectives.manipulator;
             }
             
-            // Create death effect
-            createExplosion(enemy.mesh.position);
+            if (GameState.uiElements.p2Objective) {
+                GameState.uiElements.p2Objective.textContent = puzzle.objectives.activator;
+            }
             
-            // Check if all enemies are defeated
-            if (game.world.enemies.length === 0) {
-                showMessage('ALL HOSTILES NEUTRALIZED', 'Area secured');
+            if (GameState.uiElements.puzzleInstruction) {
+                GameState.uiElements.puzzleInstruction.textContent = puzzle.description;
             }
         }
 
-        function createExplosion(position) {
-            // Create multiple particles for explosion
-            for (let i = 0; i < 10; i++) {
-                const geometry = new THREE.SphereGeometry(Math.random() * 0.3 + 0.1);
-                const material = new THREE.MeshBasicMaterial({
-                    color: Math.random() > 0.5 ? 0xff5500 : 0xff0000,
-                    transparent: true,
-                    opacity: 0.8
-                });
-                const particle = new THREE.Mesh(geometry, material);
-                particle.position.copy(position);
-                
-                // Random velocity
-                const velocity = new THREE.Vector3(
-                    (Math.random() - 0.5) * 5,
-                    Math.random() * 5,
-                    (Math.random() - 0.5) * 5
-                );
-                
-                game.scene.add(particle);
-                
-                // Animate explosion
-                const animateExplosion = (startTime) => {
-                    const now = Date.now();
-                    const elapsed = (now - startTime) / 1000;
-                    
-                    if (elapsed < 1) {
-                        // Move particle
-                        particle.position.add(velocity.clone().multiplyScalar(0.016));
-                        velocity.y -= 0.1; // Gravity
-                        
-                        // Fade out
-                        particle.material.opacity = 0.8 * (1 - elapsed);
-                        
-                        requestAnimationFrame(() => animateExplosion(startTime));
-                    } else {
-                        game.scene.remove(particle);
-                        particle.geometry.dispose();
-                        particle.material.dispose();
-                    }
-                };
-                
-                animateExplosion(Date.now());
-            }
-        }
-
-        function takeDamage(amount) {
-            game.player.health -= amount;
-            updateHealthBar();
-            
-            // Visual feedback
-            document.body.style.backgroundColor = '#ff0000';
-            setTimeout(() => {
-                document.body.style.backgroundColor = '#000';
-            }, 100);
-            
-            // Check if player died
-            if (game.player.health <= 0) {
-                game.player.health = 0;
-                gameOver();
-            } else {
-                showMessage('DAMAGE RECEIVED', `Neural integrity at ${Math.round(game.player.health)}%`);
-            }
-        }
-
-        function checkObjective() {
-            // Check distance to objective
-            if (game.world.objectivePlatform) {
-                const distance = game.player.position.distanceTo(game.world.objectivePlatform.position);
-                
-                if (distance < 10 && !game.objectiveComplete) {
-                    game.objectiveComplete = true;
-                    game.player.score += 1000;
-                    updateScore();
-                    
-                    showMessage('OBJECTIVE COMPLETE', 'Virus uploaded successfully! +1000 credits');
-                    
-                    // Win condition
-                    setTimeout(() => {
-                        showMessage('MISSION ACCOMPLISHED', 'Extracting in 5 seconds...');
-                        setTimeout(() => {
-                            // Restart with new world
-                            game.worldSeed = Date.now() + Math.random() * 1000;
-                            location.reload();
-                        }, 5000);
-                    }, 2000);
-                }
-            }
-        }
-
-        function switchWeapon(weaponType) {
-            if (CONFIG.WEAPONS[weaponType]) {
-                game.player.weapon = weaponType;
-                updateWeaponHUD();
-                showMessage('WEAPON SWITCHED', CONFIG.WEAPONS[weaponType].name + ' equipped');
-            }
-        }
-
-        function reloadWeapon() {
-            // Since we have infinite ammo, just show a message
-            showMessage('WEAPON READY', 'Energy cells at maximum capacity');
-        }
-
-        function updateEnemies(deltaTime) {
-            const now = Date.now();
-            
-            for (const enemy of game.world.enemies) {
-                // Simple AI behavior
-                switch(enemy.state) {
-                    case 'patrol':
-                        // Move around patrol point
-                        const time = now * 0.001;
-                        enemy.mesh.position.x = enemy.patrolPoint.x + Math.sin(time) * enemy.patrolRadius;
-                        enemy.mesh.position.z = enemy.patrolPoint.z + Math.cos(time) * enemy.patrolRadius;
-                        
-                        // Occasionally shoot at player
-                        if (now - enemy.lastShot > 2000 && Math.random() > 0.99) {
-                            enemy.lastShot = now;
-                            // Enemy shooting logic would go here
-                        }
-                        break;
-                }
-                
-                // Face player (simplified)
-                enemy.mesh.lookAt(game.player.position);
-            }
-        }
-
-        function updatePickups() {
-            for (const pickup of game.world.pickups) {
-                if (!pickup.collected && pickup.mesh) {
-                    // Check collision with player
-                    const distance = game.player.position.distanceTo(pickup.mesh.position);
-                    
-                    if (distance < 2) {
-                        collectPickup(pickup);
-                    }
-                }
-            }
-        }
-
-        function collectPickup(pickup) {
-            pickup.collected = true;
-            
-            // Remove from scene
-            game.scene.remove(pickup.mesh);
-            
-            // Apply pickup effect
-            switch(pickup.type) {
-                case 'health':
-                    game.player.health = Math.min(CONFIG.PLAYER_HEALTH, game.player.health + pickup.value);
-                    updateHealthBar();
-                    showMessage('NEURAL INTEGRITY RESTORED', `+${pickup.value} health`);
-                    break;
-                case 'energy':
-                    game.player.energy = Math.min(CONFIG.PLAYER_ENERGY, game.player.energy + pickup.value);
-                    updateEnergyBar();
-                    showMessage('ENERGY RESTORED', `+${pickup.value} energy`);
-                    break;
-                case 'score':
-                    game.player.score += pickup.value;
-                    updateScore();
-                    showMessage('CREDITS ACQUIRED', `+${pickup.value} credits`);
-                    break;
-                case 'ammo':
-                    // Infinite ammo, just show message
-                    showMessage('AMMO RESTOCKED', 'Weapons at full capacity');
-                    break;
-            }
-            
-            // Remove from array
-            const index = game.world.pickups.indexOf(pickup);
-            if (index > -1) {
-                game.world.pickups.splice(index, 1);
-            }
-        }
-
-        function updateWorldObjects(deltaTime) {
-            const now = Date.now();
-            
-            // Update floating platforms
-            for (const platform of game.world.platforms) {
-                if (platform.userData && platform.userData.floatHeight !== undefined) {
-                    const time = now * 0.001;
-                    platform.position.y = platform.userData.floatHeight + 
-                                        Math.sin(time * platform.userData.floatSpeed + platform.userData.floatOffset) * 2;
-                }
-            }
-            
-            // Update particles
-            for (const particle of game.world.particles) {
-                if (particle.userData) {
-                    const time = now * 0.001;
-                    
-                    // Floating animation
-                    if (particle.userData.amplitude) {
-                        particle.position.y += Math.sin(time * particle.userData.speed + particle.userData.offset) * 0.05;
-                        particle.rotation.y += particle.userData.rotationSpeed;
-                    }
-                }
-            }
-            
-            // Update pickups
-            for (const pickup of game.world.pickups) {
-                if (!pickup.collected && pickup.mesh) {
-                    const time = now * 0.001;
-                    pickup.mesh.rotation.y += pickup.rotationSpeed;
-                    pickup.mesh.position.y = pickup.floatHeight + Math.sin(time * 2) * 0.5;
-                }
-            }
-        }
-
-        // ================================
-        // UI FUNCTIONS
-        // ================================
-        function updateHealthBar() {
-            const percent = (game.player.health / CONFIG.PLAYER_HEALTH) * 100;
-            document.getElementById('healthBar').style.width = percent + '%';
-            document.getElementById('healthValue').textContent = Math.round(percent) + '%';
-        }
-
-        function updateEnergyBar() {
-            const percent = (game.player.energy / CONFIG.PLAYER_ENERGY) * 100;
-            document.getElementById('energyBar').style.width = percent + '%';
-            document.getElementById('energyValue').textContent = Math.round(percent) + '%';
-        }
-
-        function updateScore() {
-            document.getElementById('scoreValue').textContent = game.player.score;
-        }
-
-        function updateKillCount() {
-            document.getElementById('killCount').textContent = game.player.kills;
-        }
-
-        function updateTime() {
-            game.timeElapsed += 1;
-            const minutes = Math.floor(game.timeElapsed / 60);
-            const seconds = game.timeElapsed % 60;
-            document.getElementById('timeValue').textContent = 
-                minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
-        }
-
-        function updateWeaponHUD() {
-            const weapon = CONFIG.WEAPONS[game.player.weapon];
-            document.getElementById('weaponName').textContent = weapon.name;
-            document.getElementById('ammoType').textContent = weapon.ammoType;
-            document.getElementById('ammoCount').textContent = '∞/∞';
-        }
-
-        function updateAbilityCooldown(abilityName, cooldownPercent) {
-            const element = document.getElementById(abilityName + 'Cooldown');
-            if (element) {
-                element.style.height = (cooldownPercent * 100) + '%';
-            }
-        }
-
-        function showMessage(title, text) {
-            const messageContainer = document.getElementById('messageContainer');
-            const message = document.createElement('div');
-            message.className = 'message show';
-            message.innerHTML = `
-                <div style="color:#ff00ff; margin-bottom:5px;">${title}</div>
-                <div style="color:#00ffff; font-size:0.9rem;">${text}</div>
-            `;
-            
-            messageContainer.appendChild(message);
-            
-            // Remove after delay
-            setTimeout(() => {
-                message.classList.remove('show');
-                setTimeout(() => {
-                    if (message.parentNode) {
-                        message.parentNode.removeChild(message);
-                    }
-                }, 300);
-            }, 3000);
-        }
-
-        function togglePause() {
-            if (game.state === 'playing') {
-                game.state = 'paused';
-                document.getElementById('pauseMenu').style.display = 'flex';
-                document.exitPointerLock();
-            } else if (game.state === 'paused') {
-                game.state = 'playing';
-                document.getElementById('pauseMenu').style.display = 'none';
-                document.getElementById('settingsPanel').style.display = 'none';
-            }
-        }
-
-        function toggleControlsHelp() {
-            game.ui.controlsVisible = !game.ui.controlsVisible;
-            document.getElementById('controlsHelp').classList.toggle('show', game.ui.controlsVisible);
-        }
-
-        function openSettings() {
-            if (game.state === 'playing') {
-                game.state = 'paused';
-                document.exitPointerLock();
-            }
-            document.getElementById('pauseMenu').style.display = 'none';
-            document.getElementById('settingsPanel').style.display = 'flex';
-        }
-
-        function gameOver() {
-            game.state = 'gameOver';
-            showMessage('NEURAL INTEGRITY CRITICAL', 'Mission failed. Disconnecting...');
-            
-            setTimeout(() => {
-                // Generate new world on game over
-                game.worldSeed = Date.now() + Math.random() * 1000;
-                location.reload();
-            }, 3000);
-        }
-
-        // ================================
-        // GAME LOOP
-        // ================================
+        // ============================================
+        // GAME LOOP & ANIMATION
+        // ============================================
         function animate() {
             requestAnimationFrame(animate);
             
-            if (game.state === 'loading') return;
+            // Calculate delta time
+            GameState.deltaTime = GameState.clock.getDelta();
             
-            const deltaTime = game.clock.getDelta();
-            
-            if (game.state === 'playing') {
-                // Update game logic
-                updatePlayer(deltaTime);
-                updateWorldObjects(deltaTime);
-                updateEnemies(deltaTime);
-                updatePickups();
-                checkObjective();
+            // Only update game logic if we're in playing phase
+            if (GameState.phase === 'playing') {
+                updateGameLogic();
                 
-                // Update time every second
-                if (Date.now() - game.ui.lastMessageTime > 1000) {
-                    updateTime();
-                    game.ui.lastMessageTime = Date.now();
+                // Update player position based on input
+                if (GameState.playerRole) {
+                    updatePlayerMovement();
+                }
+                
+                // Update puzzle logic
+                updatePuzzleLogic();
+            }
+            
+            // Always render
+            GameState.renderer.render(GameState.scene, GameState.camera);
+        }
+
+        function updateGameLogic() {
+            // Update player light position to follow camera
+            if (GameState.objects.playerLight && GameState.camera) {
+                GameState.objects.playerLight.position.copy(GameState.camera.position);
+                GameState.objects.playerLight.position.y -= 1;
+            }
+            
+            // Check puzzle completion
+            checkPuzzleCompletion();
+        }
+
+        function updatePlayerMovement() {
+            if (!GameState.camera || !GameState.playerRole) return;
+            
+            const speed = GameConfig.PLAYER_SPEED * GameState.deltaTime;
+            const moveVector = new THREE.Vector3();
+            
+            // Movement based on player role and keys pressed
+            if (GameState.playerRole === 'manipulator') {
+                // WASD controls for manipulator
+                if (GameState.keysPressed['KeyW']) moveVector.z -= speed;
+                if (GameState.keysPressed['KeyS']) moveVector.z += speed;
+                if (GameState.keysPressed['KeyA']) moveVector.x -= speed;
+                if (GameState.keysPressed['KeyD']) moveVector.x += speed;
+            } else if (GameState.playerRole === 'activator') {
+                // Arrow key controls for activator
+                if (GameState.keysPressed['ArrowUp']) moveVector.z -= speed;
+                if (GameState.keysPressed['ArrowDown']) moveVector.z += speed;
+                if (GameState.keysPressed['ArrowLeft']) moveVector.x -= speed;
+                if (GameState.keysPressed['ArrowRight']) moveVector.x += speed;
+            }
+            
+            // Apply movement to camera
+            moveVector.applyEuler(GameState.camera.rotation);
+            moveVector.y = 0; // Keep movement horizontal
+            GameState.camera.position.add(moveVector);
+            
+            // Keep player within bounds
+            const bounds = 23;
+            GameState.camera.position.x = Math.max(-bounds, Math.min(bounds, GameState.camera.position.x));
+            GameState.camera.position.z = Math.max(-bounds, Math.min(bounds, GameState.camera.position.z));
+        }
+
+        function updatePuzzleLogic() {
+            if (GameState.puzzles.length === 0) return;
+            
+            const puzzle = GameState.puzzles[GameState.activePuzzle];
+            if (puzzle.completed) return;
+            
+            // Check if energy blocks are in correct positions
+            let allBlocksInPosition = true;
+            
+            for (let i = 0; i < 3; i++) {
+                const block = puzzle.objects[`block_${i}`];
+                const target = puzzle.objects[`target_${i}`];
+                
+                if (block && target) {
+                    const distance = block.position.distanceTo(target.position);
+                    const inPosition = distance < 1.5;
+                    
+                    block.userData.inPosition = inPosition;
+                    
+                    // Update block color based on position
+                    if (inPosition) {
+                        block.material.emissive.setHex(0x44ff44);
+                        block.material.emissiveIntensity = 0.5;
+                    } else {
+                        block.material.emissive.setHex(0x112266);
+                        block.material.emissiveIntensity = 0.3;
+                    }
+                    
+                    if (!inPosition) {
+                        allBlocksInPosition = false;
+                    }
                 }
             }
             
-            // Render
-            game.renderer.render(game.scene, game.camera);
-        }
-
-        // ================================
-        // LOADING PROGRESS
-        // ================================
-        function updateLoadingProgress(progress, text) {
-            document.getElementById('loadingBar').style.width = progress + '%';
-            document.getElementById('loadingText').textContent = text;
-        }
-
-        // Simulate loading
-        const loadingSteps = [
-            { progress: 10, text: 'INITIALIZING NEURAL LINK...' },
-            { progress: 25, text: 'GENERATING PROCEDURAL WORLD...' },
-            { progress: 40, text: 'CALIBRATING OPTICS...' },
-            { progress: 60, text: 'SYNCHRONIZING WEAPONS SYSTEMS...' },
-            { progress: 80, text: 'POPULATING ENVIRONMENT...' },
-            { progress: 95, text: 'FINALIZING INFILTRATION PROTOCOL...' },
-            { progress: 100, text: 'READY FOR DEPLOYMENT' }
-        ];
-
-        let currentStep = 0;
-        const loadingInterval = setInterval(() => {
-            if (currentStep < loadingSteps.length) {
-                updateLoadingProgress(
-                    loadingSteps[currentStep].progress,
-                    loadingSteps[currentStep].text
-                );
-                currentStep++;
-            } else {
-                clearInterval(loadingInterval);
-                init();
+            // Update conduit power based on switch states
+            let conduitPowered = true;
+            for (let i = 0; i < 2; i++) {
+                const switchObj = puzzle.objects[`switch_${i}`];
+                if (switchObj && !switchObj.userData.activated) {
+                    conduitPowered = false;
+                    break;
+                }
             }
-        }, 500);
+            
+            // Update conduit
+            const conduit = puzzle.objects.conduit;
+            if (conduit) {
+                conduit.userData.powered = conduitPowered;
+                if (conduitPowered) {
+                    conduit.material.emissiveIntensity = 0.8;
+                    conduit.material.emissive.setHex(0x44ffaa);
+                } else {
+                    conduit.material.emissiveIntensity = 0.1;
+                    conduit.material.emissive.setHex(0x224477);
+                }
+            }
+            
+            // Update gate if both conditions met
+            const gate = puzzle.objects.gate;
+            if (gate && allBlocksInPosition && conduitPowered) {
+                gate.userData.activated = true;
+                gate.material.emissiveIntensity = 0.9;
+                gate.material.opacity = 1;
+                
+                // Rotate gate
+                gate.rotation.z += GameState.deltaTime;
+            }
+        }
 
-        // Initialize when page loads
-        window.addEventListener('load', () => {
-            // Loading already simulated
-        });
+        function checkPuzzleCompletion() {
+            if (GameState.puzzles.length === 0) return;
+            
+            const puzzle = GameState.puzzles[GameState.activePuzzle];
+            if (puzzle.completed) return;
+            
+            const gate = puzzle.objects.gate;
+            if (gate && gate.userData.activated) {
+                // Puzzle completed!
+                puzzle.completed = true;
+                
+                // Show completion message
+                showMessage("Puzzle Complete!", "Gateway activated! Excellent teamwork!");
+                
+                // Move to next puzzle after delay
+                setTimeout(() => {
+                    if (GameState.activePuzzle < GameState.puzzles.length - 1) {
+                        GameState.activePuzzle++;
+                        updatePuzzleObjectives();
+                        showMessage(`Puzzle ${GameState.activePuzzle + 1}`, "New challenge ahead!");
+                    } else {
+                        showMessage("All Puzzles Complete!", "You've mastered quantum cooperation!");
+                    }
+                }, 3000);
+            }
+        }
+
+        // ============================================
+        // INPUT HANDLING
+        // ============================================
+        function handleKeyDown(event) {
+            const key = event.code;
+            GameState.keysPressed[key] = true;
+            
+            // Prevent default for game keys
+            if ([
+                'KeyW', 'KeyA', 'KeyS', 'KeyD',
+                'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+                'Space', 'ShiftLeft', 'ControlLeft', 'KeyE', 'KeyR', 'Enter'
+            ].includes(key)) {
+                event.preventDefault();
+            }
+            
+            // Handle game actions
+            if (GameState.phase === 'playing' && GameState.playerRole) {
+                handleGameAction(key);
+            }
+        }
+
+        function handleKeyUp(event) {
+            const key = event.code;
+            GameState.keysPressed[key] = false;
+        }
+
+        function handleGameAction(key) {
+            if (GameState.puzzles.length === 0) return;
+            
+            const puzzle = GameState.puzzles[GameState.activePuzzle];
+            
+            // Manipulator actions (Player 1)
+            if (GameState.playerRole === 'manipulator') {
+                if (key === 'KeyE') {
+                    // Grab nearest object logic would go here
+                    Debug.log('Manipulator: Grab object action');
+                } else if (key === 'KeyR') {
+                    // Rotate object logic would go here
+                    Debug.log('Manipulator: Rotate object action');
+                }
+            }
+            // Activator actions (Player 2)
+            else if (GameState.playerRole === 'activator') {
+                if (key === 'Enter') {
+                    // Activate nearest switch
+                    activateNearestSwitch(puzzle);
+                } else if (key === 'Space') {
+                    // Jump action
+                    Debug.log('Activator: Jump action');
+                }
+            }
+        }
+
+        function activateNearestSwitch(puzzle) {
+            if (!GameState.camera || !puzzle) return;
+            
+            let nearestSwitch = null;
+            let nearestDistance = Infinity;
+            
+            // Find nearest switch
+            for (let i = 0; i < 2; i++) {
+                const switchObj = puzzle.objects[`switch_${i}`];
+                if (switchObj && switchObj.userData.activatable && !switchObj.userData.activated) {
+                    const distance = GameState.camera.position.distanceTo(switchObj.position);
+                    if (distance < 5 && distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestSwitch = switchObj;
+                    }
+                }
+            }
+            
+            // Activate the switch
+            if (nearestSwitch) {
+                nearestSwitch.userData.activated = true;
+                nearestSwitch.material.emissive.setHex(0xff44aa);
+                nearestSwitch.material.emissiveIntensity = 0.8;
+                nearestSwitch.position.y = 0.1; // Lower it slightly when activated
+                
+                Debug.log(`Switch ${nearestSwitch.userData.id} activated`);
+            }
+        }
+
+        // ============================================
+        // NETWORKING (SIMPLIFIED FOR LOCAL PLAY)
+        // ============================================
+        function startHostGame() {
+            Debug.log('Starting as host...');
+            
+            GameState.connectionType = 'host';
+            GameState.playerId = 'player1';
+            GameState.playerRole = 'manipulator';
+            
+            // In a real implementation, this would set up WebRTC
+            // For this demo, we'll simulate local multiplayer
+            simulateLocalMultiplayer();
+            
+            startGame();
+        }
+
+        function startJoinGame() {
+            Debug.log('Joining as client...');
+            
+            GameState.connectionType = 'client';
+            GameState.playerId = 'player2';
+            GameState.playerRole = 'activator';
+            
+            // In a real implementation, this would connect to host via WebRTC
+            // For this demo, we'll simulate local multiplayer
+            simulateLocalMultiplayer();
+            
+            startGame();
+        }
+
+        function simulateLocalMultiplayer() {
+            Debug.log('Simulating local multiplayer connection...');
+            
+            // Show connection status
+            showConnectionStatus('Connected to local game', 'connected');
+            
+            // Simulate connection establishment
+            setTimeout(() => {
+                GameState.isConnected = true;
+                
+                // Update player status indicators
+                if (GameState.uiElements.p1Status && GameState.playerRole === 'manipulator') {
+                    GameState.uiElements.p1Status.textContent = 'Active';
+                    GameState.uiElements.p1Status.className = 'status connected pulse';
+                }
+                
+                if (GameState.uiElements.p2Status && GameState.playerRole === 'activator') {
+                    GameState.uiElements.p2Status.textContent = 'Active';
+                    GameState.uiElements.p2Status.className = 'status connected pulse';
+                }
+                
+                Debug.log('Local multiplayer simulation complete');
+            }, 1000);
+        }
+
+        // ============================================
+        // GAME FLOW CONTROL
+        // ============================================
+        function startGame() {
+            Debug.log(`Starting game as ${GameState.playerRole}`);
+            
+            // Hide main menu
+            GameState.uiElements.mainMenu.classList.add('hidden');
+            
+            // Show appropriate HUD based on player role
+            if (GameState.playerRole === 'manipulator') {
+                GameState.uiElements.gameHUD.classList.remove('hidden');
+                GameState.uiElements.player2HUD.classList.add('hidden');
+            } else {
+                GameState.uiElements.gameHUD.classList.add('hidden');
+                GameState.uiElements.player2HUD.classList.remove('hidden');
+            }
+            
+            // Show instructions
+            GameState.uiElements.instructions.classList.remove('hidden');
+            
+            // Position camera based on role
+            if (GameState.camera) {
+                if (GameState.playerRole === 'manipulator') {
+                    GameState.camera.position.set(0, 8, 20);
+                    GameState.camera.lookAt(0, 0, 0);
+                } else {
+                    GameState.camera.position.set(0, 8, -20);
+                    GameState.camera.lookAt(0, 0, 0);
+                }
+            }
+            
+            // Change game phase
+            GameState.phase = 'playing';
+            
+            // Show welcome message
+            showMessage(
+                `Welcome, ${GameState.playerRole.toUpperCase()}!`,
+                `You are the ${GameState.playerRole}. Work with your partner to solve the puzzles!`
+            );
+            
+            // Lock pointer for better mouse control
+            lockPointer();
+        }
+
+        function showHowToPlay() {
+            showMessage(
+                "How to Play Quantum Link",
+                `• TWO PLAYERS, ONE GOAL: Work together to solve puzzles
+• UNIQUE ABILITIES: Manipulator moves objects, Activator triggers switches
+• COMMUNICATION: Talk to coordinate your actions
+• SOLVE PROGRESSIVELY: Complete puzzles to advance
+• LOCAL NETWORK: Play together on the same WiFi`
+            );
+        }
+
+        function lockPointer() {
+            const canvas = document.getElementById('game-canvas');
+            
+            canvas.requestPointerLock = canvas.requestPointerLock || 
+                                       canvas.mozRequestPointerLock ||
+                                       canvas.webkitRequestPointerLock;
+            
+            if (canvas.requestPointerLock) {
+                canvas.requestPointerLock();
+            }
+            
+            // Mouse movement handling for camera control
+            document.addEventListener('mousemove', handleMouseMove);
+        }
+
+        function handleMouseMove(event) {
+            if (GameState.phase !== 'playing' || !GameState.camera) return;
+            
+            const sensitivity = 0.002;
+            
+            // Update camera rotation based on mouse movement
+            GameState.camera.rotation.y -= event.movementX * sensitivity;
+            GameState.camera.rotation.x -= event.movementY * sensitivity;
+            
+            // Limit vertical rotation
+            GameState.camera.rotation.x = Math.max(
+                -Math.PI / 2, 
+                Math.min(Math.PI / 2, GameState.camera.rotation.x)
+            );
+        }
+
+        // ============================================
+        // UI UTILITIES
+        // ============================================
+        function showMessage(title, text) {
+            Debug.log(`Message: ${title} - ${text}`);
+            
+            // Create message element
+            const messageEl = document.createElement('div');
+            messageEl.className = 'ui-panel';
+            messageEl.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 20;
+                text-align: center;
+                min-width: 300px;
+                max-width: 80vw;
+                animation: fadeIn 0.3s ease;
+            `;
+            
+            messageEl.innerHTML = `
+                <h3>${title}</h3>
+                <div style="margin: 15px 0; line-height: 1.5;">${text.replace(/\n/g, '<br>')}</div>
+                <button id="close-message-btn" class="button" style="margin-top: 10px;">OK</button>
+            `;
+            
+            document.getElementById('ui-overlay').appendChild(messageEl);
+            
+            // Add close button event
+            document.getElementById('close-message-btn').addEventListener('click', function() {
+                messageEl.remove();
+            });
+            
+            // Auto-remove after 5 seconds if not manually closed
+            setTimeout(() => {
+                if (messageEl.parentNode) {
+                    messageEl.remove();
+                }
+            }, 5000);
+        }
+
+        function showConnectionStatus(message, type) {
+            const statusEl = GameState.uiElements.connectionStatus;
+            statusEl.textContent = message;
+            statusEl.className = type;
+            statusEl.classList.remove('hidden');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                statusEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        // ============================================
+        // WINDOW RESIZE HANDLING
+        // ============================================
+        function handleResize() {
+            if (!GameState.camera || !GameState.renderer) return;
+            
+            GameState.camera.aspect = window.innerWidth / window.innerHeight;
+            GameState.camera.updateProjectionMatrix();
+            GameState.renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // ============================================
+        // ERROR HANDLING
+        // ============================================
+        function handleCriticalError(error) {
+            console.error('Critical game error:', error);
+            
+            // Show error message to user
+            const errorMessage = `
+                <div class="ui-panel" style="
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(40, 10, 10, 0.95);
+                    border-color: #ff5555;
+                    z-index: 1000;
+                    text-align: center;
+                    max-width: 90vw;
+                ">
+                    <h1 style="color: #ff5555;">Game Error</h1>
+                    <div style="margin: 20px 0; color: #ffaaaa;">
+                        ${error.message || 'An unexpected error occurred'}
+                    </div>
+                    <div style="margin: 10px 0; font-size: 0.9em; color: #cc8888;">
+                        Please refresh the page to try again
+                    </div>
+                    <button onclick="window.location.reload()" class="button" style="background: #ff5555; margin-top: 15px;">
+                        <i class="fas fa-redo"></i> Reload Game
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('game-container').innerHTML += errorMessage;
+        }
+
+        // ============================================
+        // INITIALIZATION COMPLETE
+        // ============================================
+        Debug.log('Game initialization script loaded successfully');
+        
+        // Add CSS animation for fadeIn
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+                to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
