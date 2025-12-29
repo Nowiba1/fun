@@ -96,6 +96,130 @@
             letter-spacing: 3px;
         }
         
+        /* Settings Panel */
+        #settingsPanel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            pointer-events: all;
+        }
+        
+        .settings-title {
+            font-size: 3rem;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+        }
+        
+        .settings-container {
+            width: 800px;
+            max-width: 90%;
+            background: rgba(0, 20, 40, 0.8);
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .settings-section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            color: #ff00ff;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #00ffff;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .control-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .control-item:hover {
+            background: rgba(0, 255, 255, 0.1);
+        }
+        
+        .control-label {
+            color: #0ff;
+            font-size: 0.9rem;
+        }
+        
+        .control-key {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            color: #ff00ff;
+            padding: 5px 15px;
+            border-radius: 4px;
+            min-width: 80px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        
+        .control-key:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        .control-key.editing {
+            animation: pulse 1s infinite;
+            background: rgba(255, 0, 255, 0.3);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            grid-column: 1 / -1;
+            justify-content: center;
+        }
+        
+        .settings-button {
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            border: none;
+            color: #000;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.3s;
+        }
+        
+        .settings-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .settings-button.reset {
+            background: linear-gradient(45deg, #ff3300, #ff9900);
+        }
+        
         /* Main HUD */
         .hud {
             padding: 20px;
@@ -381,41 +505,23 @@
             position: relative;
         }
         
-        /* Objective Marker */
-        .objective-marker {
+        /* Controls Help */
+        .controls-help {
             position: fixed;
-            top: 50%;
+            bottom: 30px;
             left: 50%;
-            transform: translate(-50%, -50%);
-            color: #ff00ff;
-            text-align: center;
-            pointer-events: none;
-            animation: pulse 2s infinite;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            padding: 10px 20px;
+            color: #0ff;
+            font-size: 0.8rem;
+            display: none;
         }
         
-        .objective-distance {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px #ff00ff;
-        }
-        
-        .objective-text {
-            font-size: 1rem;
-            opacity: 0.8;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        /* Damage Indicator */
-        .damage-indicator {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            opacity: 0;
-            z-index: 10;
+        .controls-help.show {
+            display: block;
         }
         
         /* Messages */
@@ -461,6 +567,7 @@
             justify-content: center;
             align-items: center;
             z-index: 50;
+            pointer-events: all;
         }
         
         .pause-title {
@@ -499,48 +606,6 @@
             transform: scale(1.05);
         }
         
-        /* Tutorial */
-        .tutorial-hint {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            border: 2px solid #00ffff;
-            padding: 15px 30px;
-            color: #0ff;
-            text-align: center;
-            max-width: 500px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .tutorial-hint.show {
-            opacity: 1;
-        }
-        
-        /* Animations */
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            2% { transform: translate(-2px, 2px); }
-            4% { transform: translate(-2px, -2px); }
-            6% { transform: translate(2px, 2px); }
-            8% { transform: translate(2px, -2px); }
-            10% { transform: translate(0); }
-            100% { transform: translate(0); }
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-            100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-        }
-        
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-        
         /* Grid Overlay */
         .grid-overlay {
             position: fixed;
@@ -556,23 +621,33 @@
             z-index: 1;
         }
         
-        /* Scanline Effect */
-        .scanline {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: rgba(0, 255, 255, 0.3);
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-            pointer-events: none;
-            z-index: 3;
-            animation: scanline 2s linear infinite;
+        /* Animations */
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            2% { transform: translate(-2px, 2px); }
+            4% { transform: translate(-2px, -2px); }
+            6% { transform: translate(2px, 2px); }
+            8% { transform: translate(2px, -2px); }
+            10% { transform: translate(0); }
+            100% { transform: translate(0); }
         }
         
-        @keyframes scanline {
-            0% { top: 0; }
-            100% { top: 100%; }
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.5; transform: scale(1); }
+        }
+        
+        /* Key Display */
+        .key-display {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #00ffff;
+            padding: 2px 8px;
+            margin: 0 3px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -587,6 +662,102 @@
         <div class="loading-text" id="loadingText">INITIALIZING NEURAL LINK...</div>
     </div>
 
+    <!-- Settings Panel -->
+    <div id="settingsPanel">
+        <div class="settings-title">CONTROL CONFIGURATION</div>
+        <div class="settings-container">
+            <div class="settings-section">
+                <div class="section-title">MOVEMENT</div>
+                <div class="control-item">
+                    <span class="control-label">Move Forward</span>
+                    <div class="control-key" data-action="forward">W</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Move Backward</span>
+                    <div class="control-key" data-action="backward">S</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Move Left</span>
+                    <div class="control-key" data-action="left">A</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Move Right</span>
+                    <div class="control-key" data-action="right">D</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Jump</span>
+                    <div class="control-key" data-action="jump">Space</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Sprint</span>
+                    <div class="control-key" data-action="sprint">Shift</div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="section-title">COMBAT</div>
+                <div class="control-item">
+                    <span class="control-label">Shoot</span>
+                    <div class="control-key" data-action="shoot">Mouse Left</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Aim Down Sights</span>
+                    <div class="control-key" data-action="aim">Mouse Right</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Reload</span>
+                    <div class="control-key" data-action="reload">R</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Weapon 1</span>
+                    <div class="control-key" data-action="weapon1">1</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Weapon 2</span>
+                    <div class="control-key" data-action="weapon2">2</div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="section-title">ABILITIES</div>
+                <div class="control-item">
+                    <span class="control-label">Cyber Dash</span>
+                    <div class="control-key" data-action="ability1">Q</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Neural Scan</span>
+                    <div class="control-key" data-action="ability2">E</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Time Dilation</span>
+                    <div class="control-key" data-action="ability3">F</div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="section-title">GAME CONTROLS</div>
+                <div class="control-item">
+                    <span class="control-label">Pause Game</span>
+                    <div class="control-key" data-action="pause">Escape</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Show Controls</span>
+                    <div class="control-key" data-action="help">H</div>
+                </div>
+                <div class="control-item">
+                    <span class="control-label">Settings</span>
+                    <div class="control-key" data-action="settings">F1</div>
+                </div>
+            </div>
+            
+            <div class="button-group">
+                <button class="settings-button" id="saveSettings">SAVE SETTINGS</button>
+                <button class="settings-button reset" id="resetSettings">RESET TO DEFAULT</button>
+                <button class="settings-button" id="closeSettings">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Game Canvas -->
     <canvas id="gameContainer"></canvas>
 
@@ -594,9 +765,6 @@
     <div id="uiOverlay">
         <!-- Grid Overlay -->
         <div class="grid-overlay"></div>
-        
-        <!-- Scanline -->
-        <div class="scanline"></div>
         
         <!-- HUD -->
         <div class="hud">
@@ -655,17 +823,17 @@
         <div class="abilities-hud">
             <div class="ability-slot" id="ability1">
                 <div class="ability-icon">⚡</div>
-                <div class="ability-key">Q</div>
+                <div class="ability-key" id="ability1Key">Q</div>
                 <div class="ability-cooldown" id="ability1Cooldown"></div>
             </div>
             <div class="ability-slot" id="ability2">
                 <div class="ability-icon">👁️</div>
-                <div class="ability-key">E</div>
+                <div class="ability-key" id="ability2Key">E</div>
                 <div class="ability-cooldown" id="ability2Cooldown"></div>
             </div>
             <div class="ability-slot" id="ability3">
                 <div class="ability-icon">🌀</div>
-                <div class="ability-key">SHIFT</div>
+                <div class="ability-key" id="ability3Key">F</div>
                 <div class="ability-cooldown" id="ability3Cooldown"></div>
             </div>
         </div>
@@ -687,22 +855,13 @@
             </div>
         </div>
 
-        <!-- Objective Marker -->
-        <div class="objective-marker" id="objectiveMarker">
-            <div class="objective-distance">50m</div>
-            <div class="objective-text">UPLOAD POINT</div>
+        <!-- Controls Help -->
+        <div class="controls-help" id="controlsHelp">
+            Press <span class="key-display">H</span> to hide controls • Press <span class="key-display">F1</span> to configure
         </div>
-
-        <!-- Damage Indicator -->
-        <div class="damage-indicator" id="damageIndicator"></div>
 
         <!-- Messages -->
         <div class="message-container" id="messageContainer"></div>
-
-        <!-- Tutorial Hint -->
-        <div class="tutorial-hint" id="tutorialHint">
-            Use <span style="color:#ff00ff">WASD</span> to move • <span style="color:#ff00ff">MOUSE</span> to aim • <span style="color:#ff00ff">SPACE</span> to jump
-        </div>
     </div>
 
     <!-- Pause Menu -->
@@ -710,8 +869,8 @@
         <div class="pause-title">PAUSED</div>
         <div class="pause-menu">
             <div class="pause-button" id="resumeButton">RESUME MISSION</div>
+            <div class="pause-button" id="settingsButton">CONTROLS CONFIG</div>
             <div class="pause-button" id="restartButton">RESTART LEVEL</div>
-            <div class="pause-button" id="settingsButton">NEURAL SETTINGS</div>
             <div class="pause-button" id="quitButton">DISCONNECT</div>
         </div>
     </div>
@@ -740,7 +899,7 @@
             GRAVITY: -20,
             ENEMY_COUNT: 15,
             OBJECTIVE_DISTANCE: 200,
-            TIME_LIMIT: 600, // 10 minutes
+            TIME_LIMIT: 600,
             
             // Weapons
             WEAPONS: {
@@ -789,6 +948,169 @@
         };
 
         // ================================
+        // CUSTOM CONTROLS SYSTEM
+        // ================================
+        const DEFAULT_CONTROLS = {
+            forward: 'KeyW',
+            backward: 'KeyS',
+            left: 'KeyA',
+            right: 'KeyD',
+            jump: 'Space',
+            sprint: 'ShiftLeft',
+            shoot: 'Mouse0',
+            aim: 'Mouse2',
+            reload: 'KeyR',
+            weapon1: 'Digit1',
+            weapon2: 'Digit2',
+            ability1: 'KeyQ',
+            ability2: 'KeyE',
+            ability3: 'KeyF',
+            pause: 'Escape',
+            help: 'KeyH',
+            settings: 'F1'
+        };
+
+        let userControls = JSON.parse(localStorage.getItem('cyberrunner_controls')) || {...DEFAULT_CONTROLS};
+        let editingControl = null;
+        let keyBindings = {};
+
+        function initializeControls() {
+            // Convert control mapping to key bindings
+            keyBindings = {};
+            for (const [action, key] of Object.entries(userControls)) {
+                keyBindings[key] = action;
+            }
+            
+            // Update UI display
+            updateControlDisplay();
+        }
+
+        function updateControlDisplay() {
+            // Update control key displays
+            for (const [action, key] of Object.entries(userControls)) {
+                const element = document.querySelector(`.control-key[data-action="${action}"]`);
+                if (element) {
+                    element.textContent = formatKeyName(key);
+                }
+            }
+            
+            // Update ability key displays
+            document.getElementById('ability1Key').textContent = formatKeyName(userControls.ability1);
+            document.getElementById('ability2Key').textContent = formatKeyName(userControls.ability2);
+            document.getElementById('ability3Key').textContent = formatKeyName(userControls.ability3);
+        }
+
+        function formatKeyName(keyCode) {
+            const keyMap = {
+                'KeyW': 'W',
+                'KeyA': 'A',
+                'KeyS': 'S',
+                'KeyD': 'D',
+                'KeyQ': 'Q',
+                'KeyE': 'E',
+                'KeyR': 'R',
+                'KeyF': 'F',
+                'KeyH': 'H',
+                'Space': 'Space',
+                'ShiftLeft': 'Shift',
+                'ShiftRight': 'Shift',
+                'Digit1': '1',
+                'Digit2': '2',
+                'Escape': 'Esc',
+                'F1': 'F1',
+                'Mouse0': 'Mouse L',
+                'Mouse2': 'Mouse R'
+            };
+            
+            return keyMap[keyCode] || keyCode.replace('Key', '').replace('Digit', '').replace('Arrow', '');
+        }
+
+        function saveControls() {
+            localStorage.setItem('cyberrunner_controls', JSON.stringify(userControls));
+            initializeControls();
+            showMessage('CONTROLS SAVED', 'Custom controls have been saved');
+        }
+
+        function resetControls() {
+            userControls = {...DEFAULT_CONTROLS};
+            updateControlDisplay();
+            showMessage('CONTROLS RESET', 'Default controls restored');
+        }
+
+        function setupControlListeners() {
+            // Control key click listeners
+            document.querySelectorAll('.control-key').forEach(element => {
+                element.addEventListener('click', () => {
+                    if (editingControl) {
+                        editingControl.classList.remove('editing');
+                    }
+                    
+                    editingControl = element;
+                    editingControl.classList.add('editing');
+                    editingControl.textContent = 'Press any key...';
+                });
+            });
+            
+            // Global key listener for control editing
+            document.addEventListener('keydown', (e) => {
+                if (editingControl) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const action = editingControl.dataset.action;
+                    const keyCode = e.code;
+                    
+                    // Don't allow duplicate key bindings
+                    for (const [existingAction, existingKey] of Object.entries(userControls)) {
+                        if (existingKey === keyCode && existingAction !== action) {
+                            showMessage('KEY ALREADY BOUND', `This key is already bound to ${existingAction}`);
+                            return;
+                        }
+                    }
+                    
+                    userControls[action] = keyCode;
+                    editingControl.classList.remove('editing');
+                    editingControl.textContent = formatKeyName(keyCode);
+                    editingControl = null;
+                }
+            });
+            
+            // Mouse button binding
+            document.addEventListener('mousedown', (e) => {
+                if (editingControl) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const action = editingControl.dataset.action;
+                    const mouseCode = `Mouse${e.button}`;
+                    
+                    // Don't allow duplicate key bindings
+                    for (const [existingAction, existingKey] of Object.entries(userControls)) {
+                        if (existingKey === mouseCode && existingAction !== action) {
+                            showMessage('BUTTON ALREADY BOUND', `This button is already bound to ${existingAction}`);
+                            return;
+                        }
+                    }
+                    
+                    userControls[action] = mouseCode;
+                    editingControl.classList.remove('editing');
+                    editingControl.textContent = formatKeyName(mouseCode);
+                    editingControl = null;
+                }
+            });
+            
+            // Settings buttons
+            document.getElementById('saveSettings').addEventListener('click', saveControls);
+            document.getElementById('resetSettings').addEventListener('click', resetControls);
+            document.getElementById('closeSettings').addEventListener('click', () => {
+                document.getElementById('settingsPanel').style.display = 'none';
+                if (game.state === 'paused') {
+                    document.getElementById('pauseMenu').style.display = 'flex';
+                }
+            });
+        }
+
+        // ================================
         // GAME STATE
         // ================================
         let game = {
@@ -802,7 +1124,6 @@
             // Player
             player: {
                 mesh: null,
-                body: null,
                 position: new THREE.Vector3(0, 10, 0),
                 velocity: new THREE.Vector3(0, 0, 0),
                 rotation: new THREE.Euler(0, 0, 0),
@@ -840,9 +1161,8 @@
             
             // UI
             ui: {
-                tutorialShown: false,
-                lastMessageTime: 0,
-                damageFlash: 0
+                controlsVisible: true,
+                lastMessageTime: 0
             }
         };
 
@@ -851,13 +1171,17 @@
         // ================================
         async function init() {
             try {
+                // Initialize controls
+                initializeControls();
+                setupControlListeners();
+                
                 // Initialize Three.js
                 initThreeJS();
                 
                 // Create game world
                 await createWorld();
                 
-                // Set up player
+                // Set up player (FIXED: Use CylinderGeometry instead of CapsuleGeometry)
                 createPlayer();
                 
                 // Set up enemies
@@ -882,7 +1206,12 @@
                         document.getElementById('loadingScreen').style.display = 'none';
                         game.state = 'playing';
                         showMessage('INFILTRATION PROTOCOL ACTIVE', 'Get to the upload point');
-                        showTutorialHint();
+                        
+                        // Show controls help
+                        document.getElementById('controlsHelp').classList.add('show');
+                        setTimeout(() => {
+                            document.getElementById('controlsHelp').classList.remove('show');
+                        }, 5000);
                     }, 1000);
                 }, 500);
                 
@@ -920,7 +1249,6 @@
             game.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             game.renderer.shadowMap.enabled = true;
             game.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            game.renderer.outputEncoding = THREE.sRGBEncoding;
         }
 
         async function createWorld() {
@@ -986,9 +1314,6 @@
                 
                 game.scene.add(building);
                 game.world.buildings.push(building);
-                
-                // Add windows
-                addWindows(building, width, height, depth);
             }
             
             // Create main tower (objective)
@@ -1011,73 +1336,14 @@
             game.scene.add(towerLight);
         }
 
-        function addWindows(building, width, height, depth) {
-            const windowCount = Math.floor(height / 10);
-            const windowColor = 0x00ffff;
-            
-            for (let i = 0; i < windowCount; i++) {
-                const windowGeometry = new THREE.PlaneGeometry(3, 5);
-                const windowMaterial = new THREE.MeshBasicMaterial({
-                    color: windowColor,
-                    transparent: true,
-                    opacity: 0.7,
-                    emissive: windowColor
-                });
-                const window = new THREE.Mesh(windowGeometry, windowMaterial);
-                
-                // Randomly place windows on building faces
-                const face = Math.floor(Math.random() * 4);
-                const y = (i / windowCount) * height - height / 2 + 2.5;
-                
-                switch(face) {
-                    case 0: // Front
-                        window.position.set(0, y, depth / 2 + 0.1);
-                        break;
-                    case 1: // Back
-                        window.position.set(0, y, -depth / 2 - 0.1);
-                        window.rotation.y = Math.PI;
-                        break;
-                    case 2: // Left
-                        window.position.set(-width / 2 - 0.1, y, 0);
-                        window.rotation.y = Math.PI / 2;
-                        break;
-                    case 3: // Right
-                        window.position.set(width / 2 + 0.1, y, 0);
-                        window.rotation.y = -Math.PI / 2;
-                        break;
-                }
-                
-                building.add(window);
-            }
-        }
-
         function createParkourCourse() {
-            // Create a series of platforms for parkour
             const platformColors = [0x00aaff, 0xff00aa, 0xaa00ff, 0x00ffaa];
-            const platformTypes = ['box', 'cylinder', 'platform', 'bridge'];
             
             let lastPosition = new THREE.Vector3(0, 5, 0);
             
             for (let i = 0; i < 30; i++) {
-                const type = platformTypes[Math.floor(Math.random() * platformTypes.length)];
                 const color = platformColors[Math.floor(Math.random() * platformColors.length)];
-                
-                let platform;
-                
-                switch(type) {
-                    case 'box':
-                        platform = createBoxPlatform(lastPosition, color);
-                        break;
-                    case 'cylinder':
-                        platform = createCylinderPlatform(lastPosition, color);
-                        break;
-                    case 'platform':
-                        platform = createThinPlatform(lastPosition, color);
-                        break;
-                    case 'bridge':
-                        platform = createBridge(lastPosition, color);
-                        break;
-                }
+                const platform = createBoxPlatform(lastPosition, color);
                 
                 if (platform) {
                     game.scene.add(platform);
@@ -1113,84 +1379,20 @@
             platform.castShadow = true;
             platform.receiveShadow = true;
             
-            // Add edge glow
+            // Add edge glow using lines (FIXED: No emissiveIntensity issue)
             const edges = new THREE.EdgesGeometry(geometry);
-            const line = new THREE.LineSegments(
-                edges,
-                new THREE.LineBasicMaterial({ color: 0x00ffff })
-            );
+            const lineMaterial = new THREE.LineBasicMaterial({ 
+                color: 0x00ffff,
+                linewidth: 2
+            });
+            const line = new THREE.LineSegments(edges, lineMaterial);
             platform.add(line);
             
             return platform;
         }
 
-        function createCylinderPlatform(position, color) {
-            const geometry = new THREE.CylinderGeometry(8, 8, 2, 8);
-            const material = new THREE.MeshStandardMaterial({
-                color: color,
-                roughness: 0.4,
-                metalness: 0.6,
-                emissive: color,
-                emissiveIntensity: 0.2
-            });
-            const platform = new THREE.Mesh(geometry, material);
-            platform.position.copy(position);
-            platform.castShadow = true;
-            platform.receiveShadow = true;
-            return platform;
-        }
-
-        function createThinPlatform(position, color) {
-            const geometry = new THREE.BoxGeometry(30, 0.5, 8);
-            const material = new THREE.MeshStandardMaterial({
-                color: color,
-                roughness: 0.4,
-                metalness: 0.6,
-                emissive: color,
-                emissiveIntensity: 0.3
-            });
-            const platform = new THREE.Mesh(geometry, material);
-            platform.position.copy(position);
-            platform.castShadow = true;
-            platform.receiveShadow = true;
-            return platform;
-        }
-
-        function createBridge(position, color) {
-            const geometry = new THREE.BoxGeometry(40, 0.5, 6);
-            const material = new THREE.MeshStandardMaterial({
-                color: color,
-                roughness: 0.4,
-                metalness: 0.6,
-                emissive: color,
-                emissiveIntensity: 0.3
-            });
-            const platform = new THREE.Mesh(geometry, material);
-            platform.position.copy(position);
-            platform.castShadow = true;
-            platform.receiveShadow = true;
-            return platform;
-        }
-
         function addObstacles(position) {
-            // Create laser fences or energy barriers
-            const obstacleTypes = ['laser', 'energy', 'spike'];
-            const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-            
-            switch(type) {
-                case 'laser':
-                    createLaserFence(position);
-                    break;
-                case 'energy':
-                    createEnergyBarrier(position);
-                    break;
-                case 'spike':
-                    createSpikeTrap(position);
-                    break;
-            }
-        }
-
-        function createLaserFence(position) {
+            // Create laser fences (FIXED: Remove emissiveIntensity)
             const count = 3 + Math.floor(Math.random() * 3);
             const spacing = 4;
             
@@ -1198,8 +1400,7 @@
                 const geometry = new THREE.CylinderGeometry(0.2, 0.2, 15, 8);
                 const material = new THREE.MeshBasicMaterial({
                     color: 0xff0000,
-                    emissive: 0xff0000,
-                    emissiveIntensity: 0.8
+                    emissive: 0xff0000
                 });
                 const laser = new THREE.Mesh(geometry, material);
                 
@@ -1212,50 +1413,7 @@
             }
         }
 
-        function createEnergyBarrier(position) {
-            const geometry = new THREE.PlaneGeometry(20, 15);
-            const material = new THREE.MeshBasicMaterial({
-                color: 0x00ffff,
-                transparent: true,
-                opacity: 0.3,
-                side: THREE.DoubleSide,
-                emissive: 0x00ffff
-            });
-            const barrier = new THREE.Mesh(geometry, material);
-            
-            barrier.position.copy(position);
-            barrier.position.y += 7.5;
-            barrier.rotation.y = Math.random() * Math.PI;
-            
-            game.scene.add(barrier);
-            game.world.platforms.push(barrier);
-        }
-
-        function createSpikeTrap(position) {
-            const count = 9;
-            const spacing = 3;
-            
-            for (let i = 0; i < count; i++) {
-                const geometry = new THREE.ConeGeometry(0.5, 2, 4);
-                const material = new THREE.MeshStandardMaterial({
-                    color: 0xff3300,
-                    emissive: 0xff3300,
-                    emissiveIntensity: 0.5
-                });
-                const spike = new THREE.Mesh(geometry, material);
-                
-                spike.position.copy(position);
-                spike.position.x += (Math.floor(i / 3) - 1) * spacing;
-                spike.position.z += (i % 3 - 1) * spacing;
-                spike.position.y += 1;
-                
-                game.scene.add(spike);
-                game.world.platforms.push(spike);
-            }
-        }
-
         function createParticles() {
-            // Create floating energy particles
             for (let i = 0; i < 100; i++) {
                 const geometry = new THREE.SphereGeometry(0.2 + Math.random() * 0.3);
                 const material = new THREE.MeshBasicMaterial({
@@ -1283,8 +1441,8 @@
         }
 
         function createPlayer() {
-            // Create player capsule
-            const geometry = new THREE.CapsuleGeometry(1, 3, 8, 16);
+            // Create player using CylinderGeometry instead of CapsuleGeometry (FIXED)
+            const geometry = new THREE.CylinderGeometry(1, 1, 4, 8);
             const material = new THREE.MeshStandardMaterial({
                 color: 0x00aaff,
                 roughness: 0.3,
@@ -1328,8 +1486,7 @@
             const coreGeometry = new THREE.SphereGeometry(0.3);
             const coreMaterial = new THREE.MeshBasicMaterial({
                 color: 0x00ffff,
-                emissive: 0x00ffff,
-                emissiveIntensity: 0.5
+                emissive: 0x00ffff
             });
             const core = new THREE.Mesh(coreGeometry, coreMaterial);
             core.position.z = 0.5;
@@ -1340,11 +1497,8 @@
         }
 
         function createEnemies() {
-            const enemyTypes = ['drone', 'sentry', 'guard'];
-            
             for (let i = 0; i < CONFIG.ENEMY_COUNT; i++) {
-                const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-                const enemy = createEnemy(type);
+                const enemy = createDrone();
                 
                 // Position enemy on a platform
                 if (game.world.platforms.length > 0) {
@@ -1359,30 +1513,12 @@
                 game.world.enemies.push({
                     mesh: enemy,
                     health: 100,
-                    type: type,
+                    type: 'drone',
                     lastShot: 0,
                     target: null,
                     state: 'patrol'
                 });
             }
-        }
-
-        function createEnemy(type) {
-            let enemy;
-            
-            switch(type) {
-                case 'drone':
-                    enemy = createDrone();
-                    break;
-                case 'sentry':
-                    enemy = createSentry();
-                    break;
-                case 'guard':
-                    enemy = createGuard();
-                    break;
-            }
-            
-            return enemy;
         }
 
         function createDrone() {
@@ -1422,75 +1558,6 @@
             return group;
         }
 
-        function createSentry() {
-            const group = new THREE.Group();
-            
-            // Sentry base
-            const baseGeometry = new THREE.CylinderGeometry(2, 3, 1, 6);
-            const baseMaterial = new THREE.MeshStandardMaterial({
-                color: 0x666677
-            });
-            const base = new THREE.Mesh(baseGeometry, baseMaterial);
-            group.add(base);
-            
-            // Sentry turret
-            const turretGeometry = new THREE.BoxGeometry(1.5, 1.5, 2);
-            const turretMaterial = new THREE.MeshStandardMaterial({
-                color: 0x888899
-            });
-            const turret = new THREE.Mesh(turretGeometry, turretMaterial);
-            turret.position.y = 1.5;
-            group.add(turret);
-            
-            // Gun barrels
-            const barrelGeometry = new THREE.CylinderGeometry(0.2, 0.2, 2, 8);
-            const barrelMaterial = new THREE.MeshStandardMaterial({
-                color: 0x333333
-            });
-            
-            const leftBarrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
-            leftBarrel.position.set(-0.5, 1.5, -1);
-            group.add(leftBarrel);
-            
-            const rightBarrel = new THREE.Mesh(barrelGeometry, barrelMaterial);
-            rightBarrel.position.set(0.5, 1.5, -1);
-            group.add(rightBarrel);
-            
-            return group;
-        }
-
-        function createGuard() {
-            const group = new THREE.Group();
-            
-            // Guard body
-            const bodyGeometry = new THREE.CapsuleGeometry(1, 3, 4, 8);
-            const bodyMaterial = new THREE.MeshStandardMaterial({
-                color: 0x334455
-            });
-            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            group.add(body);
-            
-            // Guard head
-            const headGeometry = new THREE.SphereGeometry(1);
-            const headMaterial = new THREE.MeshStandardMaterial({
-                color: 0x223344
-            });
-            const head = new THREE.Mesh(headGeometry, headMaterial);
-            head.position.y = 2.5;
-            group.add(head);
-            
-            // Weapon
-            const weaponGeometry = new THREE.BoxGeometry(2, 0.5, 0.5);
-            const weaponMaterial = new THREE.MeshStandardMaterial({
-                color: 0x666677
-            });
-            const weapon = new THREE.Mesh(weaponGeometry, weaponMaterial);
-            weapon.position.set(1, 1, 0);
-            group.add(weapon);
-            
-            return group;
-        }
-
         function createPickups() {
             const pickupTypes = ['health', 'energy', 'ammo', 'score'];
             
@@ -1517,24 +1584,20 @@
 
         function createPickup(type) {
             const group = new THREE.Group();
-            let color, icon;
+            let color;
             
             switch(type) {
                 case 'health':
                     color = 0xff0000;
-                    icon = '❤️';
                     break;
                 case 'energy':
                     color = 0x00ffff;
-                    icon = '⚡';
                     break;
                 case 'ammo':
                     color = 0xffff00;
-                    icon = '🔋';
                     break;
                 case 'score':
                     color = 0x00ff00;
-                    icon = '💎';
                     break;
             }
             
@@ -1544,8 +1607,7 @@
                 color: color,
                 transparent: true,
                 opacity: 0.8,
-                emissive: color,
-                emissiveIntensity: 0.5
+                emissive: color
             });
             const crystal = new THREE.Mesh(geometry, material);
             group.add(crystal);
@@ -1558,7 +1620,7 @@
             const ambientLight = new THREE.AmbientLight(0x222233, 0.3);
             game.scene.add(ambientLight);
             
-            // Main directional light (moonlight)
+            // Main directional light
             const directionalLight = new THREE.DirectionalLight(0x4466ff, 0.5);
             directionalLight.position.set(50, 100, 50);
             directionalLight.castShadow = true;
@@ -1587,75 +1649,109 @@
         }
 
         function setupPostProcessing() {
-            game.composer = new THREE.EffectComposer(game.renderer);
-            
-            // Render pass
-            const renderPass = new THREE.RenderPass(game.scene, game.camera);
-            game.composer.addPass(renderPass);
-            
-            // Bloom pass
-            const bloomPass = new THREE.UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight),
-                CONFIG.BLOOM_STRENGTH,
-                CONFIG.BLOOM_RADIUS,
-                CONFIG.BLOOM_THRESHOLD
-            );
-            game.composer.addPass(bloomPass);
-            
-            // Copy pass
-            const copyPass = new THREE.ShaderPass(THREE.CopyShader);
-            copyPass.renderToScreen = true;
-            game.composer.addPass(copyPass);
+            try {
+                game.composer = new THREE.EffectComposer(game.renderer);
+                
+                // Render pass
+                const renderPass = new THREE.RenderPass(game.scene, game.camera);
+                game.composer.addPass(renderPass);
+                
+                // Bloom pass
+                const bloomPass = new THREE.UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    CONFIG.BLOOM_STRENGTH,
+                    CONFIG.BLOOM_RADIUS,
+                    CONFIG.BLOOM_THRESHOLD
+                );
+                game.composer.addPass(bloomPass);
+                
+                // Copy pass
+                const copyPass = new THREE.ShaderPass(THREE.CopyShader);
+                copyPass.renderToScreen = true;
+                game.composer.addPass(copyPass);
+            } catch (error) {
+                console.warn('Post-processing not available, using standard renderer');
+                game.composer = null;
+            }
         }
 
         function setupEventListeners() {
-            // Keyboard events
+            // Keyboard events using custom controls
             document.addEventListener('keydown', (e) => {
-                game.keys[e.code] = true;
-                
-                if (e.code === 'Escape') {
-                    togglePause();
+                const action = keyBindings[e.code];
+                if (action) {
+                    game.keys[action] = true;
+                    
+                    // Handle special actions
+                    switch(action) {
+                        case 'pause':
+                            togglePause();
+                            break;
+                        case 'help':
+                            toggleControlsHelp();
+                            break;
+                        case 'settings':
+                            openSettings();
+                            break;
+                        case 'weapon1':
+                            switchWeapon('plasma');
+                            break;
+                        case 'weapon2':
+                            switchWeapon('railgun');
+                            break;
+                        case 'reload':
+                            reloadWeapon();
+                            break;
+                        case 'ability1':
+                            activateAbility('dash');
+                            break;
+                        case 'ability2':
+                            activateAbility('scan');
+                            break;
+                        case 'ability3':
+                            activateAbility('timeWarp');
+                            break;
+                    }
                 }
                 
-                if (e.code === 'KeyQ') {
-                    activateAbility('dash');
-                }
-                
-                if (e.code === 'KeyE') {
-                    activateAbility('scan');
-                }
-                
-                if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
-                    activateAbility('timeWarp');
-                }
-                
-                if (e.code === 'KeyR') {
-                    reloadWeapon();
-                }
-                
-                if (e.code === 'Digit1') {
-                    switchWeapon('plasma');
-                }
-                
-                if (e.code === 'Digit2') {
-                    switchWeapon('railgun');
+                // Prevent default for game keys
+                if (action && game.state === 'playing') {
+                    e.preventDefault();
                 }
             });
             
             document.addEventListener('keyup', (e) => {
-                game.keys[e.code] = false;
+                const action = keyBindings[e.code];
+                if (action) {
+                    game.keys[action] = false;
+                }
             });
             
             // Mouse events
             document.addEventListener('mousedown', (e) => {
-                game.mouse.buttons[e.button] = true;
-                if (e.button === 0 && game.state === 'playing') { // Left click
-                    shoot();
+                const mouseCode = `Mouse${e.button}`;
+                const action = keyBindings[mouseCode];
+                
+                if (action) {
+                    game.mouse.buttons[action] = true;
+                    
+                    if (action === 'shoot' && game.state === 'playing') {
+                        shoot();
+                    }
+                }
+                
+                if (game.state === 'playing') {
+                    e.preventDefault();
                 }
             });
             
             document.addEventListener('mouseup', (e) => {
-                game.mouse.buttons[e.button] = false;
+                const mouseCode = `Mouse${e.button}`;
+                const action = keyBindings[mouseCode];
+                
+                if (action) {
+                    game.mouse.buttons[action] = false;
+                }
             });
             
             document.addEventListener('mousemove', (e) => {
@@ -1679,7 +1775,9 @@
                 game.camera.aspect = window.innerWidth / window.innerHeight;
                 game.camera.updateProjectionMatrix();
                 game.renderer.setSize(window.innerWidth, window.innerHeight);
-                game.composer.setSize(window.innerWidth, window.innerHeight);
+                if (game.composer) {
+                    game.composer.setSize(window.innerWidth, window.innerHeight);
+                }
             });
             
             // Pause menu buttons
@@ -1687,16 +1785,19 @@
                 togglePause();
             });
             
+            document.getElementById('settingsButton').addEventListener('click', () => {
+                document.getElementById('pauseMenu').style.display = 'none';
+                document.getElementById('settingsPanel').style.display = 'flex';
+            });
+            
             document.getElementById('restartButton').addEventListener('click', () => {
                 location.reload();
             });
             
-            document.getElementById('settingsButton').addEventListener('click', () => {
-                showMessage('SETTINGS', 'Neural interface settings coming in next update');
-            });
-            
             document.getElementById('quitButton').addEventListener('click', () => {
-                window.close();
+                if (confirm('Are you sure you want to quit?')) {
+                    window.close();
+                }
             });
         }
 
@@ -1718,13 +1819,13 @@
         }
 
         function updatePlayer(deltaTime) {
-            // Calculate movement direction
+            // Calculate movement direction using custom controls
             const moveDirection = new THREE.Vector3(0, 0, 0);
             
-            if (game.keys['KeyW']) moveDirection.z -= 1;
-            if (game.keys['KeyS']) moveDirection.z += 1;
-            if (game.keys['KeyA']) moveDirection.x -= 1;
-            if (game.keys['KeyD']) moveDirection.x += 1;
+            if (game.keys.forward) moveDirection.z -= 1;
+            if (game.keys.backward) moveDirection.z += 1;
+            if (game.keys.left) moveDirection.x -= 1;
+            if (game.keys.right) moveDirection.x += 1;
             
             // Normalize movement
             if (moveDirection.length() > 0) {
@@ -1743,7 +1844,7 @@
                 
                 // Calculate speed
                 let speed = CONFIG.PLAYER_SPEED;
-                if (game.keys['ShiftLeft'] || game.keys['ShiftRight']) {
+                if (game.keys.sprint) {
                     speed *= CONFIG.PLAYER_SPRINT_MULTIPLIER;
                 }
                 
@@ -1760,8 +1861,8 @@
                 game.player.velocity.z *= 0.9;
             }
             
-            // Jump
-            if (game.keys['Space'] && game.player.velocity.y === 0) {
+            // Jump using custom control
+            if (game.keys.jump && game.player.velocity.y === 0) {
                 game.player.velocity.y = CONFIG.PLAYER_JUMP_FORCE;
             }
             
@@ -1823,11 +1924,6 @@
                         const direction = enemy.target.clone().sub(enemy.mesh.position).normalize();
                         enemy.mesh.position.add(direction.multiplyScalar(2 * deltaTime));
                         
-                        // Face movement direction
-                        if (direction.length() > 0) {
-                            enemy.mesh.lookAt(enemy.mesh.position.clone().add(direction));
-                        }
-                        
                         // Switch to attack if player is close
                         if (distanceToPlayer < 30) {
                             enemy.state = 'attack';
@@ -1845,23 +1941,11 @@
                             enemy.lastShot = now;
                         }
                         
-                        // Retreat if too close
-                        if (distanceToPlayer < 10) {
-                            const retreatDirection = enemy.mesh.position.clone().sub(game.player.position).normalize();
-                            enemy.mesh.position.add(retreatDirection.multiplyScalar(5 * deltaTime));
-                        }
-                        
                         // Return to patrol if player is far
                         if (distanceToPlayer > 40) {
                             enemy.state = 'patrol';
                         }
                         break;
-                }
-                
-                // Enemy shooting logic
-                if (now - enemy.lastShot > 2000 && Math.random() < 0.01) {
-                    shootEnemy(enemy);
-                    enemy.lastShot = now;
                 }
             }
         }
@@ -1891,29 +1975,6 @@
             
             game.scene.add(projectile);
             game.world.particles.push(projectile);
-            
-            // Muzzle flash
-            createMuzzleFlash(enemy.mesh.position);
-        }
-
-        function createMuzzleFlash(position) {
-            const flashGeometry = new THREE.SphereGeometry(0.5);
-            const flashMaterial = new THREE.MeshBasicMaterial({
-                color: 0xffff00,
-                transparent: true,
-                opacity: 0.8
-            });
-            const flash = new THREE.Mesh(flashGeometry, flashMaterial);
-            flash.position.copy(position);
-            flash.position.y += 1;
-            
-            flash.userData = {
-                lifetime: 0.1,
-                maxLifetime: 0.1
-            };
-            
-            game.scene.add(flash);
-            game.world.particles.push(flash);
         }
 
         function updateParticles(deltaTime) {
@@ -1921,7 +1982,7 @@
                 const particle = game.world.particles[i];
                 
                 if (particle.userData.lifetime !== undefined) {
-                    // Timed particle (muzzle flash, etc.)
+                    // Timed particle
                     particle.userData.lifetime -= deltaTime;
                     if (particle.userData.lifetime <= 0) {
                         game.scene.remove(particle);
@@ -1985,7 +2046,6 @@
                     showMessage('ENERGY RESTORED', '+25 cybernetic energy');
                     break;
                 case 'ammo':
-                    // Add ammo (infinite ammo in this version)
                     showMessage('AMMO CACHE FOUND', 'Weapons recharged');
                     break;
                 case 'score':
@@ -1995,49 +2055,12 @@
                     break;
             }
             
-            // Visual effect
-            createPickupEffect(pickup.mesh.position, pickup.type);
-            
             // Remove pickup
             game.scene.remove(pickup.mesh);
             game.world.pickups.splice(index, 1);
         }
 
-        function createPickupEffect(position, type) {
-            // Create particle burst
-            const particleCount = 20;
-            const color = type === 'health' ? 0xff0000 :
-                         type === 'energy' ? 0x00ffff :
-                         type === 'ammo' ? 0xffff00 : 0x00ff00;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const geometry = new THREE.SphereGeometry(0.2);
-                const material = new THREE.MeshBasicMaterial({ color: color });
-                const particle = new THREE.Mesh(geometry, material);
-                
-                particle.position.copy(position);
-                
-                // Random velocity
-                const velocity = new THREE.Vector3(
-                    (Math.random() - 0.5) * 10,
-                    Math.random() * 10,
-                    (Math.random() - 0.5) * 10
-                );
-                
-                particle.userData = {
-                    velocity: velocity,
-                    lifetime: 1,
-                    maxLifetime: 1
-                };
-                
-                game.scene.add(particle);
-                game.world.particles.push(particle);
-            }
-        }
-
         function updateAbilities(deltaTime) {
-            const now = Date.now();
-            
             for (const [name, ability] of Object.entries(game.player.abilities)) {
                 if (ability.cooldown > 0) {
                     ability.cooldown -= deltaTime;
@@ -2086,18 +2109,6 @@
         function deactivateAbility(name) {
             const ability = game.player.abilities[name];
             ability.active = false;
-            
-            switch(name) {
-                case 'dash':
-                    showMessage('CYBER DASH DEPLETED', 'Systems recharging');
-                    break;
-                case 'scan':
-                    showMessage('SCAN CONCLUDED', 'Enemy positions lost');
-                    break;
-                case 'timeWarp':
-                    showMessage('TIME STREAM NORMALIZED', 'Reality stabilized');
-                    break;
-            }
         }
 
         function shoot() {
@@ -2141,13 +2152,6 @@
             game.scene.add(projectile);
             game.world.particles.push(projectile);
             
-            // Muzzle flash
-            createMuzzleFlash(game.camera.position);
-            
-            // Recoil
-            game.camera.rotation.x += (Math.random() - 0.5) * 0.01;
-            game.camera.rotation.y += (Math.random() - 0.5) * 0.01;
-            
             // Check hits
             checkHit(projectile);
         }
@@ -2160,14 +2164,11 @@
                 
                 // Simple sphere collision
                 const distance = projectile.position.distanceTo(enemy.mesh.position);
-                const hitRadius = 3; // Approximate enemy size
+                const hitRadius = 3;
                 
                 if (distance < hitRadius) {
                     // Hit enemy
                     enemy.health -= projectile.userData.damage;
-                    
-                    // Create hit effect
-                    createHitEffect(enemy.mesh.position);
                     
                     // Remove projectile
                     game.scene.remove(projectile);
@@ -2186,37 +2187,6 @@
             }
         }
 
-        function createHitEffect(position) {
-            // Blood/energy splatter
-            const particleCount = 10;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const geometry = new THREE.SphereGeometry(0.3);
-                const material = new THREE.MeshBasicMaterial({
-                    color: 0xff3300
-                });
-                const particle = new THREE.Mesh(geometry, material);
-                
-                particle.position.copy(position);
-                
-                // Random velocity
-                const velocity = new THREE.Vector3(
-                    (Math.random() - 0.5) * 5,
-                    Math.random() * 5,
-                    (Math.random() - 0.5) * 5
-                );
-                
-                particle.userData = {
-                    velocity: velocity,
-                    lifetime: 0.5,
-                    maxLifetime: 0.5
-                };
-                
-                game.scene.add(particle);
-                game.world.particles.push(particle);
-            }
-        }
-
         function enemyKilled(enemy, index) {
             // Add score
             game.player.score += 100;
@@ -2228,9 +2198,6 @@
             // Show message
             showMessage('TARGET ELIMINATED', '+100 credits');
             
-            // Death effect
-            createDeathEffect(enemy.mesh.position);
-            
             // Remove enemy
             game.scene.remove(enemy.mesh);
             game.world.enemies.splice(index, 1);
@@ -2239,33 +2206,9 @@
             checkObjective();
         }
 
-        function createDeathEffect(position) {
-            // Explosion effect
-            const geometry = new THREE.SphereGeometry(3);
-            const material = new THREE.MeshBasicMaterial({
-                color: 0xff3300,
-                transparent: true,
-                opacity: 0.5
-            });
-            const explosion = new THREE.Mesh(geometry, material);
-            explosion.position.copy(position);
-            
-            explosion.userData = {
-                lifetime: 0.3,
-                maxLifetime: 0.3,
-                scale: 1
-            };
-            
-            game.scene.add(explosion);
-            game.world.particles.push(explosion);
-        }
-
         function takeDamage(amount) {
             game.player.health -= amount;
             updateHealthBar();
-            
-            // Damage indicator
-            game.ui.damageFlash = 1;
             
             // Check death
             if (game.player.health <= 0) {
@@ -2301,7 +2244,6 @@
         }
 
         function reloadWeapon() {
-            // In this game, weapons use energy instead of ammo
             if (game.player.energy < CONFIG.PLAYER_ENERGY) {
                 showMessage('ENERGY TRANSFER', 'Cybernetic systems recharged');
                 game.player.energy = CONFIG.PLAYER_ENERGY;
@@ -2344,8 +2286,6 @@
             const weapon = CONFIG.WEAPONS[game.player.weapon];
             document.getElementById('weaponName').textContent = weapon.name;
             document.getElementById('ammoType').textContent = weapon.ammoType;
-            
-            // Infinite ammo in this version
             document.getElementById('ammoCount').textContent = '∞/∞';
         }
 
@@ -2378,18 +2318,6 @@
             }, 3000);
         }
 
-        function showTutorialHint() {
-            if (!game.ui.tutorialShown) {
-                const hint = document.getElementById('tutorialHint');
-                hint.classList.add('show');
-                
-                setTimeout(() => {
-                    hint.classList.remove('show');
-                    game.ui.tutorialShown = true;
-                }, 5000);
-            }
-        }
-
         function togglePause() {
             if (game.state === 'playing') {
                 game.state = 'paused';
@@ -2398,7 +2326,22 @@
             } else if (game.state === 'paused') {
                 game.state = 'playing';
                 document.getElementById('pauseMenu').style.display = 'none';
+                document.getElementById('settingsPanel').style.display = 'none';
             }
+        }
+
+        function toggleControlsHelp() {
+            game.ui.controlsVisible = !game.ui.controlsVisible;
+            document.getElementById('controlsHelp').classList.toggle('show', game.ui.controlsVisible);
+        }
+
+        function openSettings() {
+            if (game.state === 'playing') {
+                game.state = 'paused';
+                document.exitPointerLock();
+            }
+            document.getElementById('pauseMenu').style.display = 'none';
+            document.getElementById('settingsPanel').style.display = 'flex';
         }
 
         function gameOver() {
@@ -2432,20 +2375,6 @@
                     updateTime();
                     game.ui.lastMessageTime = Date.now();
                 }
-                
-                // Update damage indicator
-                if (game.ui.damageFlash > 0) {
-                    document.getElementById('damageIndicator').style.opacity = game.ui.damageFlash;
-                    document.getElementById('damageIndicator').style.background = 
-                        `radial-gradient(circle, rgba(255,0,0,${game.ui.damageFlash}) 0%, transparent 70%)`;
-                    game.ui.damageFlash -= deltaTime * 2;
-                }
-                
-                // Update objective marker
-                const distanceToTower = game.player.position.distanceTo(new THREE.Vector3(0, 150, -CONFIG.OBJECTIVE_DISTANCE));
-                document.getElementById('objectiveMarker').style.display = distanceToTower > 100 ? 'block' : 'none';
-                document.getElementById('objectiveMarker').querySelector('.objective-distance').textContent = 
-                    Math.round(distanceToTower) + 'm';
             }
             
             // Render
@@ -2489,9 +2418,9 @@
             }
         }, 500);
 
-        // Start the game when page loads
+        // Initialize when page loads
         window.addEventListener('load', () => {
-            // Already started by loading simulation
+            // Loading already simulated
         });
     </script>
 </body>
