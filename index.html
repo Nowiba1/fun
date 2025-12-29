@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantum Link | Cooperative 3D Puzzle</title>
+    <title>Funny Bone Runner - Wacky 3D Parkour</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -14,9 +14,9 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0c0c2e 0%, #1a1a3e 100%);
-            color: #e0e0ff;
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+            color: #333;
             overflow: hidden;
             height: 100vh;
             user-select: none;
@@ -47,17 +47,17 @@
 
         .ui-panel {
             position: absolute;
-            background: rgba(10, 10, 40, 0.85);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            border: 2px solid rgba(100, 150, 255, 0.3);
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            border-radius: 20px;
+            border: 5px solid #ffd166;
+            padding: 25px;
             pointer-events: all;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
 
         #main-menu {
-            width: 500px;
+            width: 600px;
             max-width: 90vw;
             top: 50%;
             left: 50%;
@@ -69,23 +69,16 @@
             width: 300px;
             top: 20px;
             left: 20px;
-            padding: 15px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
         }
 
-        #player2-hud {
+        #multiplayer-hud {
             width: 300px;
             top: 20px;
             right: 20px;
-            padding: 15px;
-            text-align: right;
-        }
-
-        #instructions {
-            width: 400px;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 15px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
         }
 
         .hidden {
@@ -93,177 +86,188 @@
         }
 
         h1 {
-            font-size: 3rem;
+            font-size: 4rem;
             margin-bottom: 10px;
-            background: linear-gradient(90deg, #6ee7ff, #5a8cff);
+            background: linear-gradient(90deg, #ff6b6b, #ffd166, #4ecdc4, #1a936f);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
-            text-shadow: 0 0 15px rgba(106, 231, 255, 0.3);
+            text-shadow: 3px 3px 0 #ffd166;
+            letter-spacing: 2px;
         }
 
         h2 {
-            font-size: 1.5rem;
+            font-size: 2rem;
             margin-bottom: 15px;
-            color: #a0c8ff;
-            border-bottom: 1px solid rgba(100, 150, 255, 0.3);
-            padding-bottom: 5px;
+            color: #ff6b6b;
         }
 
         h3 {
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            color: #88ccff;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #1a936f;
         }
 
         .subtitle {
-            font-size: 1.1rem;
+            font-size: 1.3rem;
             margin-bottom: 25px;
-            color: #b0d0ff;
+            color: #555;
             line-height: 1.5;
         }
 
         .button {
             display: inline-block;
-            background: linear-gradient(135deg, #3a6fff, #5a8cff);
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
             color: white;
             border: none;
-            border-radius: 8px;
-            padding: 14px 28px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            border-radius: 50px;
+            padding: 18px 35px;
+            font-size: 1.3rem;
+            font-weight: bold;
             cursor: pointer;
-            margin: 10px;
+            margin: 15px;
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(58, 111, 255, 0.3);
+            box-shadow: 0 6px 0 #cc5555;
+            font-family: inherit;
         }
 
         .button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(58, 111, 255, 0.5);
-            background: linear-gradient(135deg, #4a7fff, #6a9cff);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 0 #cc5555;
         }
 
         .button:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 10px rgba(58, 111, 255, 0.3);
+            transform: translateY(2px);
+            box-shadow: 0 3px 0 #cc5555;
         }
 
-        .button.secondary {
-            background: linear-gradient(135deg, #6c63ff, #8a84ff);
+        .button.blue {
+            background: linear-gradient(135deg, #4ecdc4, #6ee7e7);
+            box-shadow: 0 6px 0 #3bbbb3;
         }
 
-        .button.secondary:hover {
-            background: linear-gradient(135deg, #7c73ff, #9a94ff);
+        .button.blue:hover {
+            box-shadow: 0 10px 0 #3bbbb3;
         }
 
-        .player-indicator {
+        .button.green {
+            background: linear-gradient(135deg, #1a936f, #3bb992);
+            box-shadow: 0 6px 0 #15805f;
+        }
+
+        .button.green:hover {
+            box-shadow: 0 10px 0 #15805f;
+        }
+
+        .stats-container {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 15px;
+            border: 3px dashed #ffd166;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .powerup-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .powerup-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .powerup-icon.spring {
+            background: linear-gradient(135deg, #ffd166, #ffb347);
+        }
+
+        .powerup-icon.magnet {
+            background: linear-gradient(135deg, #4ecdc4, #44aadd);
+        }
+
+        .powerup-icon.giant {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+        }
+
+        .powerup-icon.slowmo {
+            background: linear-gradient(135deg, #1a936f, #3bb992);
+        }
+
+        .combo-display {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-align: center;
+            margin: 15px 0;
+            text-shadow: 2px 2px 0 #ffd166;
+            animation: pulse 1s infinite;
+        }
+
+        .player-info {
             display: flex;
             align-items: center;
             margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            border: 3px solid;
+        }
+
+        .player1 .player-info {
+            border-color: #ff6b6b;
+        }
+
+        .player2 .player-info {
+            border-color: #4ecdc4;
         }
 
         .player-icon {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 12px;
-            font-size: 1.2rem;
+            margin-right: 15px;
+            font-size: 1.8rem;
             font-weight: bold;
+            color: white;
         }
 
         .player1 .player-icon {
-            background: linear-gradient(135deg, #ff5a5a, #ff7a7a);
-            color: white;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
         }
 
         .player2 .player-icon {
-            background: linear-gradient(135deg, #5a8cff, #7aacff);
-            color: white;
-        }
-
-        .player-info {
-            flex-grow: 1;
-        }
-
-        .player-name {
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        .player-ability {
-            font-size: 0.9rem;
-            color: #a0c8ff;
-            margin-top: 3px;
-        }
-
-        .puzzle-info {
-            background: rgba(20, 30, 60, 0.7);
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 10px;
-            border-left: 4px solid #5a8cff;
-        }
-
-        .ability-icon {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            background: rgba(100, 150, 255, 0.2);
-            border-radius: 4px;
-            text-align: center;
-            line-height: 24px;
-            margin-right: 8px;
-        }
-
-        .controls-list {
-            list-style: none;
-            margin-top: 10px;
-        }
-
-        .controls-list li {
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-        }
-
-        .key {
-            display: inline-block;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 4px;
-            padding: 3px 8px;
-            margin-right: 10px;
-            min-width: 30px;
-            text-align: center;
-            font-family: monospace;
-            font-weight: bold;
-        }
-
-        .status {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            margin-top: 5px;
-        }
-
-        .connected {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
-            border: 1px solid rgba(76, 175, 80, 0.5);
-        }
-
-        .disconnected {
-            background: rgba(244, 67, 54, 0.2);
-            color: #f44336;
-            border: 1px solid rgba(244, 67, 54, 0.5);
+            background: linear-gradient(135deg, #4ecdc4, #6ee7e7);
         }
 
         .loading-screen {
@@ -272,7 +276,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #0c0c2e;
+            background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -281,59 +285,136 @@
         }
 
         .loading-bar {
-            width: 300px;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            margin-top: 20px;
+            width: 400px;
+            max-width: 80vw;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            margin-top: 30px;
             overflow: hidden;
+            border: 3px solid white;
         }
 
         .loading-progress {
             height: 100%;
-            background: linear-gradient(90deg, #3a6fff, #5a8cff);
-            border-radius: 5px;
+            background: linear-gradient(90deg, #ffd166, #ffb347);
+            border-radius: 8px;
             width: 0%;
             transition: width 0.3s ease;
         }
 
-        #connection-status {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            z-index: 11;
+        .loading-dots {
+            font-size: 2rem;
+            margin-top: 20px;
+            color: white;
         }
 
-        .pulse {
-            animation: pulse 2s infinite;
+        .funny-tip {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            color: #ff6b6b;
+            border: 3px solid #ffd166;
+            max-width: 80%;
+            text-align: center;
+            animation: bounce 2s infinite;
+        }
+
+        #combo-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-weight: bold;
+            color: #ffd166;
+            text-shadow: 5px 5px 0 #ff6b6b;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #rage-meter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid white;
+        }
+
+        #rage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd166, #ff6b6b, #ff0000);
+            width: 0%;
+            transition: width 0.5s ease;
         }
 
         @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+
+        .character-preview {
+            width: 150px;
+            height: 150px;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 5px dashed #ffd166;
+            animation: wiggle 3s infinite;
         }
 
         @media (max-width: 768px) {
-            #game-hud, #player2-hud {
-                width: 250px;
-                padding: 10px;
-            }
-            
-            #instructions {
-                width: 90%;
-                font-size: 0.9rem;
-            }
-            
             h1 {
-                font-size: 2.2rem;
+                font-size: 2.5rem;
+            }
+            
+            .button {
+                padding: 15px 25px;
+                font-size: 1.1rem;
+                margin: 10px;
+            }
+            
+            #game-hud, #multiplayer-hud {
+                width: 250px;
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 1.8rem;
             }
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="game-container">
@@ -342,348 +423,515 @@
         <div id="ui-overlay">
             <!-- Loading Screen -->
             <div id="loading-screen" class="loading-screen">
-                <h1>QUANTUM LINK</h1>
-                <div class="subtitle">Loading cooperative puzzle experience...</div>
+                <h1>FUNNY BONE RUNNER</h1>
+                <div class="subtitle" style="color: white;">Loading wacky physics and hilarious fails...</div>
                 <div class="loading-bar">
                     <div id="loading-progress" class="loading-progress"></div>
                 </div>
+                <div class="loading-dots" id="loading-dots">...</div>
+                <div class="funny-tip" id="loading-tip">Tip: The funnier you fail, the more points you get!</div>
             </div>
             
             <!-- Main Menu -->
             <div id="main-menu" class="ui-panel">
-                <h1>QUANTUM LINK</h1>
-                <div class="subtitle">A cooperative 3D puzzle adventure for 2 players</div>
+                <h1>FUNNY BONE RUNNER</h1>
+                <div class="subtitle">Run, jump, crash, and laugh in this wacky 3D parkour madness!</div>
+                
+                <div class="character-preview">
+                    <i class="fas fa-running" style="font-size: 4rem; color: #ff6b6b;"></i>
+                </div>
                 
                 <div style="margin: 30px 0;">
-                    <div class="player-indicator player1">
-                        <div class="player-icon">P1</div>
-                        <div class="player-info">
-                            <div class="player-name">Player 1: The Manipulator</div>
-                            <div class="player-ability">Ability: Move and rotate objects</div>
+                    <div class="stats-container">
+                        <div class="stat">
+                            <div class="stat-value" id="high-score">0</div>
+                            <div class="stat-label">High Score</div>
                         </div>
-                    </div>
-                    
-                    <div class="player-indicator player2">
-                        <div class="player-icon">P2</div>
-                        <div class="player-info">
-                            <div class="player-name">Player 2: The Activator</div>
-                            <div class="player-ability">Ability: Activate switches and energy fields</div>
+                        <div class="stat">
+                            <div class="stat-value" id="total-crashes">0</div>
+                            <div class="stat-label">Total Crashes</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value" id="funny-moments">0</div>
+                            <div class="stat-label">Funny Moments</div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="puzzle-info">
-                    <p><i class="fas fa-puzzle-piece ability-icon"></i> Work together to solve interconnected puzzles</p>
-                    <p><i class="fas fa-users ability-icon"></i> Communicate and coordinate your unique abilities</p>
-                    <p><i class="fas fa-bolt ability-icon"></i> Combine powers to overcome obstacles</p>
-                </div>
-                
-                <div style="margin-top: 30px;">
-                    <button id="start-host-btn" class="button">
-                        <i class="fas fa-network-wired"></i> Host Game
+                <div style="margin-top: 20px;">
+                    <button id="singleplayer-btn" class="button">
+                        <i class="fas fa-running"></i> Single Player Madness
                     </button>
-                    <button id="start-join-btn" class="button secondary">
-                        <i class="fas fa-plug"></i> Join Game
+                    <button id="multiplayer-btn" class="button blue">
+                        <i class="fas fa-users"></i> Local Multiplayer Race
                     </button>
-                    <button id="how-to-play-btn" class="button secondary">
+                    <button id="how-to-btn" class="button green">
                         <i class="fas fa-question-circle"></i> How to Play
                     </button>
                 </div>
+                
+                <div class="funny-tip" style="position: relative; bottom: 0; margin-top: 20px;">
+                    <i class="fas fa-lightbulb"></i> Pro Tip: Crash into things for bonus comedy points!
+                </div>
             </div>
             
-            <!-- Game HUD - Player 1 -->
+            <!-- Game HUD -->
             <div id="game-hud" class="ui-panel hidden">
-                <div class="player-indicator player1">
+                <h3>FUNNY METER</h3>
+                
+                <div class="stats-container">
+                    <div class="stat">
+                        <div class="stat-value" id="score">0</div>
+                        <div class="stat-label">Score</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="distance">0m</div>
+                        <div class="stat-label">Distance</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="multiplier">1x</div>
+                        <div class="stat-label">Multiplier</div>
+                    </div>
+                </div>
+                
+                <div class="combo-display" id="combo-display"></div>
+                
+                <h3>ACTIVE POWER-UPS</h3>
+                <div class="powerup-display" id="powerup-display">
+                    <!-- Power-ups will appear here -->
+                </div>
+                
+                <h3>CONTROLS</h3>
+                <div style="font-size: 1rem; line-height: 1.5;">
+                    <div><span style="font-weight: bold; color: #ff6b6b;">← → / A D</span> Move Left/Right</div>
+                    <div><span style="font-weight: bold; color: #ff6b6b;">Spacebar</span> Jump / Double Jump</div>
+                    <div><span style="font-weight: bold; color: #ff6b6b;">↓ / S</span> Slide / Crouch</div>
+                    <div><span style="font-weight: bold; color: #ff6b6b;">R</span> Rage Quit (Respawn)</div>
+                </div>
+            </div>
+            
+            <!-- Multiplayer HUD -->
+            <div id="multiplayer-hud" class="ui-panel hidden">
+                <h3>RACE MODE</h3>
+                
+                <div class="player-info player1">
                     <div class="player-icon">P1</div>
-                    <div class="player-info">
-                        <div class="player-name">MANIPULATOR</div>
-                        <div class="player-ability">Move & Rotate Objects</div>
+                    <div>
+                        <div style="font-weight: bold; font-size: 1.2rem;">Bouncy Bob</div>
+                        <div id="p1-distance" style="color: #ff6b6b; font-weight: bold;">Distance: 0m</div>
+                        <div id="p1-powerups" style="font-size: 0.9rem; color: #666;">No power-ups</div>
                     </div>
                 </div>
                 
-                <div style="margin-top: 15px;">
-                    <h3>Current Objective</h3>
-                    <div id="p1-objective">Align the energy conduits to power the gateway.</div>
-                </div>
-                
-                <div style="margin-top: 15px;">
-                    <h3>Controls</h3>
-                    <ul class="controls-list">
-                        <li><span class="key">WASD</span> Move</li>
-                        <li><span class="key">Mouse</span> Look Around</li>
-                        <li><span class="key">E</span> Grab Object</li>
-                        <li><span class="key">R</span> Rotate Object</li>
-                        <li><span class="key">Shift</span> Sprint</li>
-                    </ul>
-                </div>
-                
-                <div style="margin-top: 15px;">
-                    <div id="p1-status" class="status connected">Connected</div>
-                </div>
-            </div>
-            
-            <!-- Game HUD - Player 2 -->
-            <div id="player2-hud" class="ui-panel hidden">
-                <div class="player-indicator player2">
+                <div class="player-info player2">
                     <div class="player-icon">P2</div>
-                    <div class="player-info">
-                        <div class="player-name">ACTIVATOR</div>
-                        <div class="player-ability">Activate Energy Fields</div>
+                    <div>
+                        <div style="font-weight: bold; font-size: 1.2rem;">Stumble Steve</div>
+                        <div id="p2-distance" style="color: #4ecdc4; font-weight: bold;">Distance: 0m</div>
+                        <div id="p2-powerups" style="font-size: 0.9rem; color: #666;">No power-ups</div>
                     </div>
                 </div>
                 
-                <div style="margin-top: 15px;">
-                    <h3>Current Objective</h3>
-                    <div id="p2-objective">Activate the switches to redirect the energy flow.</div>
-                </div>
-                
-                <div style="margin-top: 15px;">
-                    <h3>Controls</h3>
-                    <ul class="controls-list">
-                        <li><span class="key">↑↓←→</span> Move</li>
-                        <li><span class="key">Mouse</span> Look Around</li>
-                        <li><span class="key">Enter</span> Activate Switch</li>
-                        <li><span class="key">Space</span> Jump</li>
-                        <li><span class="key">Ctrl</span> Crouch</li>
-                    </ul>
-                </div>
-                
-                <div style="margin-top: 15px;">
-                    <div id="p2-status" class="status connected">Connected</div>
+                <div style="text-align: center; margin-top: 15px; padding: 10px; background: #ffd166; border-radius: 10px;">
+                    <div style="font-weight: bold; color: #333;">First to 500m WINS!</div>
+                    <div id="race-timer" style="font-size: 1.5rem; font-weight: bold; color: #ff6b6b;">--:--</div>
                 </div>
             </div>
             
-            <!-- Instructions Panel -->
-            <div id="instructions" class="ui-panel hidden">
-                <h3><i class="fas fa-lightbulb"></i> Current Puzzle</h3>
-                <div id="puzzle-instruction">Both players must work together. The Manipulator moves the energy blocks into position while the Activator powers the transfer conduits. Communication is key!</div>
+            <!-- Combo Popup -->
+            <div id="combo-popup"></div>
+            
+            <!-- Rage Meter -->
+            <div id="rage-meter" class="hidden">
+                <div id="rage-fill"></div>
             </div>
         </div>
-        
-        <div id="connection-status" class="hidden"></div>
     </div>
 
-    <!-- Three.js and other libraries -->
+    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
     
     <script>
         // ============================================
-        // GAME STATE & CONFIGURATION
+        // GAME CONFIGURATION
         // ============================================
         const GameConfig = {
-            VERSION: "1.0.0",
-            DEBUG_MODE: false,
+            DEBUG: false,
+            VERSION: "2.0.0",
             
-            // Graphics settings
-            SHADOW_MAP_SIZE: 2048,
-            FOG_COLOR: 0x0a0a1a,
-            FOG_NEAR: 10,
-            FOG_FAR: 100,
+            // Camera settings - FIXED: Third-person auto-follow
+            CAMERA_DISTANCE: 10,
+            CAMERA_HEIGHT: 5,
+            CAMERA_SMOOTHNESS: 0.1,
             
             // Player settings
-            PLAYER_HEIGHT: 1.8,
-            PLAYER_RADIUS: 0.5,
-            PLAYER_SPEED: 5.0,
-            PLAYER_JUMP_FORCE: 8,
-            GRAVITY: 20,
+            PLAYER_SPEED: 15,
+            JUMP_FORCE: 10,
+            GRAVITY: 30,
+            PLAYER_SIZE: 1,
             
-            // Network settings
-            LOCAL_NETWORK_CHECK_INTERVAL: 2000,
-            DATA_SYNC_INTERVAL: 100,
+            // Game settings
+            LANE_COUNT: 5,
+            LANE_WIDTH: 3,
+            BASE_SPAWN_RATE: 0.5,
+            SPEED_INCREASE_RATE: 0.0001,
             
-            // Puzzle settings
-            PUZZLE_COUNT: 3,
-            OBJECT_HIGHLIGHT_COLOR: 0x44ff44
+            // Multiplayer
+            MAX_PLAYERS: 2,
+            RACE_DISTANCE: 500
         };
 
-        // Global state object
+        // ============================================
+        // GAME STATE
+        // ============================================
         const GameState = {
             // Game phase
-            phase: 'loading', // loading, menu, playing, completed
+            phase: 'loading',
+            gameMode: null, // 'single' or 'multi'
             
-            // Player information
-            playerId: null,
-            playerRole: null, // 'manipulator' or 'activator'
-            players: {},
+            // Player
+            player: {
+                position: new THREE.Vector3(0, 2, 0),
+                velocity: new THREE.Vector3(0, 0, 0),
+                lane: 2,
+                isJumping: false,
+                isSliding: false,
+                canDoubleJump: true,
+                score: 0,
+                distance: 0,
+                multiplier: 1,
+                combo: 0,
+                powerUps: [],
+                rage: 0,
+                mesh: null
+            },
             
-            // Network state
-            connectionType: null, // 'host' or 'client'
-            peerConnection: null,
-            dataChannel: null,
-            isConnected: false,
+            // Multiplayer
+            players: [],
             
-            // Game objects
+            // Game world
             scene: null,
             camera: null,
             renderer: null,
-            controls: null,
-            objects: {},
-            puzzles: [],
-            activePuzzle: 0,
-            
-            // Input state
-            keysPressed: {},
-            mouseMovement: { x: 0, y: 0 },
-            
-            // Physics
             clock: null,
             deltaTime: 0,
             
-            // UI elements
-            uiElements: {}
+            // Objects
+            platforms: [],
+            obstacles: [],
+            powerUps: [],
+            coins: [],
+            environment: [],
+            
+            // Game logic
+            gameSpeed: 15,
+            spawnTimer: 0,
+            obstacleTypes: [],
+            powerUpTypes: [],
+            
+            // UI references
+            ui: {},
+            
+            // Input
+            keys: {},
+            touch: { startX: 0, startY: 0 }
         };
 
         // ============================================
-        // ERROR HANDLING & DEBUG UTILITIES
+        // FUNNY OBSTACLE DESIGNS
         // ============================================
-        class GameError extends Error {
-            constructor(message, context = {}) {
-                super(message);
-                this.name = "GameError";
-                this.context = context;
-                this.timestamp = new Date().toISOString();
-                
-                // Log to console in debug mode
-                if (GameConfig.DEBUG_MODE) {
-                    console.error(`[GameError ${this.timestamp}] ${message}`, context);
-                }
-            }
-        }
-
-        const Debug = {
-            log: function(message, data = null) {
-                if (GameConfig.DEBUG_MODE) {
-                    const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-                    console.log(`[${timestamp}] ${message}`, data || '');
-                }
+        const FunnyObstacles = [
+            {
+                name: "Banana Peel",
+                width: 1.5,
+                height: 0.1,
+                depth: 1.5,
+                color: 0xFFFF00,
+                effect: "slip",
+                score: 100,
+                funnyFactor: 2
             },
-            
-            warn: function(message, data = null) {
-                const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-                console.warn(`[${timestamp}] ${message}`, data || '');
+            {
+                name: "Whoopee Cushion",
+                width: 1,
+                height: 0.5,
+                depth: 1,
+                color: 0xFF69B4,
+                effect: "jumpBoost",
+                score: 150,
+                funnyFactor: 3
             },
-            
-            error: function(message, data = null) {
-                const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
-                console.error(`[${timestamp}] ${message}`, data || '');
+            {
+                name: "Giant Rubber Chicken",
+                width: 2,
+                height: 3,
+                depth: 1,
+                color: 0xFF4500,
+                effect: "bounce",
+                score: 200,
+                funnyFactor: 4
+            },
+            {
+                name: "Slippery Ice Cube",
+                width: 2,
+                height: 0.5,
+                depth: 2,
+                color: 0xADD8E6,
+                effect: "ice",
+                score: 120,
+                funnyFactor: 2
+            },
+            {
+                name: "Springy Pogo Stick",
+                width: 0.5,
+                height: 3,
+                depth: 0.5,
+                color: 0x32CD32,
+                effect: "superJump",
+                score: 250,
+                funnyFactor: 3
             }
-        };
+        ];
 
         // ============================================
-        // INITIALIZATION & LOADING
+        // WACKY POWER-UPS
+        // ============================================
+        const PowerUps = [
+            {
+                name: "Spring Shoes",
+                color: 0xFFD700,
+                duration: 10,
+                effect: "doubleJumpHeight",
+                icon: "fa-shoe-prints",
+                rarity: 1
+            },
+            {
+                name: "Magnet Hands",
+                color: 0x4169E1,
+                duration: 8,
+                effect: "attractCoins",
+                icon: "fa-magnet",
+                rarity: 2
+            },
+            {
+                name: "Giant Mode",
+                color: 0xFF4500,
+                duration: 6,
+                effect: "becomeGiant",
+                icon: "fa-expand-arrows-alt",
+                rarity: 3
+            },
+            {
+                name: "Slow-Mo",
+                color: 0x00CED1,
+                duration: 5,
+                effect: "slowTime",
+                icon: "fa-hourglass-half",
+                rarity: 2
+            },
+            {
+                name: "Invincible",
+                color: 0x32CD32,
+                duration: 7,
+                effect: "noCollisions",
+                icon: "fa-shield-alt",
+                rarity: 4
+            }
+        ];
+
+        // ============================================
+        // FUNNY FAIL MESSAGES
+        // ============================================
+        const FailMessages = [
+            "WOOPSIE DAISY!",
+            "BUTTERFINGERS!",
+            "FACE MEET FLOOR!",
+            "EPIC FAIL!",
+            "RAGDOLL MODE!",
+            "SPLAT!",
+            "WIPEOUT!",
+            "HILARIOUS!",
+            "COMEDY GOLD!",
+            "BONK!",
+            "YEET!",
+            "FLYING FAIL!"
+        ];
+
+        // ============================================
+        // COMBO MESSAGES
+        // ============================================
+        const ComboMessages = [
+            { threshold: 5, message: "NICE!", color: 0x4ECDC4 },
+            { threshold: 10, message: "AWESOME!", color: 0xFFD166 },
+            { threshold: 15, message: "UNSTOPPABLE!", color: 0xFF6B6B },
+            { threshold: 20, message: "LEGENDARY!", color: 0x9B5DE5 },
+            { threshold: 25, message: "GODLIKE!", color: 0x00BBF9 }
+        ];
+
+        // ============================================
+        // INITIALIZATION
         // ============================================
         document.addEventListener('DOMContentLoaded', function() {
-            Debug.log('DOM loaded, initializing game...');
-            
-            try {
-                initializeGame();
-            } catch (error) {
-                handleCriticalError(error);
-            }
+            console.log("Funny Bone Runner initializing...");
+            initializeGame();
         });
 
         function initializeGame() {
-            Debug.log('Starting game initialization...');
+            // Setup UI references
+            setupUI();
             
-            // Initialize UI references
-            initializeUIReferences();
-            
-            // Set up loading simulation
+            // Setup loading screen
             simulateLoading();
             
-            // Set up event listeners
+            // Setup event listeners
             setupEventListeners();
             
-            // Initialize Three.js after a short delay
-            setTimeout(initializeThreeJS, 100);
+            // Initialize Three.js
+            setTimeout(initThreeJS, 500);
+            
+            // Load saved data
+            loadGameData();
         }
 
-        function initializeUIReferences() {
-            // Store references to all UI elements
-            GameState.uiElements = {
+        function setupUI() {
+            GameState.ui = {
                 loadingScreen: document.getElementById('loading-screen'),
                 loadingProgress: document.getElementById('loading-progress'),
+                loadingDots: document.getElementById('loading-dots'),
+                loadingTip: document.getElementById('loading-tip'),
                 mainMenu: document.getElementById('main-menu'),
                 gameHUD: document.getElementById('game-hud'),
-                player2HUD: document.getElementById('player2-hud'),
-                instructions: document.getElementById('instructions'),
-                connectionStatus: document.getElementById('connection-status'),
+                multiplayerHUD: document.getElementById('multiplayer-hud'),
+                comboPopup: document.getElementById('combo-popup'),
+                rageMeter: document.getElementById('rage-meter'),
+                rageFill: document.getElementById('rage-fill'),
+                
+                // Stats
+                highScore: document.getElementById('high-score'),
+                totalCrashes: document.getElementById('total-crashes'),
+                funnyMoments: document.getElementById('funny-moments'),
+                
+                // Game HUD elements
+                score: document.getElementById('score'),
+                distance: document.getElementById('distance'),
+                multiplier: document.getElementById('multiplier'),
+                comboDisplay: document.getElementById('combo-display'),
+                powerupDisplay: document.getElementById('powerup-display'),
+                
+                // Multiplayer HUD
+                p1Distance: document.getElementById('p1-distance'),
+                p2Distance: document.getElementById('p2-distance'),
+                p1Powerups: document.getElementById('p1-powerups'),
+                p2Powerups: document.getElementById('p2-powerups'),
+                raceTimer: document.getElementById('race-timer'),
                 
                 // Buttons
-                startHostBtn: document.getElementById('start-host-btn'),
-                startJoinBtn: document.getElementById('start-join-btn'),
-                howToPlayBtn: document.getElementById('how-to-play-btn'),
-                
-                // Text elements
-                p1Objective: document.getElementById('p1-objective'),
-                p2Objective: document.getElementById('p2-objective'),
-                puzzleInstruction: document.getElementById('puzzle-instruction'),
-                p1Status: document.getElementById('p1-status'),
-                p2Status: document.getElementById('p2-status')
+                singleplayerBtn: document.getElementById('singleplayer-btn'),
+                multiplayerBtn: document.getElementById('multiplayer-btn'),
+                howToBtn: document.getElementById('how-to-btn')
             };
-            
-            Debug.log('UI references initialized');
         }
 
         function simulateLoading() {
+            const tips = [
+                "The more ridiculous your crash, the higher the score!",
+                "Collect power-ups to break the laws of physics!",
+                "Two players can race on the same keyboard!",
+                "Build up your rage meter for epic comebacks!",
+                "Some obstacles are actually helpful... sometimes!"
+            ];
+            
             let progress = 0;
+            let dotCount = 0;
+            
             const interval = setInterval(() => {
-                progress += Math.random() * 15 + 5;
-                if (progress > 100) {
+                progress += Math.random() * 10 + 5;
+                dotCount = (dotCount + 1) % 4;
+                
+                if (progress >= 100) {
                     progress = 100;
                     clearInterval(interval);
                     
-                    // Hide loading screen after a short delay
                     setTimeout(() => {
-                        GameState.uiElements.loadingScreen.classList.add('hidden');
-                        GameState.uiElements.mainMenu.classList.remove('hidden');
+                        GameState.ui.loadingScreen.classList.add('hidden');
+                        GameState.ui.mainMenu.classList.remove('hidden');
                         GameState.phase = 'menu';
-                        Debug.log('Loading complete, showing main menu');
                     }, 500);
                 }
-                GameState.uiElements.loadingProgress.style.width = `${progress}%`;
+                
+                GameState.ui.loadingProgress.style.width = `${progress}%`;
+                GameState.ui.loadingDots.textContent = '.'.repeat(dotCount + 1);
+                
+                // Change tip every 25% progress
+                if (progress % 25 < 5) {
+                    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+                    GameState.ui.loadingTip.textContent = `Tip: ${randomTip}`;
+                }
             }, 200);
         }
 
         function setupEventListeners() {
-            Debug.log('Setting up event listeners...');
+            // Button events
+            GameState.ui.singleplayerBtn.addEventListener('click', () => startGame('single'));
+            GameState.ui.multiplayerBtn.addEventListener('click', () => startGame('multi'));
+            GameState.ui.howToBtn.addEventListener('click', showHowToPlay);
             
-            // Button event listeners
-            GameState.uiElements.startHostBtn.addEventListener('click', startHostGame);
-            GameState.uiElements.startJoinBtn.addEventListener('click', startJoinGame);
-            GameState.uiElements.howToPlayBtn.addEventListener('click', showHowToPlay);
-            
-            // Global keyboard events
+            // Keyboard events
             document.addEventListener('keydown', handleKeyDown);
             document.addEventListener('keyup', handleKeyUp);
             
-            // Prevent context menu on right click
-            document.addEventListener('contextmenu', (e) => e.preventDefault());
+            // Touch events for mobile
+            document.addEventListener('touchstart', handleTouchStart);
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('touchend', handleTouchEnd);
             
-            Debug.log('Event listeners set up');
+            // Window resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Prevent context menu
+            document.addEventListener('contextmenu', e => e.preventDefault());
+        }
+
+        function loadGameData() {
+            // Load from localStorage
+            try {
+                const highScore = localStorage.getItem('funnyBoneHighScore') || '0';
+                const totalCrashes = localStorage.getItem('funnyBoneCrashes') || '0';
+                const funnyMoments = localStorage.getItem('funnyBoneMoments') || '0';
+                
+                GameState.ui.highScore.textContent = parseInt(highScore).toLocaleString();
+                GameState.ui.totalCrashes.textContent = parseInt(totalCrashes).toLocaleString();
+                GameState.ui.funnyMoments.textContent = parseInt(funnyMoments).toLocaleString();
+            } catch (e) {
+                console.log("Could not load game data:", e);
+            }
+        }
+
+        function saveGameData() {
+            try {
+                localStorage.setItem('funnyBoneHighScore', GameState.player.score.toString());
+                localStorage.setItem('funnyBoneCrashes', 
+                    (parseInt(GameState.ui.totalCrashes.textContent.replace(/,/g, '')) + 1).toString());
+            } catch (e) {
+                console.log("Could not save game data:", e);
+            }
         }
 
         // ============================================
         // THREE.JS INITIALIZATION
         // ============================================
-        function initializeThreeJS() {
-            Debug.log('Initializing Three.js...');
-            
+        function initThreeJS() {
             try {
                 // Create scene
                 GameState.scene = new THREE.Scene();
-                GameState.scene.background = new THREE.Color(0x0c0c2e);
-                GameState.scene.fog = new THREE.Fog(GameConfig.FOG_COLOR, GameConfig.FOG_NEAR, GameConfig.FOG_FAR);
                 
-                // Create camera
+                // Create camera - FIXED: Third person camera
                 GameState.camera = new THREE.PerspectiveCamera(
-                    75, 
-                    window.innerWidth / window.innerHeight, 
-                    0.1, 
+                    60,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
                     1000
                 );
-                GameState.camera.position.set(0, 5, 10);
                 
                 // Create renderer
                 GameState.renderer = new THREE.WebGLRenderer({
@@ -692,446 +940,755 @@
                     alpha: false
                 });
                 GameState.renderer.setSize(window.innerWidth, window.innerHeight);
-                GameState.renderer.setPixelRatio(window.devicePixelRatio);
+                GameState.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
                 GameState.renderer.shadowMap.enabled = true;
                 GameState.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
                 
-                // Add lights
+                // Add lighting
                 setupLighting();
                 
-                // Create game world
-                createGameWorld();
+                // Create player
+                createPlayer();
                 
-                // Set up clock for delta time
+                // Create initial platform
+                createPlatform(0, 0, 0, 50, 5, 1);
+                
+                // Create environment
+                createEnvironment();
+                
+                // Start game loop
                 GameState.clock = new THREE.Clock();
-                
-                // Start animation loop
                 animate();
                 
-                // Handle window resize
-                window.addEventListener('resize', handleResize);
-                
-                Debug.log('Three.js initialization complete');
+                console.log("Three.js initialized successfully");
             } catch (error) {
-                throw new GameError('Failed to initialize Three.js', { error: error.message });
+                console.error("Failed to initialize Three.js:", error);
+                showError("Graphics initialization failed. Please try refreshing.");
             }
         }
 
         function setupLighting() {
             // Ambient light
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
             GameState.scene.add(ambientLight);
             
             // Directional light (sun)
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(10, 20, 5);
             directionalLight.castShadow = true;
-            directionalLight.shadow.mapSize.width = GameConfig.SHADOW_MAP_SIZE;
-            directionalLight.shadow.mapSize.height = GameConfig.SHADOW_MAP_SIZE;
-            directionalLight.shadow.camera.near = 0.5;
-            directionalLight.shadow.camera.far = 50;
-            directionalLight.shadow.camera.left = -20;
-            directionalLight.shadow.camera.right = 20;
-            directionalLight.shadow.camera.top = 20;
-            directionalLight.shadow.camera.bottom = -20;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
             GameState.scene.add(directionalLight);
             
-            // Point light for player
-            const pointLight = new THREE.PointLight(0x4488ff, 1, 10);
-            pointLight.position.set(0, 2, 0);
-            GameState.objects.playerLight = pointLight;
-            GameState.scene.add(pointLight);
+            // Hemisphere light for sky/ground color
+            const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x98FB98, 0.3);
+            GameState.scene.add(hemisphereLight);
         }
 
-        function createGameWorld() {
-            Debug.log('Creating game world...');
+        function createPlayer() {
+            // Create a funny character
+            const group = new THREE.Group();
             
-            // Create floor
-            const floorGeometry = new THREE.PlaneGeometry(50, 50);
-            const floorMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x1a1a3e,
-                roughness: 0.8,
+            // Body (main sphere)
+            const bodyGeometry = new THREE.SphereGeometry(0.8, 16, 16);
+            const bodyMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xFF6B6B,
+                roughness: 0.3,
                 metalness: 0.2
             });
-            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-            floor.rotation.x = -Math.PI / 2;
-            floor.receiveShadow = true;
-            GameState.scene.add(floor);
-            GameState.objects.floor = floor;
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.position.y = 0.8;
+            group.add(body);
             
-            // Create walls
-            createWalls();
+            // Eyes
+            const eyeGeometry = new THREE.SphereGeometry(0.15, 8, 8);
+            const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
             
-            // Create first puzzle
-            createPuzzleOne();
+            const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            leftEye.position.set(-0.3, 1.1, 0.7);
+            group.add(leftEye);
             
-            Debug.log('Game world created');
+            const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            rightEye.position.set(0.3, 1.1, 0.7);
+            group.add(rightEye);
+            
+            // Pupils
+            const pupilGeometry = new THREE.SphereGeometry(0.07, 8, 8);
+            const pupilMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            
+            const leftPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            leftPupil.position.set(-0.3, 1.1, 0.85);
+            group.add(leftPupil);
+            
+            const rightPupil = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            rightPupil.position.set(0.3, 1.1, 0.85);
+            group.add(rightPupil);
+            
+            // Funny hat
+            const hatGeometry = new THREE.ConeGeometry(0.6, 1, 8);
+            const hatMaterial = new THREE.MeshStandardMaterial({ color: 0xFFD166 });
+            const hat = new THREE.Mesh(hatGeometry, hatMaterial);
+            hat.position.set(0, 1.6, 0);
+            hat.rotation.x = Math.PI;
+            group.add(hat);
+            
+            // Arms (cylinders)
+            const armGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1, 8);
+            const armMaterial = new THREE.MeshStandardMaterial({ color: 0xFF6B6B });
+            
+            const leftArm = new THREE.Mesh(armGeometry, armMaterial);
+            leftArm.position.set(-1, 0.8, 0);
+            leftArm.rotation.z = Math.PI / 4;
+            group.add(leftArm);
+            
+            const rightArm = new THREE.Mesh(armGeometry, armMaterial);
+            rightArm.position.set(1, 0.8, 0);
+            rightArm.rotation.z = -Math.PI / 4;
+            group.add(rightArm);
+            
+            // Legs
+            const legGeometry = new THREE.CylinderGeometry(0.15, 0.15, 1, 8);
+            const legMaterial = new THREE.MeshStandardMaterial({ color: 0xFF6B6B });
+            
+            const leftLeg = new THREE.Mesh(legGeometry, legMaterial);
+            leftLeg.position.set(-0.4, -0.5, 0);
+            group.add(leftLeg);
+            
+            const rightLeg = new THREE.Mesh(legGeometry, legMaterial);
+            rightLeg.position.set(0.4, -0.5, 0);
+            group.add(rightLeg);
+            
+            group.position.copy(GameState.player.position);
+            group.castShadow = true;
+            
+            GameState.scene.add(group);
+            GameState.player.mesh = group;
+            
+            // Set camera position behind player
+            updateCameraPosition();
         }
 
-        function createWalls() {
-            const wallMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x252550,
-                roughness: 0.7,
+        function createPlatform(x, y, z, width, lanes, height = 1) {
+            const platformGroup = new THREE.Group();
+            
+            // Base platform
+            const platformGeometry = new THREE.BoxGeometry(width, height, lanes * GameConfig.LANE_WIDTH);
+            const platformMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x4ECDC4,
+                roughness: 0.8,
                 metalness: 0.1
             });
             
-            // Back wall
-            const backWall = new THREE.Mesh(
-                new THREE.BoxGeometry(50, 10, 1),
-                wallMaterial
-            );
-            backWall.position.set(0, 5, -25);
-            backWall.receiveShadow = true;
-            backWall.castShadow = true;
-            GameState.scene.add(backWall);
+            const platform = new THREE.Mesh(platformGeometry, platformMaterial);
+            platform.position.set(0, -height/2, 0);
+            platform.receiveShadow = true;
+            platformGroup.add(platform);
             
-            // Front wall
-            const frontWall = new THREE.Mesh(
-                new THREE.BoxGeometry(50, 10, 1),
-                wallMaterial
-            );
-            frontWall.position.set(0, 5, 25);
-            frontWall.receiveShadow = true;
-            frontWall.castShadow = true;
-            GameState.scene.add(frontWall);
+            // Lane markings
+            const laneMarkingGeometry = new THREE.BoxGeometry(width * 0.8, 0.05, 0.1);
+            const laneMarkingMaterial = new THREE.MeshStandardMaterial({ color: 0xFFFFFF });
             
-            // Left wall
-            const leftWall = new THREE.Mesh(
-                new THREE.BoxGeometry(1, 10, 50),
-                wallMaterial
-            );
-            leftWall.position.set(-25, 5, 0);
-            leftWall.receiveShadow = true;
-            leftWall.castShadow = true;
-            GameState.scene.add(leftWall);
+            for (let i = -lanes/2 + 0.5; i < lanes/2; i++) {
+                const marking = new THREE.Mesh(laneMarkingGeometry, laneMarkingMaterial);
+                marking.position.set(0, 0.01, i * GameConfig.LANE_WIDTH);
+                platformGroup.add(marking);
+            }
             
-            // Right wall
-            const rightWall = new THREE.Mesh(
-                new THREE.BoxGeometry(1, 10, 50),
-                wallMaterial
-            );
-            rightWall.position.set(25, 5, 0);
-            rightWall.receiveShadow = true;
-            rightWall.castShadow = true;
-            GameState.scene.add(rightWall);
+            platformGroup.position.set(x, y, z);
+            GameState.scene.add(platformGroup);
+            GameState.platforms.push(platformGroup);
+            
+            return platformGroup;
         }
 
-        function createPuzzleOne() {
-            Debug.log('Creating Puzzle 1: Energy Conduit Alignment');
-            
-            const puzzle = {
-                id: 1,
-                name: "Energy Conduit Alignment",
-                description: "Align the energy conduits to create a power pathway",
-                objectives: {
-                    manipulator: "Move the energy blocks into the correct positions",
-                    activator: "Activate the switches to power the conduits"
-                },
-                completed: false,
-                objects: {}
-            };
-            
-            // Create energy blocks (movable by manipulator)
-            const blockMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x3366ff,
-                emissive: 0x112266,
-                emissiveIntensity: 0.3,
-                roughness: 0.3,
-                metalness: 0.7
+        function createEnvironment() {
+            // Create skybox
+            const skyGeometry = new THREE.SphereGeometry(500, 32, 32);
+            const skyMaterial = new THREE.MeshBasicMaterial({
+                color: 0x87CEEB,
+                side: THREE.BackSide
             });
+            const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+            GameState.scene.add(sky);
             
-            const blockGeometry = new THREE.BoxGeometry(2, 1, 2);
-            
-            for (let i = 0; i < 3; i++) {
-                const block = new THREE.Mesh(blockGeometry, blockMaterial);
-                block.position.set(-10 + i * 10, 0.5, -15);
-                block.castShadow = true;
-                block.receiveShadow = true;
-                block.userData = {
-                    type: 'energyBlock',
-                    id: i,
-                    movable: true,
-                    inPosition: false,
-                    correctPosition: new THREE.Vector3(-10 + i * 10, 0.5, 5)
-                };
-                GameState.scene.add(block);
-                puzzle.objects[`block_${i}`] = block;
-            }
-            
-            // Create target positions
-            const targetMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x44aa44,
-                transparent: true,
-                opacity: 0.3,
-                emissive: 0x224422,
-                emissiveIntensity: 0.2
-            });
-            
-            for (let i = 0; i < 3; i++) {
-                const target = new THREE.Mesh(
-                    new THREE.BoxGeometry(2.2, 0.2, 2.2),
-                    targetMaterial
+            // Create some background buildings
+            for (let i = 0; i < 20; i++) {
+                const building = createFunnyBuilding();
+                building.position.set(
+                    (Math.random() - 0.5) * 100,
+                    building.position.y,
+                    -30 - Math.random() * 50
                 );
-                target.position.set(-10 + i * 10, 0.1, 5);
-                target.userData = { type: 'target', id: i };
-                GameState.scene.add(target);
-                puzzle.objects[`target_${i}`] = target;
+                GameState.scene.add(building);
+                GameState.environment.push(building);
             }
-            
-            // Create activation switches (activatable by activator)
-            const switchMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xff3366,
-                emissive: 0x662233,
-                emissiveIntensity: 0.2
-            });
-            
-            for (let i = 0; i < 2; i++) {
-                const switchObj = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16),
-                    switchMaterial
-                );
-                switchObj.position.set(15, 0.15, -5 + i * 10);
-                switchObj.rotation.x = Math.PI / 2;
-                switchObj.castShadow = true;
-                switchObj.userData = {
-                    type: 'switch',
-                    id: i,
-                    activated: false,
-                    activatable: true
-                };
-                GameState.scene.add(switchObj);
-                puzzle.objects[`switch_${i}`] = switchObj;
-                
-                // Add switch base
-                const base = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.7, 0.7, 0.1, 16),
-                    new THREE.MeshStandardMaterial({ color: 0x333333 })
-                );
-                base.position.set(15, 0.05, -5 + i * 10);
-                GameState.scene.add(base);
-            }
-            
-            // Create energy conduit
-            const conduitGeometry = new THREE.CylinderGeometry(0.2, 0.2, 20, 8);
-            const conduitMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0x44aaff,
-                emissive: 0x224477,
-                emissiveIntensity: 0.1
-            });
-            
-            const conduit = new THREE.Mesh(conduitGeometry, conduitMaterial);
-            conduit.position.set(0, 10, -5);
-            conduit.rotation.z = Math.PI / 2;
-            conduit.userData = { type: 'conduit', powered: false };
-            GameState.scene.add(conduit);
-            puzzle.objects.conduit = conduit;
-            
-            // Create goal gateway
-            const gateGeometry = new THREE.RingGeometry(2, 2.5, 32);
-            const gateMaterial = new THREE.MeshStandardMaterial({
-                color: 0x8844ff,
-                emissive: 0x442277,
-                emissiveIntensity: 0.1,
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.7
-            });
-            
-            const gate = new THREE.Mesh(gateGeometry, gateMaterial);
-            gate.position.set(0, 5, 15);
-            gate.rotation.x = Math.PI / 2;
-            gate.userData = { type: 'gate', activated: false };
-            GameState.scene.add(gate);
-            puzzle.objects.gate = gate;
-            
-            GameState.puzzles.push(puzzle);
-            GameState.activePuzzle = 0;
-            
-            // Update UI with puzzle objectives
-            updatePuzzleObjectives();
         }
 
-        function updatePuzzleObjectives() {
-            if (GameState.puzzles.length === 0) return;
+        function createFunnyBuilding() {
+            const group = new THREE.Group();
+            const height = 5 + Math.random() * 15;
+            const width = 3 + Math.random() * 5;
+            const depth = 3 + Math.random() * 5;
             
-            const puzzle = GameState.puzzles[GameState.activePuzzle];
+            // Building body
+            const geometry = new THREE.BoxGeometry(width, height, depth);
+            const colors = [0xFF6B6B, 0x4ECDC4, 0xFFD166, 0x9B5DE5, 0x00BBF9];
+            const material = new THREE.MeshStandardMaterial({ 
+                color: colors[Math.floor(Math.random() * colors.length)],
+                roughness: 0.7
+            });
             
-            if (GameState.uiElements.p1Objective) {
-                GameState.uiElements.p1Objective.textContent = puzzle.objectives.manipulator;
+            const building = new THREE.Mesh(geometry, material);
+            building.position.y = height / 2;
+            building.castShadow = true;
+            group.add(building);
+            
+            // Funny roof (random shape)
+            const roofTypes = ['cone', 'sphere', 'pyramid'];
+            const roofType = roofTypes[Math.floor(Math.random() * roofTypes.length)];
+            
+            let roof;
+            if (roofType === 'cone') {
+                roof = new THREE.Mesh(
+                    new THREE.ConeGeometry(width/2, 3, 8),
+                    new THREE.MeshStandardMaterial({ color: 0xFFD166 })
+                );
+                roof.position.y = height + 1.5;
+            } else if (roofType === 'sphere') {
+                roof = new THREE.Mesh(
+                    new THREE.SphereGeometry(width/2, 8, 8),
+                    new THREE.MeshStandardMaterial({ color: 0xFF6B6B })
+                );
+                roof.position.y = height + width/2;
+            } else {
+                roof = new THREE.Mesh(
+                    new THREE.ConeGeometry(width/2, 3, 4),
+                    new THREE.MeshStandardMaterial({ color: 0x4ECDC4 })
+                );
+                roof.position.y = height + 1.5;
             }
             
-            if (GameState.uiElements.p2Objective) {
-                GameState.uiElements.p2Objective.textContent = puzzle.objectives.activator;
-            }
+            group.add(roof);
             
-            if (GameState.uiElements.puzzleInstruction) {
-                GameState.uiElements.puzzleInstruction.textContent = puzzle.description;
-            }
+            return group;
         }
 
         // ============================================
-        // GAME LOOP & ANIMATION
+        // GAME LOOP
         // ============================================
         function animate() {
             requestAnimationFrame(animate);
             
             // Calculate delta time
-            GameState.deltaTime = GameState.clock.getDelta();
+            GameState.deltaTime = Math.min(GameState.clock.getDelta(), 0.033);
             
-            // Only update game logic if we're in playing phase
+            // Update game based on phase
             if (GameState.phase === 'playing') {
-                updateGameLogic();
-                
-                // Update player position based on input
-                if (GameState.playerRole) {
-                    updatePlayerMovement();
-                }
-                
-                // Update puzzle logic
-                updatePuzzleLogic();
+                updateGame();
             }
             
             // Always render
             GameState.renderer.render(GameState.scene, GameState.camera);
         }
 
-        function updateGameLogic() {
-            // Update player light position to follow camera
-            if (GameState.objects.playerLight && GameState.camera) {
-                GameState.objects.playerLight.position.copy(GameState.camera.position);
-                GameState.objects.playerLight.position.y -= 1;
-            }
+        function updateGame() {
+            // Update player movement
+            updatePlayer();
             
-            // Check puzzle completion
-            checkPuzzleCompletion();
+            // Update camera position - FIXED: Smooth follow camera
+            updateCameraPosition();
+            
+            // Spawn new obstacles and power-ups
+            updateSpawning();
+            
+            // Update all game objects
+            updateObstacles();
+            updatePowerUps();
+            updateCoins();
+            
+            // Update game speed (gets faster over time)
+            GameState.gameSpeed += GameConfig.SPEED_INCREASE_RATE * GameState.deltaTime;
+            
+            // Update distance and score
+            GameState.player.distance += GameState.gameSpeed * GameState.deltaTime;
+            updateUI();
+            
+            // Check for collisions
+            checkCollisions();
+            
+            // Update power-up durations
+            updatePowerUpDurations();
+            
+            // Update rage meter
+            updateRageMeter();
         }
 
-        function updatePlayerMovement() {
-            if (!GameState.camera || !GameState.playerRole) return;
+        function updatePlayer() {
+            if (!GameState.player.mesh) return;
             
-            const speed = GameConfig.PLAYER_SPEED * GameState.deltaTime;
-            const moveVector = new THREE.Vector3();
+            // Horizontal movement (lane switching)
+            const targetX = (GameState.player.lane - 2) * GameConfig.LANE_WIDTH;
+            const currentX = GameState.player.mesh.position.x;
             
-            // Movement based on player role and keys pressed
-            if (GameState.playerRole === 'manipulator') {
-                // WASD controls for manipulator
-                if (GameState.keysPressed['KeyW']) moveVector.z -= speed;
-                if (GameState.keysPressed['KeyS']) moveVector.z += speed;
-                if (GameState.keysPressed['KeyA']) moveVector.x -= speed;
-                if (GameState.keysPressed['KeyD']) moveVector.x += speed;
-            } else if (GameState.playerRole === 'activator') {
-                // Arrow key controls for activator
-                if (GameState.keysPressed['ArrowUp']) moveVector.z -= speed;
-                if (GameState.keysPressed['ArrowDown']) moveVector.z += speed;
-                if (GameState.keysPressed['ArrowLeft']) moveVector.x -= speed;
-                if (GameState.keysPressed['ArrowRight']) moveVector.x += speed;
+            // Smooth lane switching
+            GameState.player.mesh.position.x += (targetX - currentX) * 0.2;
+            
+            // Apply gravity
+            GameState.player.velocity.y -= GameConfig.GRAVITY * GameState.deltaTime;
+            
+            // Update position based on velocity
+            GameState.player.position.y += GameState.player.velocity.y * GameState.deltaTime;
+            
+            // Keep player above ground
+            if (GameState.player.position.y < 1) {
+                GameState.player.position.y = 1;
+                GameState.player.velocity.y = 0;
+                GameState.player.isJumping = false;
+                GameState.player.canDoubleJump = true;
             }
             
-            // Apply movement to camera
-            moveVector.applyEuler(GameState.camera.rotation);
-            moveVector.y = 0; // Keep movement horizontal
-            GameState.camera.position.add(moveVector);
+            // Apply sliding
+            if (GameState.player.isSliding) {
+                GameState.player.mesh.scale.y = 0.5;
+                GameState.player.mesh.position.y = 0.5;
+            } else {
+                GameState.player.mesh.scale.y = 1;
+            }
             
-            // Keep player within bounds
-            const bounds = 23;
-            GameState.camera.position.x = Math.max(-bounds, Math.min(bounds, GameState.camera.position.x));
-            GameState.camera.position.z = Math.max(-bounds, Math.min(bounds, GameState.camera.position.z));
-        }
-
-        function updatePuzzleLogic() {
-            if (GameState.puzzles.length === 0) return;
+            // Update mesh position
+            GameState.player.mesh.position.copy(GameState.player.position);
             
-            const puzzle = GameState.puzzles[GameState.activePuzzle];
-            if (puzzle.completed) return;
-            
-            // Check if energy blocks are in correct positions
-            let allBlocksInPosition = true;
-            
-            for (let i = 0; i < 3; i++) {
-                const block = puzzle.objects[`block_${i}`];
-                const target = puzzle.objects[`target_${i}`];
+            // Add running animation
+            if (!GameState.player.isJumping && !GameState.player.isSliding) {
+                const time = Date.now() * 0.01;
+                GameState.player.mesh.rotation.z = Math.sin(time) * 0.1;
                 
-                if (block && target) {
-                    const distance = block.position.distanceTo(target.position);
-                    const inPosition = distance < 1.5;
-                    
-                    block.userData.inPosition = inPosition;
-                    
-                    // Update block color based on position
-                    if (inPosition) {
-                        block.material.emissive.setHex(0x44ff44);
-                        block.material.emissiveIntensity = 0.5;
-                    } else {
-                        block.material.emissive.setHex(0x112266);
-                        block.material.emissiveIntensity = 0.3;
-                    }
-                    
-                    if (!inPosition) {
-                        allBlocksInPosition = false;
-                    }
+                // Animate legs
+                const legs = GameState.player.mesh.children.filter(child => 
+                    child.geometry && child.geometry.type === 'CylinderGeometry');
+                
+                legs.forEach((leg, index) => {
+                    leg.rotation.x = Math.sin(time + index * Math.PI) * 0.5;
+                });
+            }
+        }
+
+        // FIXED: Camera now smoothly follows behind player
+        function updateCameraPosition() {
+            if (!GameState.camera || !GameState.player.mesh) return;
+            
+            // Target position behind and above player
+            const targetPosition = new THREE.Vector3();
+            targetPosition.copy(GameState.player.mesh.position);
+            
+            // Move camera behind player (negative Z)
+            targetPosition.z += GameConfig.CAMERA_DISTANCE;
+            targetPosition.y += GameConfig.CAMERA_HEIGHT;
+            
+            // Smooth camera movement
+            GameState.camera.position.lerp(targetPosition, GameConfig.CAMERA_SMOOTHNESS);
+            
+            // Look at player (slightly ahead for better view)
+            const lookAtTarget = new THREE.Vector3();
+            lookAtTarget.copy(GameState.player.mesh.position);
+            lookAtTarget.z -= 5; // Look ahead of player
+            
+            GameState.camera.lookAt(lookAtTarget);
+        }
+
+        function updateSpawning() {
+            GameState.spawnTimer += GameState.deltaTime;
+            
+            // Spawn obstacles
+            if (GameState.spawnTimer > GameConfig.BASE_SPAWN_RATE / (GameState.gameSpeed * 0.01)) {
+                spawnRandomObstacle();
+                GameState.spawnTimer = 0;
+                
+                // Chance to spawn power-up
+                if (Math.random() < 0.1) {
+                    spawnPowerUp();
+                }
+                
+                // Chance to spawn coin line
+                if (Math.random() < 0.2) {
+                    spawnCoinLine();
+                }
+            }
+        }
+
+        function spawnRandomObstacle() {
+            const obstacleType = FunnyObstacles[Math.floor(Math.random() * FunnyObstacles.length)];
+            const lane = Math.floor(Math.random() * GameConfig.LANE_COUNT);
+            
+            const obstacle = new THREE.Mesh(
+                new THREE.BoxGeometry(obstacleType.width, obstacleType.height, obstacleType.depth),
+                new THREE.MeshStandardMaterial({ 
+                    color: obstacleType.color,
+                    roughness: 0.5,
+                    metalness: 0.5
+                })
+            );
+            
+            obstacle.position.set(
+                (lane - 2) * GameConfig.LANE_WIDTH,
+                obstacleType.height / 2,
+                -30
+            );
+            
+            obstacle.castShadow = true;
+            obstacle.userData = {
+                type: 'obstacle',
+                name: obstacleType.name,
+                effect: obstacleType.effect,
+                score: obstacleType.score,
+                funnyFactor: obstacleType.funnyFactor,
+                lane: lane
+            };
+            
+            GameState.scene.add(obstacle);
+            GameState.obstacles.push(obstacle);
+        }
+
+        function spawnPowerUp() {
+            const powerUpType = PowerUps[Math.floor(Math.random() * PowerUps.length)];
+            const lane = Math.floor(Math.random() * GameConfig.LANE_COUNT);
+            
+            const powerUp = new THREE.Mesh(
+                new THREE.SphereGeometry(0.5, 16, 16),
+                new THREE.MeshStandardMaterial({ 
+                    color: powerUpType.color,
+                    emissive: powerUpType.color,
+                    emissiveIntensity: 0.3
+                })
+            );
+            
+            powerUp.position.set(
+                (lane - 2) * GameConfig.LANE_WIDTH,
+                1.5,
+                -25
+            );
+            
+            powerUp.castShadow = true;
+            powerUp.userData = {
+                type: 'powerup',
+                name: powerUpType.name,
+                effect: powerUpType.effect,
+                duration: powerUpType.duration,
+                icon: powerUpType.icon,
+                rarity: powerUpType.rarity
+            };
+            
+            // Add floating animation
+            powerUp.userData.floatOffset = Math.random() * Math.PI * 2;
+            
+            GameState.scene.add(powerUp);
+            GameState.powerUps.push(powerUp);
+        }
+
+        function spawnCoinLine() {
+            const lane = Math.floor(Math.random() * GameConfig.LANE_COUNT);
+            
+            for (let i = 0; i < 5; i++) {
+                const coin = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.3, 0.3, 0.1, 16),
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0xFFD700,
+                        emissive: 0xFFD700,
+                        emissiveIntensity: 0.5,
+                        metalness: 1,
+                        roughness: 0.1
+                    })
+                );
+                
+                coin.position.set(
+                    (lane - 2) * GameConfig.LANE_WIDTH,
+                    1.5,
+                    -20 - i * 2
+                );
+                
+                coin.rotation.x = Math.PI / 2;
+                coin.castShadow = true;
+                coin.userData = {
+                    type: 'coin',
+                    value: 50
+                };
+                
+                GameState.scene.add(coin);
+                GameState.coins.push(coin);
+            }
+        }
+
+        function updateObstacles() {
+            for (let i = GameState.obstacles.length - 1; i >= 0; i--) {
+                const obstacle = GameState.obstacles[i];
+                
+                // Move toward player
+                obstacle.position.z += GameState.gameSpeed * GameState.deltaTime;
+                
+                // Add floating animation to some obstacles
+                if (obstacle.userData.name === "Whoopee Cushion") {
+                    obstacle.position.y = 0.5 + Math.sin(Date.now() * 0.005) * 0.2;
+                }
+                
+                // Remove if passed player
+                if (obstacle.position.z > 10) {
+                    GameState.scene.remove(obstacle);
+                    GameState.obstacles.splice(i, 1);
+                }
+            }
+        }
+
+        function updatePowerUps() {
+            for (let i = GameState.powerUps.length - 1; i >= 0; i--) {
+                const powerUp = GameState.powerUps[i];
+                
+                // Move toward player
+                powerUp.position.z += GameState.gameSpeed * GameState.deltaTime;
+                
+                // Floating animation
+                powerUp.position.y = 1.5 + Math.sin(Date.now() * 0.003 + powerUp.userData.floatOffset) * 0.3;
+                powerUp.rotation.y += 0.05;
+                
+                // Remove if passed player
+                if (powerUp.position.z > 10) {
+                    GameState.scene.remove(powerUp);
+                    GameState.powerUps.splice(i, 1);
+                }
+            }
+        }
+
+        function updateCoins() {
+            for (let i = GameState.coins.length - 1; i >= 0; i--) {
+                const coin = GameState.coins[i];
+                
+                // Move toward player
+                coin.position.z += GameState.gameSpeed * GameState.deltaTime;
+                coin.rotation.y += 0.1;
+                
+                // Remove if passed player
+                if (coin.position.z > 10) {
+                    GameState.scene.remove(coin);
+                    GameState.coins.splice(i, 1);
+                }
+            }
+        }
+
+        function checkCollisions() {
+            // Check obstacle collisions
+            for (let i = GameState.obstacles.length - 1; i >= 0; i--) {
+                const obstacle = GameState.obstacles[i];
+                
+                if (isColliding(GameState.player.mesh, obstacle)) {
+                    handleObstacleCollision(obstacle);
+                    GameState.scene.remove(obstacle);
+                    GameState.obstacles.splice(i, 1);
                 }
             }
             
-            // Update conduit power based on switch states
-            let conduitPowered = true;
-            for (let i = 0; i < 2; i++) {
-                const switchObj = puzzle.objects[`switch_${i}`];
-                if (switchObj && !switchObj.userData.activated) {
-                    conduitPowered = false;
+            // Check power-up collisions
+            for (let i = GameState.powerUps.length - 1; i >= 0; i--) {
+                const powerUp = GameState.powerUps[i];
+                
+                if (isColliding(GameState.player.mesh, powerUp)) {
+                    handlePowerUpCollision(powerUp);
+                    GameState.scene.remove(powerUp);
+                    GameState.powerUps.splice(i, 1);
+                }
+            }
+            
+            // Check coin collisions
+            for (let i = GameState.coins.length - 1; i >= 0; i--) {
+                const coin = GameState.coins[i];
+                
+                if (isColliding(GameState.player.mesh, coin)) {
+                    collectCoin(coin);
+                    GameState.scene.remove(coin);
+                    GameState.coins.splice(i, 1);
+                }
+            }
+        }
+
+        function isColliding(obj1, obj2) {
+            const distance = obj1.position.distanceTo(obj2.position);
+            return distance < 1.5; // Simple distance check
+        }
+
+        function handleObstacleCollision(obstacle) {
+            const obstacleData = obstacle.userData;
+            
+            // Random funny fail message
+            const failMessage = FailMessages[Math.floor(Math.random() * FailMessages.length)];
+            showComboPopup(failMessage, 0xFF6B6B);
+            
+            // Add score based on funny factor
+            const scoreGain = obstacleData.score * GameState.player.multiplier * obstacleData.funnyFactor;
+            GameState.player.score += Math.floor(scoreGain);
+            
+            // Apply effect
+            switch (obstacleData.effect) {
+                case 'slip':
+                    // Make player slip
+                    GameState.player.velocity.x += (Math.random() - 0.5) * 10;
                     break;
-                }
+                case 'jumpBoost':
+                    // Boost upward
+                    GameState.player.velocity.y = 15;
+                    break;
+                case 'bounce':
+                    // Bounce away
+                    GameState.player.velocity.y = 12;
+                    GameState.player.velocity.x = (Math.random() - 0.5) * 8;
+                    break;
+                case 'ice':
+                    // Slide
+                    GameState.player.velocity.x += (Math.random() - 0.5) * 5;
+                    break;
+                case 'superJump':
+                    // Super jump
+                    GameState.player.velocity.y = 20;
+                    break;
             }
             
-            // Update conduit
-            const conduit = puzzle.objects.conduit;
-            if (conduit) {
-                conduit.userData.powered = conduitPowered;
-                if (conduitPowered) {
-                    conduit.material.emissiveIntensity = 0.8;
-                    conduit.material.emissive.setHex(0x44ffaa);
-                } else {
-                    conduit.material.emissiveIntensity = 0.1;
-                    conduit.material.emissive.setHex(0x224477);
-                }
-            }
+            // Reset combo but add to rage
+            GameState.player.combo = 0;
+            GameState.player.rage += 10;
             
-            // Update gate if both conditions met
-            const gate = puzzle.objects.gate;
-            if (gate && allBlocksInPosition && conduitPowered) {
-                gate.userData.activated = true;
-                gate.material.emissiveIntensity = 0.9;
-                gate.material.opacity = 1;
-                
-                // Rotate gate
-                gate.rotation.z += GameState.deltaTime;
+            // Update funny moments counter
+            const currentMoments = parseInt(GameState.ui.funnyMoments.textContent.replace(/,/g, '')) || 0;
+            GameState.ui.funnyMoments.textContent = (currentMoments + 1).toLocaleString();
+            
+            // Play sound effect (in a real game)
+            console.log(`Collision with ${obstacleData.name}! ${failMessage}`);
+        }
+
+        function handlePowerUpCollision(powerUp) {
+            const powerUpData = powerUp.userData;
+            
+            // Show power-up collected message
+            showComboPopup(`${powerUpData.name}!`, powerUpData.color);
+            
+            // Add to active power-ups
+            GameState.player.powerUps.push({
+                ...powerUpData,
+                collectedAt: Date.now()
+            });
+            
+            // Apply immediate effect
+            applyPowerUpEffect(powerUpData);
+            
+            // Update UI
+            updatePowerUpDisplay();
+            
+            console.log(`Collected power-up: ${powerUpData.name}`);
+        }
+
+        function applyPowerUpEffect(powerUp) {
+            switch (powerUp.effect) {
+                case 'doubleJumpHeight':
+                    GameState.player.velocity.y = 15; // Boost jump
+                    break;
+                case 'attractCoins':
+                    // In a real game, this would attract coins
+                    break;
+                case 'becomeGiant':
+                    GameState.player.mesh.scale.set(2, 2, 2);
+                    break;
+                case 'slowTime':
+                    // This would slow game speed in a real implementation
+                    break;
+                case 'noCollisions':
+                    // Would make player invincible
+                    break;
             }
         }
 
-        function checkPuzzleCompletion() {
-            if (GameState.puzzles.length === 0) return;
+        function updatePowerUpDurations() {
+            const now = Date.now();
             
-            const puzzle = GameState.puzzles[GameState.activePuzzle];
-            if (puzzle.completed) return;
-            
-            const gate = puzzle.objects.gate;
-            if (gate && gate.userData.activated) {
-                // Puzzle completed!
-                puzzle.completed = true;
+            for (let i = GameState.player.powerUps.length - 1; i >= 0; i--) {
+                const powerUp = GameState.player.powerUps[i];
+                const elapsed = (now - powerUp.collectedAt) / 1000;
                 
-                // Show completion message
-                showMessage("Puzzle Complete!", "Gateway activated! Excellent teamwork!");
-                
-                // Move to next puzzle after delay
-                setTimeout(() => {
-                    if (GameState.activePuzzle < GameState.puzzles.length - 1) {
-                        GameState.activePuzzle++;
-                        updatePuzzleObjectives();
-                        showMessage(`Puzzle ${GameState.activePuzzle + 1}`, "New challenge ahead!");
-                    } else {
-                        showMessage("All Puzzles Complete!", "You've mastered quantum cooperation!");
-                    }
-                }, 3000);
+                if (elapsed > powerUp.duration) {
+                    // Remove expired power-up
+                    removePowerUpEffect(powerUp);
+                    GameState.player.powerUps.splice(i, 1);
+                    updatePowerUpDisplay();
+                }
             }
+        }
+
+        function removePowerUpEffect(powerUp) {
+            switch (powerUp.effect) {
+                case 'becomeGiant':
+                    GameState.player.mesh.scale.set(1, 1, 1);
+                    break;
+                // Other effects would be reverted here
+            }
+        }
+
+        function collectCoin(coin) {
+            const value = coin.userData.value * GameState.player.multiplier;
+            GameState.player.score += value;
+            GameState.player.combo++;
+            
+            // Update combo display
+            updateComboDisplay();
+            
+            // Check for combo messages
+            ComboMessages.forEach(comboMsg => {
+                if (GameState.player.combo === comboMsg.threshold) {
+                    showComboPopup(comboMsg.message, comboMsg.color);
+                    GameState.player.multiplier = Math.max(GameState.player.multiplier, comboMsg.threshold / 5);
+                }
+            });
+        }
+
+        function updateRageMeter() {
+            // Rage decreases over time
+            GameState.player.rage = Math.max(0, GameState.player.rage - GameState.deltaTime * 2);
+            
+            // Update UI
+            GameState.ui.rageFill.style.width = `${GameState.player.rage}%`;
+            
+            // Rage mode activation
+            if (GameState.player.rage >= 100 && !GameState.player.rageMode) {
+                activateRageMode();
+            }
+        }
+
+        function activateRageMode() {
+            showComboPopup("RAGE MODE!", 0xFF0000);
+            GameState.player.rageMode = true;
+            GameState.player.multiplier *= 2;
+            
+            // Visual effect
+            if (GameState.player.mesh) {
+                GameState.player.mesh.children.forEach(child => {
+                    if (child.material && child.material.emissive) {
+                        child.material.emissive.setHex(0xFF0000);
+                        child.material.emissiveIntensity = 0.5;
+                    }
+                });
+            }
+            
+            // End rage mode after 5 seconds
+            setTimeout(() => {
+                if (GameState.player.rageMode) {
+                    GameState.player.rageMode = false;
+                    GameState.player.multiplier /= 2;
+                    GameState.player.rage = 0;
+                    
+                    if (GameState.player.mesh) {
+                        GameState.player.mesh.children.forEach(child => {
+                            if (child.material && child.material.emissive) {
+                                child.material.emissiveIntensity = 0.1;
+                            }
+                        });
+                    }
+                }
+            }, 5000);
         }
 
         // ============================================
@@ -1139,341 +1696,337 @@
         // ============================================
         function handleKeyDown(event) {
             const key = event.code;
-            GameState.keysPressed[key] = true;
+            GameState.keys[key] = true;
             
             // Prevent default for game keys
-            if ([
-                'KeyW', 'KeyA', 'KeyS', 'KeyD',
-                'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-                'Space', 'ShiftLeft', 'ControlLeft', 'KeyE', 'KeyR', 'Enter'
-            ].includes(key)) {
+            if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 
+                 'KeyA', 'KeyD', 'KeyW', 'KeyS', 'KeyR'].includes(key)) {
                 event.preventDefault();
             }
             
             // Handle game actions
-            if (GameState.phase === 'playing' && GameState.playerRole) {
-                handleGameAction(key);
+            if (GameState.phase === 'playing') {
+                // Movement
+                if (key === 'ArrowLeft' || key === 'KeyA') {
+                    GameState.player.lane = Math.max(0, GameState.player.lane - 1);
+                } else if (key === 'ArrowRight' || key === 'KeyD') {
+                    GameState.player.lane = Math.min(GameConfig.LANE_COUNT - 1, GameState.player.lane + 1);
+                }
+                
+                // Jump
+                if ((key === 'Space' || key === 'ArrowUp' || key === 'KeyW') && !GameState.player.isJumping) {
+                    GameState.player.velocity.y = GameConfig.JUMP_FORCE;
+                    GameState.player.isJumping = true;
+                } else if ((key === 'Space' || key === 'ArrowUp' || key === 'KeyW') && 
+                          GameState.player.canDoubleJump && GameState.player.velocity.y < 5) {
+                    // Double jump
+                    GameState.player.velocity.y = GameConfig.JUMP_FORCE * 1.2;
+                    GameState.player.canDoubleJump = false;
+                }
+                
+                // Slide
+                if (key === 'ArrowDown' || key === 'KeyS') {
+                    GameState.player.isSliding = true;
+                }
+                
+                // Rage quit (respawn)
+                if (key === 'KeyR') {
+                    resetPlayerPosition();
+                }
             }
         }
 
         function handleKeyUp(event) {
             const key = event.code;
-            GameState.keysPressed[key] = false;
-        }
-
-        function handleGameAction(key) {
-            if (GameState.puzzles.length === 0) return;
+            GameState.keys[key] = false;
             
-            const puzzle = GameState.puzzles[GameState.activePuzzle];
-            
-            // Manipulator actions (Player 1)
-            if (GameState.playerRole === 'manipulator') {
-                if (key === 'KeyE') {
-                    // Grab nearest object logic would go here
-                    Debug.log('Manipulator: Grab object action');
-                } else if (key === 'KeyR') {
-                    // Rotate object logic would go here
-                    Debug.log('Manipulator: Rotate object action');
-                }
-            }
-            // Activator actions (Player 2)
-            else if (GameState.playerRole === 'activator') {
-                if (key === 'Enter') {
-                    // Activate nearest switch
-                    activateNearestSwitch(puzzle);
-                } else if (key === 'Space') {
-                    // Jump action
-                    Debug.log('Activator: Jump action');
+            if (GameState.phase === 'playing') {
+                if (key === 'ArrowDown' || key === 'KeyS') {
+                    GameState.player.isSliding = false;
                 }
             }
         }
 
-        function activateNearestSwitch(puzzle) {
-            if (!GameState.camera || !puzzle) return;
+        function handleTouchStart(event) {
+            if (event.touches.length > 0) {
+                GameState.touch.startX = event.touches[0].clientX;
+                GameState.touch.startY = event.touches[0].clientY;
+            }
+        }
+
+        function handleTouchMove(event) {
+            event.preventDefault();
+        }
+
+        function handleTouchEnd(event) {
+            if (!GameState.touch.startX) return;
             
-            let nearestSwitch = null;
-            let nearestDistance = Infinity;
+            const endX = event.changedTouches[0].clientX;
+            const endY = event.changedTouches[0].clientY;
             
-            // Find nearest switch
-            for (let i = 0; i < 2; i++) {
-                const switchObj = puzzle.objects[`switch_${i}`];
-                if (switchObj && switchObj.userData.activatable && !switchObj.userData.activated) {
-                    const distance = GameState.camera.position.distanceTo(switchObj.position);
-                    if (distance < 5 && distance < nearestDistance) {
-                        nearestDistance = distance;
-                        nearestSwitch = switchObj;
-                    }
+            const diffX = endX - GameState.touch.startX;
+            const diffY = endY - GameState.touch.startY;
+            
+            // Swipe left/right for lane change
+            if (Math.abs(diffX) > 50) {
+                if (diffX > 0) {
+                    GameState.player.lane = Math.min(GameConfig.LANE_COUNT - 1, GameState.player.lane + 1);
+                } else {
+                    GameState.player.lane = Math.max(0, GameState.player.lane - 1);
                 }
             }
             
-            // Activate the switch
-            if (nearestSwitch) {
-                nearestSwitch.userData.activated = true;
-                nearestSwitch.material.emissive.setHex(0xff44aa);
-                nearestSwitch.material.emissiveIntensity = 0.8;
-                nearestSwitch.position.y = 0.1; // Lower it slightly when activated
-                
-                Debug.log(`Switch ${nearestSwitch.userData.id} activated`);
+            // Swipe up for jump
+            if (diffY < -50 && !GameState.player.isJumping) {
+                GameState.player.velocity.y = GameConfig.JUMP_FORCE;
+                GameState.player.isJumping = true;
+            }
+            
+            // Swipe down for slide
+            if (diffY > 50) {
+                GameState.player.isSliding = true;
+                setTimeout(() => {
+                    GameState.player.isSliding = false;
+                }, 500);
             }
         }
 
         // ============================================
-        // NETWORKING (SIMPLIFIED FOR LOCAL PLAY)
+        // GAME FLOW
         // ============================================
-        function startHostGame() {
-            Debug.log('Starting as host...');
+        function startGame(mode) {
+            GameState.gameMode = mode;
+            GameState.phase = 'playing';
             
-            GameState.connectionType = 'host';
-            GameState.playerId = 'player1';
-            GameState.playerRole = 'manipulator';
+            // Reset game state
+            resetGame();
             
-            // In a real implementation, this would set up WebRTC
-            // For this demo, we'll simulate local multiplayer
-            simulateLocalMultiplayer();
+            // Show appropriate UI
+            GameState.ui.mainMenu.classList.add('hidden');
             
-            startGame();
+            if (mode === 'single') {
+                GameState.ui.gameHUD.classList.remove('hidden');
+                GameState.ui.multiplayerHUD.classList.add('hidden');
+                GameState.ui.rageMeter.classList.remove('hidden');
+            } else {
+                GameState.ui.gameHUD.classList.add('hidden');
+                GameState.ui.multiplayerHUD.classList.remove('hidden');
+                GameState.ui.rageMeter.classList.add('hidden');
+                // In a real multiplayer game, you'd initialize two players here
+            }
+            
+            // Start game timer for multiplayer
+            if (mode === 'multi') {
+                startRaceTimer();
+            }
+            
+            console.log(`Starting ${mode} player game`);
         }
 
-        function startJoinGame() {
-            Debug.log('Joining as client...');
+        function resetGame() {
+            // Reset player
+            GameState.player = {
+                position: new THREE.Vector3(0, 2, 0),
+                velocity: new THREE.Vector3(0, 0, 0),
+                lane: 2,
+                isJumping: false,
+                isSliding: false,
+                canDoubleJump: true,
+                score: 0,
+                distance: 0,
+                multiplier: 1,
+                combo: 0,
+                powerUps: [],
+                rage: 0,
+                rageMode: false,
+                mesh: GameState.player.mesh
+            };
             
-            GameState.connectionType = 'client';
-            GameState.playerId = 'player2';
-            GameState.playerRole = 'activator';
+            // Reset game objects
+            GameState.obstacles.forEach(obj => GameState.scene.remove(obj));
+            GameState.powerUps.forEach(obj => GameState.scene.remove(obj));
+            GameState.coins.forEach(obj => GameState.scene.remove(obj));
             
-            // In a real implementation, this would connect to host via WebRTC
-            // For this demo, we'll simulate local multiplayer
-            simulateLocalMultiplayer();
+            GameState.obstacles = [];
+            GameState.powerUps = [];
+            GameState.coins = [];
             
-            startGame();
+            GameState.gameSpeed = 15;
+            GameState.spawnTimer = 0;
+            
+            // Reset player mesh if it exists
+            if (GameState.player.mesh) {
+                GameState.player.mesh.position.copy(GameState.player.position);
+                GameState.player.mesh.scale.set(1, 1, 1);
+                GameState.player.mesh.rotation.set(0, 0, 0);
+            }
+            
+            // Update UI
+            updateUI();
+            updatePowerUpDisplay();
+            updateComboDisplay();
         }
 
-        function simulateLocalMultiplayer() {
-            Debug.log('Simulating local multiplayer connection...');
+        function resetPlayerPosition() {
+            GameState.player.position.set(0, 5, 0);
+            GameState.player.velocity.set(0, 0, 0);
+            GameState.player.lane = 2;
+            GameState.player.rage = 0;
             
-            // Show connection status
-            showConnectionStatus('Connected to local game', 'connected');
+            if (GameState.player.mesh) {
+                GameState.player.mesh.position.copy(GameState.player.position);
+            }
+        }
+
+        function gameOver() {
+            GameState.phase = 'menu';
             
-            // Simulate connection establishment
-            setTimeout(() => {
-                GameState.isConnected = true;
-                
-                // Update player status indicators
-                if (GameState.uiElements.p1Status && GameState.playerRole === 'manipulator') {
-                    GameState.uiElements.p1Status.textContent = 'Active';
-                    GameState.uiElements.p1Status.className = 'status connected pulse';
+            // Save high score
+            const currentHighScore = parseInt(GameState.ui.highScore.textContent.replace(/,/g, '')) || 0;
+            if (GameState.player.score > currentHighScore) {
+                GameState.ui.highScore.textContent = GameState.player.score.toLocaleString();
+                saveGameData();
+            }
+            
+            // Update crashes
+            const currentCrashes = parseInt(GameState.ui.totalCrashes.textContent.replace(/,/g, '')) || 0;
+            GameState.ui.totalCrashes.textContent = (currentCrashes + 1).toLocaleString();
+            
+            // Show game over message
+            showGameOver();
+            
+            // Return to menu
+            GameState.ui.gameHUD.classList.add('hidden');
+            GameState.ui.multiplayerHUD.classList.add('hidden');
+            GameState.ui.rageMeter.classList.add('hidden');
+            GameState.ui.mainMenu.classList.remove('hidden');
+        }
+
+        function startRaceTimer() {
+            let time = 0;
+            const timerInterval = setInterval(() => {
+                if (GameState.phase !== 'playing' || GameState.gameMode !== 'multi') {
+                    clearInterval(timerInterval);
+                    return;
                 }
                 
-                if (GameState.uiElements.p2Status && GameState.playerRole === 'activator') {
-                    GameState.uiElements.p2Status.textContent = 'Active';
-                    GameState.uiElements.p2Status.className = 'status connected pulse';
-                }
+                time++;
+                const minutes = Math.floor(time / 60);
+                const seconds = time % 60;
+                GameState.ui.raceTimer.textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 
-                Debug.log('Local multiplayer simulation complete');
+                // Update player distances (simulated for demo)
+                GameState.ui.p1Distance.textContent = 
+                    `Distance: ${Math.floor(Math.random() * 500)}m`;
+                GameState.ui.p2Distance.textContent = 
+                    `Distance: ${Math.floor(Math.random() * 500)}m`;
             }, 1000);
         }
 
         // ============================================
-        // GAME FLOW CONTROL
+        // UI UPDATES
         // ============================================
-        function startGame() {
-            Debug.log(`Starting game as ${GameState.playerRole}`);
+        function updateUI() {
+            // Update score
+            GameState.ui.score.textContent = GameState.player.score.toLocaleString();
             
-            // Hide main menu
-            GameState.uiElements.mainMenu.classList.add('hidden');
+            // Update distance
+            GameState.ui.distance.textContent = `${Math.floor(GameState.player.distance)}m`;
             
-            // Show appropriate HUD based on player role
-            if (GameState.playerRole === 'manipulator') {
-                GameState.uiElements.gameHUD.classList.remove('hidden');
-                GameState.uiElements.player2HUD.classList.add('hidden');
+            // Update multiplier
+            GameState.ui.multiplier.textContent = `${GameState.player.multiplier.toFixed(1)}x`;
+        }
+
+        function updateComboDisplay() {
+            if (GameState.player.combo > 1) {
+                GameState.ui.comboDisplay.textContent = `${GameState.player.combo} COMBO!`;
+                GameState.ui.comboDisplay.style.display = 'block';
             } else {
-                GameState.uiElements.gameHUD.classList.add('hidden');
-                GameState.uiElements.player2HUD.classList.remove('hidden');
+                GameState.ui.comboDisplay.style.display = 'none';
             }
+        }
+
+        function updatePowerUpDisplay() {
+            const display = GameState.ui.powerupDisplay;
+            display.innerHTML = '';
             
-            // Show instructions
-            GameState.uiElements.instructions.classList.remove('hidden');
+            GameState.player.powerUps.forEach(powerUp => {
+                const icon = document.createElement('div');
+                icon.className = `powerup-icon ${powerUp.icon.replace('fa-', '')}`;
+                icon.innerHTML = `<i class="fas ${powerUp.icon}"></i>`;
+                icon.title = powerUp.name;
+                display.appendChild(icon);
+            });
+        }
+
+        function showComboPopup(text, color) {
+            const popup = GameState.ui.comboPopup;
+            popup.textContent = text;
+            popup.style.color = `#${color.toString(16).padStart(6, '0')}`;
+            popup.style.opacity = '1';
+            popup.style.transform = 'translate(-50%, -50%) scale(1)';
             
-            // Position camera based on role
-            if (GameState.camera) {
-                if (GameState.playerRole === 'manipulator') {
-                    GameState.camera.position.set(0, 8, 20);
-                    GameState.camera.lookAt(0, 0, 0);
-                } else {
-                    GameState.camera.position.set(0, 8, -20);
-                    GameState.camera.lookAt(0, 0, 0);
-                }
-            }
+            // Animate out
+            setTimeout(() => {
+                popup.style.opacity = '0';
+                popup.style.transform = 'translate(-50%, -50%) scale(0.5)';
+            }, 1500);
+        }
+
+        function showGameOver() {
+            const messages = [
+                "WASTED!",
+                "TRY AGAIN!",
+                "BETTER LUCK NEXT TIME!",
+                "EPIC RUN!",
+                "NICE TRY!"
+            ];
             
-            // Change game phase
-            GameState.phase = 'playing';
-            
-            // Show welcome message
-            showMessage(
-                `Welcome, ${GameState.playerRole.toUpperCase()}!`,
-                `You are the ${GameState.playerRole}. Work with your partner to solve the puzzles!`
-            );
-            
-            // Lock pointer for better mouse control
-            lockPointer();
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            showComboPopup(message, 0xFF6B6B);
         }
 
         function showHowToPlay() {
-            showMessage(
-                "How to Play Quantum Link",
-                `• TWO PLAYERS, ONE GOAL: Work together to solve puzzles
-• UNIQUE ABILITIES: Manipulator moves objects, Activator triggers switches
-• COMMUNICATION: Talk to coordinate your actions
-• SOLVE PROGRESSIVELY: Complete puzzles to advance
-• LOCAL NETWORK: Play together on the same WiFi`
-            );
+            alert(`HOW TO PLAY FUNNY BONE RUNNER:
+
+🏃 CONTROLS:
+• LEFT/RIGHT ARROWS or A/D - Switch lanes
+• SPACEBAR or UP ARROW - Jump (double tap for double jump!)
+• DOWN ARROW or S - Slide under obstacles
+• R - Rage quit (respawn)
+
+🎯 OBJECTIVE:
+• Run as far as you can!
+• Avoid funny obstacles (or don't - crashing is fun too!)
+• Collect coins for points
+• Grab power-ups for crazy abilities
+• Build your rage meter for epic comebacks!
+
+😄 FUN FACTOR:
+• The funnier your crash, the more points you get!
+• Build combos for multiplier bonuses
+• Two players can race on the same keyboard!
+
+HAVE FUN AND EMBRACE THE CHAOS!`);
         }
 
-        function lockPointer() {
-            const canvas = document.getElementById('game-canvas');
-            
-            canvas.requestPointerLock = canvas.requestPointerLock || 
-                                       canvas.mozRequestPointerLock ||
-                                       canvas.webkitRequestPointerLock;
-            
-            if (canvas.requestPointerLock) {
-                canvas.requestPointerLock();
+        function showError(message) {
+            alert(`ERROR: ${message}\n\nPlease refresh the page to try again.`);
+        }
+
+        function onWindowResize() {
+            if (GameState.camera && GameState.renderer) {
+                GameState.camera.aspect = window.innerWidth / window.innerHeight;
+                GameState.camera.updateProjectionMatrix();
+                GameState.renderer.setSize(window.innerWidth, window.innerHeight);
             }
-            
-            // Mouse movement handling for camera control
-            document.addEventListener('mousemove', handleMouseMove);
-        }
-
-        function handleMouseMove(event) {
-            if (GameState.phase !== 'playing' || !GameState.camera) return;
-            
-            const sensitivity = 0.002;
-            
-            // Update camera rotation based on mouse movement
-            GameState.camera.rotation.y -= event.movementX * sensitivity;
-            GameState.camera.rotation.x -= event.movementY * sensitivity;
-            
-            // Limit vertical rotation
-            GameState.camera.rotation.x = Math.max(
-                -Math.PI / 2, 
-                Math.min(Math.PI / 2, GameState.camera.rotation.x)
-            );
-        }
-
-        // ============================================
-        // UI UTILITIES
-        // ============================================
-        function showMessage(title, text) {
-            Debug.log(`Message: ${title} - ${text}`);
-            
-            // Create message element
-            const messageEl = document.createElement('div');
-            messageEl.className = 'ui-panel';
-            messageEl.style.cssText = `
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                z-index: 20;
-                text-align: center;
-                min-width: 300px;
-                max-width: 80vw;
-                animation: fadeIn 0.3s ease;
-            `;
-            
-            messageEl.innerHTML = `
-                <h3>${title}</h3>
-                <div style="margin: 15px 0; line-height: 1.5;">${text.replace(/\n/g, '<br>')}</div>
-                <button id="close-message-btn" class="button" style="margin-top: 10px;">OK</button>
-            `;
-            
-            document.getElementById('ui-overlay').appendChild(messageEl);
-            
-            // Add close button event
-            document.getElementById('close-message-btn').addEventListener('click', function() {
-                messageEl.remove();
-            });
-            
-            // Auto-remove after 5 seconds if not manually closed
-            setTimeout(() => {
-                if (messageEl.parentNode) {
-                    messageEl.remove();
-                }
-            }, 5000);
-        }
-
-        function showConnectionStatus(message, type) {
-            const statusEl = GameState.uiElements.connectionStatus;
-            statusEl.textContent = message;
-            statusEl.className = type;
-            statusEl.classList.remove('hidden');
-            
-            // Hide after 3 seconds
-            setTimeout(() => {
-                statusEl.classList.add('hidden');
-            }, 3000);
-        }
-
-        // ============================================
-        // WINDOW RESIZE HANDLING
-        // ============================================
-        function handleResize() {
-            if (!GameState.camera || !GameState.renderer) return;
-            
-            GameState.camera.aspect = window.innerWidth / window.innerHeight;
-            GameState.camera.updateProjectionMatrix();
-            GameState.renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        // ============================================
-        // ERROR HANDLING
-        // ============================================
-        function handleCriticalError(error) {
-            console.error('Critical game error:', error);
-            
-            // Show error message to user
-            const errorMessage = `
-                <div class="ui-panel" style="
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: rgba(40, 10, 10, 0.95);
-                    border-color: #ff5555;
-                    z-index: 1000;
-                    text-align: center;
-                    max-width: 90vw;
-                ">
-                    <h1 style="color: #ff5555;">Game Error</h1>
-                    <div style="margin: 20px 0; color: #ffaaaa;">
-                        ${error.message || 'An unexpected error occurred'}
-                    </div>
-                    <div style="margin: 10px 0; font-size: 0.9em; color: #cc8888;">
-                        Please refresh the page to try again
-                    </div>
-                    <button onclick="window.location.reload()" class="button" style="background: #ff5555; margin-top: 15px;">
-                        <i class="fas fa-redo"></i> Reload Game
-                    </button>
-                </div>
-            `;
-            
-            document.getElementById('game-container').innerHTML += errorMessage;
         }
 
         // ============================================
         // INITIALIZATION COMPLETE
         // ============================================
-        Debug.log('Game initialization script loaded successfully');
-        
-        // Add CSS animation for fadeIn
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeIn {
-                from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-                to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            }
-        `;
-        document.head.appendChild(style);
+        console.log("Game initialization complete!");
     </script>
 </body>
 </html>
