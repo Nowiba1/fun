@@ -492,6 +492,30 @@
             transition: width 0.3s;
         }
 
+        /* Waiting Overlay */
+        #waitingOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .waiting-box {
+            background: rgba(0, 20, 0, 0.95);
+            border: 3px solid #00ccff;
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 500px;
+            animation: pulse 2s infinite;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             h1 { font-size: 2.5em; }
@@ -542,6 +566,16 @@
             </div>
         </div>
 
+        <!-- Waiting Overlay -->
+        <div id="waitingOverlay">
+            <div class="waiting-box">
+                <h2>Waiting for Host to Start Game...</h2>
+                <div class="spinner"></div>
+                <p id="waitingMessage">Connected to host. Waiting for game to start...</p>
+                <button onclick="cancelWaiting()" style="margin-top: 20px;">CANCEL</button>
+            </div>
+        </div>
+
         <!-- Lobby Screen -->
         <div id="lobbyScreen" class="screen">
             <div class="ui-box">
@@ -560,8 +594,9 @@
                 
                 <div id="joinSection" style="display: none; margin: 20px 0;">
                     <input type="text" id="roomCode" placeholder="Enter 6-digit code" maxlength="6" pattern="[A-Z0-9]{6}">
-                    <button onclick="connectToHost()">CONNECT</button>
+                    <button onclick="connectToHost()" id="connectBtn">CONNECT</button>
                     <button onclick="cancelJoin()">CANCEL</button>
+                    <p id="connectStatus" style="margin-top: 10px; color: #ffcc00;"></p>
                 </div>
                 
                 <div id="roomInfo" style="display: none; margin: 20px 0;">
@@ -701,7 +736,7 @@
 
     <script>
         // ============================================================================
-        // SIMPLIFIED RNG (No dependencies)
+        // SIMPLIFIED RNG
         // ============================================================================
         class SimpleRandom {
             constructor(seed) {
@@ -786,7 +821,8 @@
             fps: 60,
             gameLoaded: false,
             prisonSeed: Date.now(),
-            rng: null
+            rng: null,
+            connectionCheckInterval: null
         };
 
         // ============================================================================
@@ -807,13 +843,14 @@
         let touchControls = {};
 
         // ============================================================================
-        // LOBBY FUNCTIONS (FIXED - All functions defined)
+        // LOBBY FUNCTIONS
         // ============================================================================
 
         function joinGame() {
             document.getElementById('joinSection').style.display = 'block';
             document.getElementById('hostBtn').disabled = true;
             document.getElementById('joinBtn').disabled = true;
+            document.getElementById('tutorialBtn').disabled = true;
             document.getElementById('roomCode').focus();
         }
 
@@ -830,11 +867,15 @@
             document.getElementById('hostBtn').disabled = false;
             document.getElementById('joinBtn').disabled = false;
             document.getElementById('tutorialBtn').disabled = false;
+            document.getElementById('connectStatus').textContent = '';
         }
 
         function cancelHost() {
             if (gameState.peer) {
                 gameState.peer.close();
+            }
+            if (gameState.connectionCheckInterval) {
+                clearInterval(gameState.connectionCheckInterval);
             }
             localStorage.removeItem('hostOffer');
             localStorage.removeItem('iceCandidates');
@@ -843,6 +884,16 @@
             document.getElementById('joinBtn').disabled = false;
             document.getElementById('tutorialBtn').disabled = false;
             updateConnectionStatus('disconnected', 'Ready to play');
+        }
+
+        function cancelWaiting() {
+            document.getElementById('waitingOverlay').style.display = 'none';
+            if (gameState.peer) {
+                gameState.peer.close();
+            }
+            gameState.connectionEstablished = false;
+            updateConnectionStatus('disconnected', 'Connection cancelled');
+            showMessage("Connection cancelled", "info");
         }
 
         // ============================================================================
@@ -886,8 +937,17 @@
             }
         }
 
+        function showWaitingScreen(message) {
+            document.getElementById('waitingOverlay').style.display = 'flex';
+            document.getElementById('waitingMessage').textContent = message;
+        }
+
+        function hideWaitingScreen() {
+            document.getElementById('waitingOverlay').style.display = 'none';
+        }
+
         // ============================================================================
-        // NETWORKING (WebRTC)
+        // NETWORKING (WebRTC) - FIXED CONNECTION
         // ============================================================================
         function hostGame() {
             if (!gameState.gameLoaded) {
@@ -906,65 +966,140 @@
             gameState.prisonSeed = Date.now();
             gameState.rng = new SimpleRandom(gameState.prisonSeed);
             
-            // Create peer connection
+            // Create peer connection with better timeout handling
             gameState.peer = new RTCPeerConnection({
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
                     { urls: 'stun:stun2.l.google.com:19302' }
-                ]
+                ],
+                iceCandidatePoolSize: 10
             });
             
             // Create data channel
-            gameState.dataChannel = gameState.peer.createDataChannel('game');
+            gameState.dataChannel = gameState.peer.createDataChannel('game', {
+                ordered: true,
+                maxRetransmits: 10
+            });
             
             setupDataChannel(gameState.dataChannel);
             
             // Handle ICE candidates
             gameState.peer.onicecandidate = (event) => {
                 if (event.candidate) {
+                    console.log('Host ICE candidate:', event.candidate);
                     const candidates = JSON.parse(localStorage.getItem('iceCandidates') || '[]');
                     candidates.push(event.candidate);
                     localStorage.setItem('iceCandidates', JSON.stringify(candidates));
                 }
             };
             
+            // Handle connection state
+            gameState.peer.onconnectionstatechange = () => {
+                console.log('Host connection state:', gameState.peer.connectionState);
+                if (gameState.peer.connectionState === 'connected') {
+                    updateConnectionStatus('connected', 'Player connected!');
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('connectionCount').textContent = 'Player connected! Ready to start!';
+                    showMessage("Player connected!", "success");
+                }
+            };
+            
             // Create and store offer
             gameState.peer.createOffer()
-                .then(offer => gameState.peer.setLocalDescription(offer))
+                .then(offer => {
+                    console.log('Host created offer');
+                    return gameState.peer.setLocalDescription(offer);
+                })
                 .then(() => {
+                    console.log('Host set local description');
+                    
+                    // Store offer with expiration
                     localStorage.setItem('hostOffer', JSON.stringify({
                         sdp: gameState.peer.localDescription,
                         roomCode: gameState.roomCode,
                         playerId: gameState.playerId,
                         prisonSeed: gameState.prisonSeed,
-                        timestamp: Date.now()
+                        timestamp: Date.now(),
+                        expires: Date.now() + 120000 // 2 minutes
                     }));
                     
                     localStorage.setItem('iceCandidates', '[]');
-                    localStorage.setItem('playerAnswer', '');
+                    localStorage.removeItem('playerAnswer');
+                    localStorage.removeItem('playerIceCandidate');
                     
                     // Show room info
                     document.getElementById('roomInfo').style.display = 'block';
                     document.getElementById('displayCode').textContent = gameState.roomCode;
-                    updateConnectionStatus('connecting', 'Waiting for player...');
+                    updateConnectionStatus('connecting', `Waiting for player... Code: ${gameState.roomCode}`);
+                    
+                    console.log('Host room created:', gameState.roomCode);
                     
                     // Start checking for connection
-                    checkForConnection();
+                    startConnectionPolling();
                 })
                 .catch(error => {
                     console.error('Error creating offer:', error);
                     updateConnectionStatus('disconnected', 'Failed to create room');
-                    showMessage("Failed to create room. Please try again.");
+                    showMessage("Failed to create room. Please try again.", "error");
                     document.getElementById('hostBtn').disabled = false;
                     document.getElementById('joinBtn').disabled = false;
                     document.getElementById('tutorialBtn').disabled = false;
                 });
         }
 
+        function startConnectionPolling() {
+            if (gameState.connectionCheckInterval) {
+                clearInterval(gameState.connectionCheckInterval);
+            }
+            
+            gameState.connectionCheckInterval = setInterval(() => {
+                if (gameState.connectionEstablished) {
+                    clearInterval(gameState.connectionCheckInterval);
+                    return;
+                }
+                
+                try {
+                    const playerAnswer = localStorage.getItem('playerAnswer');
+                    if (playerAnswer) {
+                        const answer = JSON.parse(playerAnswer);
+                        console.log('Host found answer:', answer);
+                        
+                        if (answer.roomCode === gameState.roomCode) {
+                            console.log('Room code matches, setting remote description');
+                            gameState.peer.setRemoteDescription(new RTCSessionDescription(answer.sdp))
+                                .then(() => {
+                                    console.log('Host set remote description');
+                                    
+                                    // Add ICE candidates from joiner
+                                    const candidateData = localStorage.getItem('playerIceCandidate');
+                                    if (candidateData) {
+                                        const candidate = JSON.parse(candidateData);
+                                        if (candidate.roomCode === gameState.roomCode) {
+                                            console.log('Adding ICE candidate from joiner');
+                                            gameState.peer.addIceCandidate(new RTCIceCandidate(candidate.candidate));
+                                        }
+                                    }
+                                    
+                                    localStorage.removeItem('playerAnswer');
+                                    localStorage.removeItem('playerIceCandidate');
+                                })
+                                .catch(error => {
+                                    console.error('Error setting remote description:', error);
+                                });
+                        }
+                    }
+                } catch (e) {
+                    console.error('Connection polling error:', e);
+                }
+            }, 1000);
+        }
+
         function connectToHost() {
             const roomCodeInput = document.getElementById('roomCode');
             const roomCode = roomCodeInput.value.trim().toUpperCase();
+            const connectBtn = document.getElementById('connectBtn');
+            const connectStatus = document.getElementById('connectStatus');
             
             if (!roomCode || roomCode.length !== 6) {
                 showMessage("Please enter a valid 6-digit code", "error");
@@ -972,125 +1107,191 @@
                 return;
             }
             
-            document.getElementById('hostBtn').disabled = true;
-            document.getElementById('joinBtn').disabled = true;
-            document.getElementById('tutorialBtn').disabled = true;
+            connectBtn.disabled = true;
+            connectBtn.textContent = 'CONNECTING...';
+            connectStatus.textContent = 'Looking for room...';
             updateConnectionStatus('connecting', 'Connecting to host...');
             
             gameState.isHost = false;
             gameState.playerId = 'joiner_' + generateRandomId();
             gameState.roomCode = roomCode;
             
-            // Get host offer
-            const hostData = localStorage.getItem('hostOffer');
-            if (!hostData) {
-                showMessage("Room not found. Make sure host created a room first.", "error");
-                document.getElementById('hostBtn').disabled = false;
-                document.getElementById('joinBtn').disabled = false;
-                document.getElementById('tutorialBtn').disabled = false;
-                return;
-            }
+            // Clear any old data first
+            localStorage.removeItem('playerAnswer');
+            localStorage.removeItem('playerIceCandidate');
             
-            let hostOffer;
-            try {
-                hostOffer = JSON.parse(hostData);
+            // Try to get host offer with retry logic
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            function tryConnect() {
+                attempts++;
+                connectStatus.textContent = `Looking for room... (Attempt ${attempts}/${maxAttempts})`;
                 
-                if (Date.now() - hostOffer.timestamp > 120000) {
-                    showMessage("Room expired. Ask host to create new room.", "error");
-                    document.getElementById('hostBtn').disabled = false;
-                    document.getElementById('joinBtn').disabled = false;
-                    document.getElementById('tutorialBtn').disabled = false;
+                const hostData = localStorage.getItem('hostOffer');
+                console.log('Joiner looking for host data:', hostData ? 'Found' : 'Not found');
+                
+                if (!hostData) {
+                    if (attempts < maxAttempts) {
+                        setTimeout(tryConnect, 1000);
+                    } else {
+                        connectBtn.disabled = false;
+                        connectBtn.textContent = 'CONNECT';
+                        connectStatus.textContent = 'Room not found. Make sure host created a room first.';
+                        updateConnectionStatus('disconnected', 'Room not found');
+                        showMessage("Room not found. Make sure host created a room first.", "error");
+                    }
                     return;
                 }
                 
-                if (hostOffer.roomCode !== roomCode) {
-                    showMessage("Invalid room code.", "error");
-                    document.getElementById('hostBtn').disabled = false;
-                    document.getElementById('joinBtn').disabled = false;
-                    document.getElementById('tutorialBtn').disabled = false;
+                let hostOffer;
+                try {
+                    hostOffer = JSON.parse(hostData);
+                    console.log('Host offer found:', hostOffer);
+                    
+                    if (Date.now() > (hostOffer.expires || hostOffer.timestamp + 120000)) {
+                        connectBtn.disabled = false;
+                        connectBtn.textContent = 'CONNECT';
+                        connectStatus.textContent = 'Room expired. Ask host to create new room.';
+                        updateConnectionStatus('disconnected', 'Room expired');
+                        showMessage("Room expired. Ask host to create new room.", "error");
+                        return;
+                    }
+                    
+                    if (hostOffer.roomCode !== roomCode) {
+                        connectBtn.disabled = false;
+                        connectBtn.textContent = 'CONNECT';
+                        connectStatus.textContent = 'Invalid room code.';
+                        updateConnectionStatus('disconnected', 'Invalid code');
+                        showMessage("Invalid room code.", "error");
+                        return;
+                    }
+                    
+                    gameState.prisonSeed = hostOffer.prisonSeed || Date.now();
+                    gameState.rng = new SimpleRandom(gameState.prisonSeed);
+                    
+                } catch (e) {
+                    console.error('Error reading host data:', e);
+                    connectBtn.disabled = false;
+                    connectBtn.textContent = 'CONNECT';
+                    connectStatus.textContent = 'Error reading room data.';
+                    updateConnectionStatus('disconnected', 'Data error');
+                    showMessage("Error reading room data.", "error");
                     return;
                 }
                 
-                gameState.prisonSeed = hostOffer.prisonSeed || Date.now();
-                gameState.rng = new SimpleRandom(gameState.prisonSeed);
-                
-            } catch (e) {
-                showMessage("Error reading room data.", "error");
-                document.getElementById('hostBtn').disabled = false;
-                document.getElementById('joinBtn').disabled = false;
-                document.getElementById('tutorialBtn').disabled = false;
-                return;
-            }
-            
-            // Create peer connection
-            gameState.peer = new RTCPeerConnection({
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' }
-                ]
-            });
-            
-            // Set up data channel listener
-            gameState.peer.ondatachannel = (event) => {
-                gameState.dataChannel = event.channel;
-                setupDataChannel(gameState.dataChannel);
-            };
-            
-            // Handle ICE candidates
-            gameState.peer.onicecandidate = (event) => {
-                if (event.candidate) {
-                    const candidateData = {
-                        type: 'iceCandidate',
-                        candidate: event.candidate,
-                        roomCode: roomCode
-                    };
-                    localStorage.setItem('playerIceCandidate', JSON.stringify(candidateData));
-                }
-            };
-            
-            // Set remote description
-            gameState.peer.setRemoteDescription(new RTCSessionDescription(hostOffer.sdp))
-                .then(() => gameState.peer.createAnswer())
-                .then(answer => gameState.peer.setLocalDescription(answer))
-                .then(() => {
-                    localStorage.setItem('playerAnswer', JSON.stringify({
-                        sdp: gameState.peer.localDescription,
-                        roomCode: roomCode,
-                        playerId: gameState.playerId,
-                        timestamp: Date.now()
-                    }));
-                    
-                    const iceCandidates = JSON.parse(localStorage.getItem('iceCandidates') || '[]');
-                    iceCandidates.forEach(candidate => {
-                        if (candidate) {
-                            gameState.peer.addIceCandidate(new RTCIceCandidate(candidate));
-                        }
-                    });
-                    
-                    showMessage("Connected! Waiting for host to start game...", "success");
-                })
-                .catch(error => {
-                    console.error('Error connecting:', error);
-                    updateConnectionStatus('disconnected', 'Connection failed');
-                    showMessage("Failed to connect. Check room code and try again.", "error");
-                    document.getElementById('hostBtn').disabled = false;
-                    document.getElementById('joinBtn').disabled = false;
-                    document.getElementById('tutorialBtn').disabled = false;
+                // Create peer connection
+                console.log('Creating peer connection...');
+                gameState.peer = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' }
+                    ],
+                    iceCandidatePoolSize: 10
                 });
+                
+                // Set up data channel listener
+                gameState.peer.ondatachannel = (event) => {
+                    console.log('Data channel received');
+                    gameState.dataChannel = event.channel;
+                    setupDataChannel(gameState.dataChannel);
+                };
+                
+                // Handle ICE candidates
+                gameState.peer.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        console.log('Joiner ICE candidate:', event.candidate);
+                        const candidateData = {
+                            type: 'iceCandidate',
+                            candidate: event.candidate,
+                            roomCode: roomCode,
+                            timestamp: Date.now()
+                        };
+                        localStorage.setItem('playerIceCandidate', JSON.stringify(candidateData));
+                    }
+                };
+                
+                // Handle connection state
+                gameState.peer.onconnectionstatechange = () => {
+                    console.log('Joiner connection state:', gameState.peer.connectionState);
+                    if (gameState.peer.connectionState === 'connected') {
+                        updateConnectionStatus('connected', 'Connected to host!');
+                        connectStatus.textContent = 'Connected! Waiting for host to start...';
+                        showWaitingScreen("Connected to host! Waiting for game to start...");
+                    } else if (gameState.peer.connectionState === 'failed' || 
+                              gameState.peer.connectionState === 'disconnected') {
+                        updateConnectionStatus('disconnected', 'Connection failed');
+                        connectStatus.textContent = 'Connection failed.';
+                    }
+                };
+                
+                // Set remote description and create answer
+                console.log('Setting remote description...');
+                gameState.peer.setRemoteDescription(new RTCSessionDescription(hostOffer.sdp))
+                    .then(() => {
+                        console.log('Remote description set, creating answer...');
+                        return gameState.peer.createAnswer();
+                    })
+                    .then(answer => {
+                        console.log('Answer created, setting local description...');
+                        return gameState.peer.setLocalDescription(answer);
+                    })
+                    .then(() => {
+                        console.log('Local description set, storing answer...');
+                        
+                        // Store answer for host
+                        localStorage.setItem('playerAnswer', JSON.stringify({
+                            sdp: gameState.peer.localDescription,
+                            roomCode: roomCode,
+                            playerId: gameState.playerId,
+                            timestamp: Date.now()
+                        }));
+                        
+                        connectStatus.textContent = 'Connected! Waiting for host...';
+                        connectBtn.textContent = 'CONNECTED';
+                        
+                        // Add any stored ICE candidates from host
+                        const iceCandidates = JSON.parse(localStorage.getItem('iceCandidates') || '[]');
+                        console.log('Adding', iceCandidates.length, 'ICE candidates from host');
+                        iceCandidates.forEach(candidate => {
+                            if (candidate) {
+                                gameState.peer.addIceCandidate(new RTCIceCandidate(candidate))
+                                    .catch(e => console.error('Error adding ICE candidate:', e));
+                            }
+                        });
+                        
+                        console.log('Joiner connected to room:', roomCode);
+                        showMessage("Connected! Waiting for host to start...", "success");
+                    })
+                    .catch(error => {
+                        console.error('Connection error:', error);
+                        updateConnectionStatus('disconnected', 'Connection failed');
+                        connectStatus.textContent = 'Connection failed. Check room code.';
+                        connectBtn.disabled = false;
+                        connectBtn.textContent = 'CONNECT';
+                        showMessage("Failed to connect. Check room code and try again.", "error");
+                    });
+            }
+            
+            tryConnect();
         }
 
         function setupDataChannel(channel) {
+            console.log('Setting up data channel...');
+            
             channel.onopen = () => {
-                console.log('Data channel opened');
+                console.log('Data channel opened!');
                 gameState.connectionEstablished = true;
                 updateConnectionStatus('connected', 'Connected to partner');
                 
                 if (gameState.isHost) {
                     document.getElementById('startBtn').disabled = false;
                     document.getElementById('connectionCount').textContent = 'Player connected! Ready to start!';
+                    showMessage("Player connected successfully!", "success");
                 } else {
-                    showMessage("Connected! Waiting for host to start...", "success");
+                    showWaitingScreen("Connected! Waiting for host to start the game...");
+                    showMessage("Connected to host! Waiting for game start...", "success");
                 }
                 
                 sendNetworkMessage('playerJoin', {
@@ -1103,6 +1304,7 @@
             channel.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
+                    console.log('Network message received:', data.type);
                     handleNetworkMessage(data);
                 } catch (e) {
                     console.error('Error parsing network message:', e);
@@ -1116,40 +1318,14 @@
                 
                 if (gameState.gameStarted) {
                     showMessage("Partner disconnected!", "error");
+                } else {
+                    hideWaitingScreen();
                 }
             };
-        }
-
-        function checkForConnection() {
-            if (!gameState.isHost || !gameState.peer || gameState.connectionEstablished) return;
             
-            try {
-                const playerAnswer = localStorage.getItem('playerAnswer');
-                if (playerAnswer) {
-                    const answer = JSON.parse(playerAnswer);
-                    if (answer.roomCode === gameState.roomCode) {
-                        gameState.peer.setRemoteDescription(new RTCSessionDescription(answer.sdp))
-                            .then(() => {
-                                const candidateData = localStorage.getItem('playerIceCandidate');
-                                if (candidateData) {
-                                    const candidate = JSON.parse(candidateData);
-                                    if (candidate.roomCode === gameState.roomCode) {
-                                        gameState.peer.addIceCandidate(new RTCIceCandidate(candidate.candidate));
-                                    }
-                                }
-                                localStorage.removeItem('playerAnswer');
-                                localStorage.removeItem('playerIceCandidate');
-                            })
-                            .catch(console.error);
-                    }
-                }
-            } catch (e) {
-                console.error('Error checking connection:', e);
-            }
-            
-            if (!gameState.connectionEstablished) {
-                setTimeout(checkForConnection, 1000);
-            }
+            channel.onerror = (error) => {
+                console.error('Data channel error:', error);
+            };
         }
 
         function sendNetworkMessage(type, data) {
@@ -1162,13 +1338,17 @@
                 };
                 try {
                     gameState.dataChannel.send(JSON.stringify(message));
+                    console.log('Sent message:', type);
                 } catch (e) {
                     console.error('Error sending network message:', e);
                 }
+            } else {
+                console.log('Cannot send message, channel not open');
             }
         }
 
         function handleNetworkMessage(message) {
+            console.log('Handling message:', message.type);
             switch (message.type) {
                 case 'playerJoin':
                     handlePlayerJoin(message);
@@ -1194,6 +1374,11 @@
                 case 'gameOver':
                     handleGameOver(message.data);
                     break;
+                case 'ping':
+                    sendNetworkMessage('pong', { timestamp: message.data.timestamp });
+                    break;
+                default:
+                    console.log('Unknown message type:', message.type);
             }
         }
 
@@ -1213,18 +1398,19 @@
                     inventory: []
                 };
                 
-                document.getElementById('playerName2').textContent = name;
+                document.getElementById('playerName2').textContent = ` (${name})`;
                 updateConnectionStatus('connected', `Connected to ${name}`);
                 
                 if (gameState.isHost && !gameState.gameStarted) {
                     document.getElementById('startBtn').disabled = false;
-                    document.getElementById('connectionCount').textContent = `${name} connected!`;
+                    document.getElementById('connectionCount').textContent = `${name} connected! Ready to start!`;
+                    showMessage(`${name} connected!`, "success");
                 }
             }
         }
 
         // ============================================================================
-        // GAME START
+        // GAME START - FIXED
         // ============================================================================
         function startGame() {
             if (!gameState.isHost || !gameState.connectionEstablished) {
@@ -1233,64 +1419,89 @@
             }
             
             showLoadingScreen(true);
+            document.getElementById('loadingText').textContent = 'Starting game...';
             
             // Initialize Three.js
-            initThreeJS();
-            
-            // Generate prison
-            generatePrison(gameState.prisonSeed);
-            
-            // Create local player
-            createPlayer(gameState.playerId, true);
-            
-            // Notify other player to start
-            sendNetworkMessage('gameStart', {
-                prisonSeed: gameState.prisonSeed,
-                playerPositions: {
-                    [gameState.playerId]: { x: -10, y: 1, z: 0 }
-                }
-            });
-            
-            // Start game locally
-            setTimeout(() => {
-                startGameLocal();
-            }, 500);
+            try {
+                initThreeJS();
+                
+                // Generate prison
+                generatePrison(gameState.prisonSeed);
+                
+                // Create local player
+                createPlayer(gameState.playerId, true);
+                
+                // Notify other player to start
+                sendNetworkMessage('gameStart', {
+                    prisonSeed: gameState.prisonSeed,
+                    playerPositions: {
+                        [gameState.playerId]: { x: -10, y: 1, z: 0 }
+                    }
+                });
+                
+                // Start game locally after a short delay
+                setTimeout(() => {
+                    startGameLocal();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error starting game:', error);
+                showMessage("Error starting game: " + error.message, "error");
+                showLoadingScreen(false);
+            }
         }
 
         function startGameFromNetwork(data) {
+            console.log('Starting game from network...');
             showLoadingScreen(true);
+            document.getElementById('loadingText').textContent = 'Joining game...';
             
             gameState.prisonSeed = data.prisonSeed;
             gameState.rng = new SimpleRandom(gameState.prisonSeed);
             
-            initThreeJS();
-            generatePrison(gameState.prisonSeed);
-            
-            const myPosition = data.playerPositions[gameState.playerId] || { x: 10, y: 1, z: 0 };
-            createPlayer(gameState.playerId, true);
-            if (playerMesh && myPosition) {
-                playerMesh.position.set(myPosition.x, myPosition.y, myPosition.z);
+            try {
+                initThreeJS();
+                generatePrison(gameState.prisonSeed);
+                
+                const myPosition = data.playerPositions[gameState.playerId] || { x: 10, y: 1, z: 0 };
+                createPlayer(gameState.playerId, true);
+                if (playerMesh && myPosition) {
+                    playerMesh.position.set(myPosition.x, myPosition.y, myPosition.z);
+                }
+                
+                setTimeout(() => {
+                    startGameLocal();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error joining game:', error);
+                showMessage("Error joining game: " + error.message, "error");
+                showLoadingScreen(false);
+                hideWaitingScreen();
             }
-            
-            setTimeout(() => {
-                startGameLocal();
-            }, 500);
         }
 
         function startGameLocal() {
+            console.log('Starting game locally...');
             gameState.gameStarted = true;
+            
+            // Hide all overlays
             showLoadingScreen(false);
+            hideWaitingScreen();
             document.getElementById('lobbyScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'flex';
             
+            // Show objective
             document.getElementById('objective').style.display = 'block';
             document.getElementById('objectiveText').textContent = "ESCAPE THE PRISON WITH YOUR PARTNER!";
             document.getElementById('objectiveSubtext').textContent = "Collect items, avoid guards, and choose an escape method when ready.";
             
+            // Start game loop
             animate();
             setupEventListeners();
             
-            console.log('Game started!');
+            console.log('Game started successfully!');
+            showMessage("Game started! Good luck!", "success");
         }
 
         function showLoadingScreen(show) {
@@ -1367,21 +1578,22 @@
             
             const rng = new SimpleRandom(seed);
             
-            if (wallMeshes) {
+            // Clear existing objects
+            if (wallMeshes.length > 0) {
                 wallMeshes.forEach(mesh => {
                     if (mesh && mesh.parent) {
                         scene.remove(mesh);
                     }
                 });
             }
-            if (itemMeshes) {
+            if (itemMeshes.length > 0) {
                 itemMeshes.forEach(mesh => {
                     if (mesh && mesh.parent) {
                         scene.remove(mesh);
                     }
                 });
             }
-            if (botMeshes) {
+            if (botMeshes.length > 0) {
                 botMeshes.forEach(mesh => {
                     if (mesh && mesh.parent) {
                         scene.remove(mesh);
@@ -1570,10 +1782,10 @@
             
             if (isLocal) {
                 playerMesh = player;
-                player.position.set(-10, 1, 0);
+                playerMesh.position.set(-10, 1, 0);
             } else {
                 otherPlayerMesh = player;
-                player.position.set(10, 1, 0);
+                otherPlayerMesh.position.set(10, 1, 0);
             }
             
             scene.add(player);
@@ -2182,6 +2394,9 @@
             if (gameState.peer) {
                 gameState.peer.close();
             }
+            if (gameState.connectionCheckInterval) {
+                clearInterval(gameState.connectionCheckInterval);
+            }
             gameState.gameStarted = false;
             document.getElementById('solitaryScreen').style.display = 'none';
             document.getElementById('lobbyScreen').style.display = 'flex';
@@ -2494,6 +2709,9 @@
             if (gameState.peer) {
                 gameState.peer.close();
             }
+            if (gameState.connectionCheckInterval) {
+                clearInterval(gameState.connectionCheckInterval);
+            }
             if (renderer) {
                 renderer.dispose();
             }
@@ -2503,7 +2721,7 @@
             localStorage.removeItem('playerIceCandidate');
         });
 
-        console.log('Cell Block Zero - All bugs fixed and ready to play!');
+        console.log('Cell Block Zero - Connection system fixed and ready!');
     </script>
 </body>
 </html>
